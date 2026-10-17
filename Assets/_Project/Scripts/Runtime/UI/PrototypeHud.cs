@@ -30,6 +30,7 @@ namespace ZombiesFPS.UI
         long _lastPoints = -1;
         long _pointsGain;
         float _pointsGainTime = -100f;
+        float _lastPickTime = -100f;
 
         public void Init(NetPlayer player)
         {
@@ -62,6 +63,14 @@ namespace ZombiesFPS.UI
             if (GameInput.DebugPressed(DebugKey.ToggleHelp)) _showHelp = !_showHelp;
             WatchRounds();
             WatchPoints();
+            WatchPowerUps();
+        }
+
+        void WatchPowerUps()
+        {
+            if (_player.LastPickTime <= _lastPickTime) return;
+            _lastPickTime = _player.LastPickTime;
+            ShowBanner("POWER-UP", _player.LastPickText);
         }
 
         void WatchRounds()
@@ -186,13 +195,15 @@ namespace ZombiesFPS.UI
             DrawHealth(h, u);
             DrawStats(u, rounds);
             DrawSquad(w, u);
+            DrawPowerUps(h, u);
+            DrawPowerUpOffer(w, h, u);
 
             if (_showHelp)
             {
                 var r = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
-                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode · P +5,000 pts" : "";
+                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode · P +5,000 pts · O power-up" : "";
                 Shadowed(new Rect(w - 800 * u, 30 * u, 760 * u, 260 * u),
-                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · Q / wheel switch gun\nE buy · hold E revive" + host + "\nEsc menu · H hide help",
+                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · Q / wheel switch gun\nE buy · hold E revive · 1/2/3 pick power-up" + host + "\nEsc menu · H hide help",
                     r);
             }
 
@@ -241,18 +252,18 @@ namespace ZombiesFPS.UI
         {
             var right = new GUIStyle(_label) { alignment = TextAnchor.LowerRight };
             var bigRight = new GUIStyle(_big) { alignment = TextAnchor.LowerRight };
-            int quarter = _gun.Data.magazineSize / 4;
+            int quarter = _gun.MagazineCapacity / 4;
             bigRight.normal.textColor = _gun.Magazine == 0 ? new Color(1f, 0.3f, 0.25f) : _gun.Magazine <= quarter ? new Color(1f, 0.8f, 0.3f) : Color.white;
             Shadowed(new Rect(w - 420 * u, h - 140 * u, 260 * u, 90 * u), _gun.Magazine.ToString(), bigRight);
             Shadowed(new Rect(w - 160 * u, h - 112 * u, 120 * u, 50 * u), "/ " + _gun.Reserve, right);
-            Shadowed(new Rect(w - 520 * u, h - 52 * u, 480 * u, 40 * u), _gun.Data.displayName, right);
+            Shadowed(new Rect(w - 520 * u, h - 52 * u, 480 * u, 40 * u), _gun.DisplayName ?? _gun.Data.displayName, right);
             int other = 1 - _player.ActiveSlot.Value;
             var otherGun = GameConfig.GunById(_player.GunInSlot(other));
             if (otherGun != null)
             {
                 var dim = new GUIStyle(_small) { alignment = TextAnchor.LowerRight };
                 dim.normal.textColor = new Color(1f, 1f, 1f, 0.6f);
-                Shadowed(new Rect(w - 520 * u, h - 176 * u, 480 * u, 30 * u), $"Q  {otherGun.displayName}", dim);
+                Shadowed(new Rect(w - 520 * u, h - 176 * u, 480 * u, 30 * u), $"Q  {_player.GunName(other)}", dim);
             }
 
             var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
@@ -284,7 +295,15 @@ namespace ZombiesFPS.UI
             var b = _player.FocusedBuyable;
             if (b == null) return;
             long price = _player.PriceFor(b, out string what);
-            if (price < 0) return;
+            if (price < 0)
+            {
+                // Something there, but not for sale right now (a maxed gun, a recharging machine).
+                if (string.IsNullOrEmpty(what)) return;
+                var dim = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
+                dim.normal.textColor = new Color(1f, 1f, 1f, 0.6f);
+                Shadowed(new Rect(0, h * 0.64f, w, 36 * u), what, dim);
+                return;
+            }
             bool afford = _player.Points.Value >= price;
             var c = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
             if (!afford) c.normal.textColor = new Color(1f, 0.45f, 0.35f);
@@ -299,7 +318,7 @@ namespace ZombiesFPS.UI
         void DrawHealth(float h, float u)
         {
             float hbw = 320 * u, hbh = 14 * u, hx = 40 * u, hy = h - 60 * u;
-            float n = _player.Health.Value / NetPlayer.MaxHealth;
+            float n = Mathf.Clamp01(_player.Health.Value / _player.MaxHealthNow);
             Fill(hx - 2, hy - 2, hbw + 4, hbh + 4, new Color(0f, 0f, 0f, 0.5f));
             Fill(hx, hy, hbw * n, hbh, Color.Lerp(new Color(0.9f, 0.15f, 0.1f), new Color(0.85f, 0.85f, 0.85f), n));
             Shadowed(new Rect(hx, hy - 40 * u, hbw, 36 * u), Mathf.CeilToInt(_player.Health.Value).ToString(), _label);
@@ -362,6 +381,56 @@ namespace ZombiesFPS.UI
             var sub = new GUIStyle(_center);
             sub.normal.textColor = new Color(1f, 1f, 1f, a);
             Shadowed(new Rect(0, h * 0.2f + 110 * u, w, 40 * u), _bannerSub, sub);
+        }
+
+        /// <summary>Owned power-ups and their levels, above the health bar.</summary>
+        void DrawPowerUps(float h, float u)
+        {
+            var upgrades = GameConfig.Upgrades;
+            if (upgrades == null || _player.PowerLevels.Value == 0) return;
+            var parts = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < upgrades.PowerUpCount; i++)
+            {
+                int level = _player.PowerLevel(i);
+                if (level > 0) parts.Add($"{upgrades.PowerUpAt(i).name} {NetPlayer.ToRoman(level)}");
+            }
+            var style = new GUIStyle(_small) { wordWrap = true, alignment = TextAnchor.LowerLeft };
+            style.normal.textColor = new Color(0.85f, 0.75f, 1f);
+            Shadowed(new Rect(40 * u, h - 170 * u, 700 * u, 60 * u), string.Join("  ·  ", parts), style);
+        }
+
+        /// <summary>The three power-up cards to pick from after every few rounds.</summary>
+        void DrawPowerUpOffer(float w, float h, float u)
+        {
+            var upgrades = GameConfig.Upgrades;
+            if (upgrades == null || !_player.HasPowerUpOffer) return;
+            bool empowered = _player.OfferIsEmpowered;
+            int levels = _player.OfferLevels;
+            float cw = 300 * u, ch = 130 * u, gap = 20 * u;
+            float x0 = (w - (cw * 3 + gap * 2)) / 2f, y = h - 290 * u;
+
+            var head = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
+            head.normal.textColor = empowered ? new Color(1f, 0.8f, 0.3f) : new Color(0.85f, 0.75f, 1f);
+            Shadowed(new Rect(0, y - 40 * u, w, 36 * u), empowered ? $"EMPOWERED: PICK A POWER-UP (+{levels} levels)" : "PICK A POWER-UP", head);
+
+            var title = new GUIStyle(_label) { alignment = TextAnchor.UpperCenter };
+            var body = new GUIStyle(_small) { alignment = TextAnchor.UpperCenter, wordWrap = true };
+            var key = new GUIStyle(_small) { alignment = TextAnchor.LowerCenter };
+            key.normal.textColor = new Color(1f, 1f, 1f, 0.7f);
+            for (int card = 0; card < 3; card++)
+            {
+                var p = upgrades.PowerUpAt(_player.OfferedPowerUp(card));
+                if (p == null) continue;
+                int id = _player.OfferedPowerUp(card);
+                int now = _player.PowerLevel(id), next = now + levels;
+                float x = x0 + card * (cw + gap);
+                Fill(x, y, cw, ch, new Color(0.08f, 0.05f, 0.12f, 0.8f));
+                Fill(x, y, cw, 4 * u, head.normal.textColor);
+                Shadowed(new Rect(x, y + 12 * u, cw, 34 * u), $"{p.name} {NetPlayer.ToRoman(next)}", title);
+                string change = now > 0 ? $"{p.Describe(now)}  ->  {p.Describe(next)}" : p.Describe(next);
+                Shadowed(new Rect(x + 12 * u, y + 46 * u, cw - 24 * u, 50 * u), change, body);
+                Shadowed(new Rect(x, y + ch - 30 * u, cw, 26 * u), $"Press {card + 1}", key);
+            }
         }
 
         void DrawSquad(float w, float u)
@@ -443,7 +512,7 @@ namespace ZombiesFPS.UI
         void DrawDamageVignette(float w, float h)
         {
             float recent = Mathf.Clamp01(1f - (Time.time - _player.LocalLastDamageTime) / 0.6f);
-            float low = _player.IsAlive ? Mathf.Clamp01(1f - _player.Health.Value / NetPlayer.MaxHealth / 0.5f) : 0f;
+            float low = _player.IsAlive ? Mathf.Clamp01(1f - _player.Health.Value / _player.MaxHealthNow / 0.5f) : 0f;
             float a = Mathf.Max(recent * 0.35f, low * 0.3f * (0.8f + 0.2f * Mathf.Sin(Time.time * 6f)));
             if (a <= 0.001f) return;
             float edge = h * 0.12f;

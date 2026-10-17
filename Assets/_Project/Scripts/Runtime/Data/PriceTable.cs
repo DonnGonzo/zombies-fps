@@ -24,6 +24,9 @@ namespace ZombiesFPS.Data
         [Tooltip("Cost of each door, in the map's door order (see ZoneMap.Doors).")]
         public long[] doorCosts = { 750, 750, 1000, 1000, 1250, 1250 };
 
+        [Tooltip("Upgrade machine: the cost of each visit (Mk II, Mk III, Mk IV).")]
+        public long[] upgradeCosts = { 5000, 10000, 15000 };
+
         [Tooltip("Guns on the walls, in the map's wall-buy order (see ZoneMap.WallBuys). A gun can appear twice.")]
         public List<WallGun> wallGuns = new List<WallGun>();
 
@@ -31,6 +34,13 @@ namespace ZombiesFPS.Data
         {
             if (doorCosts == null || doorCosts.Length == 0) return 1000;
             return doorCosts[Mathf.Clamp(door, 0, doorCosts.Length - 1)];
+        }
+
+        /// <summary>Cost to take a gun to the given machine tier (1 = first visit).</summary>
+        public long UpgradeCost(int tier)
+        {
+            if (upgradeCosts == null || upgradeCosts.Length == 0) return 5000;
+            return upgradeCosts[Mathf.Clamp(tier - 1, 0, upgradeCosts.Length - 1)];
         }
 
         public WallGun WallGunAt(int index)

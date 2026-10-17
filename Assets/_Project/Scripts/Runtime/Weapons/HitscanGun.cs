@@ -42,6 +42,21 @@ namespace ZombiesFPS.Weapons
         public float AimAmount { get; private set; }
         public float CurrentSpread { get; private set; }
         public float LastShotTime { get; private set; } = -100f;
+        /// <summary>Name shown on the HUD, including any upgrade machine tier.</summary>
+        public string DisplayName { get; private set; }
+        /// <summary>Magazine and reserve multiplier (the ammo power-up and the machine tier).</summary>
+        public float CapacityScale { get; private set; } = 1f;
+        /// <summary>Reload speed multiplier (the reload power-up): 2 reloads in half the time.</summary>
+        public float ReloadSpeed { get; set; } = 1f;
+        /// <summary>Upgraded guns with explosive rounds show a burst where they hit.</summary>
+        public bool ExplosiveRounds { get; set; }
+        public int MagazineCapacity => ScaledMagazine(_data, CapacityScale);
+        public int MaxReserve => ScaledReserve(_data.maxReserve, CapacityScale);
+        public int StartingReserve => ScaledReserve(_data.startingReserve, CapacityScale);
+
+        public static int ScaledMagazine(GunData data, float scale) => Mathf.Max(1, Mathf.RoundToInt(data.magazineSize * scale));
+        public static int ScaledReserve(int reserve, float scale) => Mathf.Max(0, Mathf.RoundToInt(reserve * scale));
+
         /// <summary>0 just switched to, 1 fully raised and ready.</summary>
         public float RaiseProgress => 1f - Mathf.Clamp01((_raiseEndTime - Time.time) / _raiseDuration);
         public bool IsRaising => Time.time < _raiseEndTime;
@@ -65,8 +80,9 @@ namespace ZombiesFPS.Weapons
             _audio = gunAudio;
             _uiAudio = uiAudio;
             _view = view;
-            Magazine = data.magazineSize;
-            Reserve = data.startingReserve;
+            DisplayName = data.displayName;
+            Magazine = MagazineCapacity;
+            Reserve = StartingReserve;
             _camera.fieldOfView = baseFov;
         }
 
@@ -134,6 +150,7 @@ namespace ZombiesFPS.Weapons
                 bool flesh = hitbox != null && hitbox.Owner != null && hitbox.Owner.IsAlive;
                 if (flesh) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
                 else FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, 4, 2.5f, 0.05f);
+                if (ExplosiveRounds) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
             }
             Fired?.Invoke(cam.position, dir);
 
@@ -156,9 +173,9 @@ namespace ZombiesFPS.Weapons
 
         void TryStartReload()
         {
-            if (IsReloading || IsRaising || Magazine >= _data.magazineSize || Reserve <= 0) return;
+            if (IsReloading || IsRaising || Magazine >= MagazineCapacity || Reserve <= 0) return;
             IsReloading = true;
-            _reloadDuration = Magazine == 0 ? _data.emptyReloadTime : _data.reloadTime;
+            _reloadDuration = (Magazine == 0 ? _data.emptyReloadTime : _data.reloadTime) / Mathf.Max(0.1f, ReloadSpeed);
             _reloadEndTime = Time.time + _reloadDuration;
             _magOutPlayed = false;
         }
@@ -173,7 +190,7 @@ namespace ZombiesFPS.Weapons
             }
             if (Time.time < _reloadEndTime) return;
 
-            int take = Mathf.Min(_data.magazineSize - Magazine, Reserve);
+            int take = Mathf.Min(MagazineCapacity - Magazine, Reserve);
             Magazine += take;
             Reserve -= take;
             IsReloading = false;
@@ -191,16 +208,18 @@ namespace ZombiesFPS.Weapons
         /// <summary>Back to a full magazine and starting reserve (used on restart).</summary>
         public void ResetAmmo()
         {
-            Magazine = _data.magazineSize;
-            Reserve = _data.startingReserve;
+            Magazine = MagazineCapacity;
+            Reserve = StartingReserve;
             IsReloading = false;
         }
 
         /// <summary>Puts a gun in the player's hands with the given ammo, then raises it before it can fire.</summary>
-        public void Equip(GunData data, int magazine, int reserve)
+        public void Equip(GunData data, int magazine, int reserve, float capacityScale = 1f, string displayName = null)
         {
             _data = data;
-            Magazine = Mathf.Clamp(magazine, 0, data.magazineSize);
+            CapacityScale = Mathf.Max(0.1f, capacityScale);
+            DisplayName = string.IsNullOrEmpty(displayName) ? data.displayName : displayName;
+            Magazine = Mathf.Clamp(magazine, 0, MagazineCapacity);
             Reserve = Mathf.Max(0, reserve);
             IsReloading = false;
             _bloom = 0f;
@@ -213,15 +232,22 @@ namespace ZombiesFPS.Weapons
         /// <summary>Tops the reserve up to the maximum (god mode).</summary>
         public void RefillAmmo()
         {
-            Reserve = _data.maxReserve;
+            Reserve = MaxReserve;
         }
 
         /// <summary>Full magazine and full reserve (bought ammo off the wall).</summary>
         public void FillAmmo()
         {
-            Magazine = _data.magazineSize;
-            Reserve = _data.maxReserve;
+            Magazine = MagazineCapacity;
+            Reserve = MaxReserve;
             IsReloading = false;
+        }
+
+        /// <summary>Changes capacity without touching the rounds already loaded (a new ammo power-up level).</summary>
+        public void SetCapacityScale(float scale)
+        {
+            CapacityScale = Mathf.Max(0.1f, scale);
+            Magazine = Mathf.Min(Magazine, MagazineCapacity);
         }
     }
 }

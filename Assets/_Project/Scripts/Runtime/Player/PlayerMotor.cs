@@ -20,6 +20,8 @@ namespace ZombiesFPS.Player
         Vector3 _velocity;
 
         public bool InputLocked { get; set; }
+        /// <summary>Scales walk, sprint and aim speed (the move speed power-up). Crawling is unaffected.</summary>
+        public float SpeedMultiplier { get; set; } = 1f;
         /// <summary>Downed players crawl: slow, no sprint, no jump.</summary>
         public bool Downed { get; set; }
         public bool IsGrounded => _controller.isGrounded;
@@ -49,7 +51,7 @@ namespace ZombiesFPS.Player
             bool firing = !InputLocked && GameInput.FireHeld;
 
             IsSprinting = !InputLocked && !Downed && GameInput.SprintHeld && input.y > 0.1f && !aiming && !firing;
-            float targetSpeed = Downed ? downedSpeed : IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed;
+            float targetSpeed = Downed ? downedSpeed : (IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed) * SpeedMultiplier;
 
             Vector3 wish = (transform.right * input.x + transform.forward * input.y) * targetSpeed;
             Vector3 planar = new Vector3(_velocity.x, 0f, _velocity.z);

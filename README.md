@@ -2,9 +2,16 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
-## Current state: Phase 3 (map, doors and wall guns), on top of Phases 0-2
+## Current state: Phase 4 part A (power-ups and the upgrade machine), on top of Phases 0-3
 
 A first-person greybox co-op zombie game for up to 4 players: Netcode for GameObjects with a host-authoritative model, a round-based loop, and now a map to buy your way through.
+
+**Power-ups and the upgrade machine (Phase 4, part A)**
+- After every 5th round each player picks 1 of 3 power-ups with 1 / 2 / 3 (d-pad left / up / right). They stack: picking one again levels it up, with diminishing returns so stacking never runs away. An offer left unpicked takes its first card when the next one arrives
+  - Hollow Point (damage, up to +300%), Quick Hands (reload speed), Thick Skin (max health), Light Feet (move speed), Deadeye (headshot damage), Deep Pockets (magazine and reserve), Medic (revive speed), Bounty (kill points)
+- Every 25th round the offer is empowered: it is drawn from power-ups you already own and adds 2 levels
+- The upgrade machine (purple glow, in the Chapel) upgrades the gun in your hands: Mk II 5,000 (x2 damage, x1.5 ammo), Mk III 10,000 (x2.6, chain hits jump to a nearby zombie), Mk IV 15,000 (x3.3, chain plus explosive rounds). Each player can use it once between power-ups. An upgraded gun comes out full
+- Owned power-ups show above the health bar; the health bar follows Thick Skin
 
 **Map, doors and wall guns (Phase 3)**
 - Six zones in a 3 x 2 grid, joined by six doors into one loop, so there is always a way round to retreat:
@@ -74,10 +81,11 @@ If the scene is ever missing or broken, **Zombies FPS → Rebuild Prototype Scen
 |---|---|
 | Move / sprint / jump | WASD / Shift / Space |
 | Fire / aim / reload | Left mouse / right mouse / R |
-| Buy (door, wall gun, ammo) | E |
+| Buy (door, wall gun, ammo, upgrade) | E |
+| Pick a power-up | 1 / 2 / 3 |
 | Switch weapon | Q / mouse wheel / 1, 2 |
 | Revive a downed teammate | Hold E |
-| Test mode (host): next round / jump 10 rounds / god mode / +5,000 points | `=` / `]` / `G` / `P` |
+| Test mode (host): next round / jump 10 rounds / god mode / +5,000 points / power-up offer | `=` / `]` / `G` / `P` / `O` |
 | Free the mouse (shows Leave) / toggle help | Esc / H |
 | Restart after game over (host) | Enter |
 
@@ -88,11 +96,12 @@ A gamepad works too (sticks, triggers, south = jump, west = reload, north = buy 
 Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even during Play mode:
 
 - `Gun_Rook9`, `Gun_Hatchet44`, `Gun_Wren7`, `Gun_BrennanDMR`, `Gun_TalonLMG`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom, and the model's length and colour
-- `PriceTable`: door costs and each wall gun's price and ammo price
+- `PriceTable`: door costs, upgrade machine costs, and each wall gun's price and ammo price
+- `UpgradeData`: each power-up's max bonus and half level, how often offers come, empowered levels, machine tiers, chain and explosive damage
 - `Zombie_Walker`: speeds per tier, attack damage/range/wind-up, stagger, points
 - `RoundData`: zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices) from **Window → General → Test Runner → EditMode**.
+Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 
@@ -120,4 +129,5 @@ The prototype builds its scene from code (`PrototypeBootstrap`) so there are no 
 
 - Unity Relay + Lobby join codes, so friends can join without port forwarding. This needs the project linked to a Unity Cloud project (Edit → Project Settings → Services).
 - An autoplay bot for overnight balance runs to rounds 100, 250 and 500 (planned for Phase 2 in the design doc).
-- Phase 4: power-ups every 5 rounds, the upgrade machine, more zombie types and a boss.
+- Phase 4 part B: more zombie types (Runner, Crawler, Brute, Spitter) and a boss every 10 rounds.
+- Perks: 8 buyable perks, lost when you go down (in the design doc, not scheduled yet).

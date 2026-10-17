@@ -10,6 +10,7 @@ namespace ZombiesFPS.World
     {
         Door,
         WallGun,
+        UpgradeMachine,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -55,6 +56,9 @@ namespace ZombiesFPS.World
         const float GapHeight = 3.2f;
         const float DoorRange = 2.6f;
         const float WallBuyRange = 2f;
+        const float MachineRange = 2.2f;
+        /// <summary>The upgrade machine stands at the far end of the Chapel, the zone furthest from the start.</summary>
+        static readonly Vector3 MachinePosition = new Vector3(0f, 0f, 33.4f);
 
         public static readonly string[] ZoneNames = { "Gate Yard", "Depot", "Garage", "Chapel", "Barracks", "Courtyard" };
 
@@ -166,6 +170,7 @@ namespace ZombiesFPS.World
             var buyables = new List<Buyable>();
             BuildDoors(buyables);
             BuildWallBuys(prices, buyables);
+            BuildUpgradeMachine(buyables);
             Buyables = buyables.ToArray();
 
             PlayerStart = new Vector3(0f, 0.05f, -4f);
@@ -275,7 +280,6 @@ namespace ZombiesFPS.World
                 Greybox.Box("Pew", Root, new Vector3(-4f, 0.45f, z), new Vector3(6f, 0.9f, 0.6f), Cover);
                 Greybox.Box("Pew", Root, new Vector3(4f, 0.45f, z), new Vector3(6f, 0.9f, 0.6f), Cover);
             }
-            Greybox.Box("Altar", Root, new Vector3(0f, 0.6f, 32f), new Vector3(3f, 1.2f, 1.2f), Concrete);
 
             // Barracks: bunks down both sides.
             for (int i = 0; i < 4; i++)
@@ -360,6 +364,33 @@ namespace ZombiesFPS.World
                 BuildWallBuyPanel(face, inward, entry != null ? entry.gun : null);
                 buyables.Add(new Buyable { Kind = BuyableKind.WallGun, Index = i, Position = face + inward * 1f + Vector3.up, Range = WallBuyRange });
             }
+        }
+
+        void BuildUpgradeMachine(List<Buyable> buyables)
+        {
+            var glow = new Color(0.65f, 0.35f, 1f);
+            var machine = Greybox.Empty("Upgrade Machine", Root, MachinePosition);
+            var body = Greybox.Box("Body", machine, new Vector3(0f, 1.1f, 0f), new Vector3(2.4f, 2.2f, 1.4f), new Color(0.14f, 0.13f, 0.17f));
+            // Built after the bake like the doors, so it carves its own hole in the NavMesh.
+            var obstacle = body.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+            obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+            obstacle.size = Vector3.one;
+            obstacle.carving = true;
+            Greybox.Box("Top", machine, new Vector3(0f, 2.35f, 0f), new Vector3(2.6f, 0.3f, 1.6f), new Color(0.22f, 0.2f, 0.26f));
+            // Glowing slot and strips facing the room.
+            Greybox.Prim(PrimitiveType.Cube, "Slot", machine, new Vector3(0f, 1.25f, -0.71f), new Vector3(1.2f, 0.25f, 0.02f), glow, collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Cube, "StripL", machine, new Vector3(-1.05f, 1.1f, -0.71f), new Vector3(0.08f, 1.8f, 0.02f), glow, collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Cube, "StripR", machine, new Vector3(1.05f, 1.1f, -0.71f), new Vector3(0.08f, 1.8f, 0.02f), glow, collider: false, unlit: true);
+            var lightGo = new GameObject("Machine Light");
+            lightGo.transform.SetParent(machine, false);
+            lightGo.transform.localPosition = new Vector3(0f, 1.6f, -1.6f);
+            var light = lightGo.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = glow;
+            light.range = 7f;
+            light.intensity = 2.2f;
+            light.shadows = LightShadows.None;
+            buyables.Add(new Buyable { Kind = BuyableKind.UpgradeMachine, Index = 0, Position = MachinePosition + new Vector3(0f, 1f, -1.9f), Range = MachineRange });
         }
 
         void BuildWallBuyPanel(Vector3 face, Vector3 inward, GunData gun)

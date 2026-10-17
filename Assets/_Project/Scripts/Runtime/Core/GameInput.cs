@@ -13,6 +13,7 @@ namespace ZombiesFPS.Core
         GivePoints,
         Restart,
         ToggleHelp,
+        OfferPowerUp,
     }
 
     /// <summary>
@@ -76,6 +77,27 @@ namespace ZombiesFPS.Core
         /// <summary>The weapon slot picked with the number keys this frame (0 or 1), or -1.</summary>
         public static int SlotPressed => K == null ? -1 : K.digit1Key.wasPressedThisFrame ? 0 : K.digit2Key.wasPressedThisFrame ? 1 : -1;
 
+        /// <summary>A power-up card picked with 1/2/3 (or d-pad left/up/right), else -1.</summary>
+        public static int ChoicePressed
+        {
+            get
+            {
+                if (K != null)
+                {
+                    if (K.digit1Key.wasPressedThisFrame) return 0;
+                    if (K.digit2Key.wasPressedThisFrame) return 1;
+                    if (K.digit3Key.wasPressedThisFrame) return 2;
+                }
+                if (G != null)
+                {
+                    if (G.dpad.left.wasPressedThisFrame) return 0;
+                    if (G.dpad.up.wasPressedThisFrame) return 1;
+                    if (G.dpad.right.wasPressedThisFrame) return 2;
+                }
+                return -1;
+            }
+        }
+
         public static bool DebugPressed(DebugKey key)
         {
             if (K == null) return false;
@@ -87,6 +109,7 @@ namespace ZombiesFPS.Core
                 case DebugKey.GivePoints: return K.pKey.wasPressedThisFrame;
                 case DebugKey.Restart: return K.enterKey.wasPressedThisFrame || (G != null && G.startButton.wasPressedThisFrame);
                 case DebugKey.ToggleHelp: return K.hKey.wasPressedThisFrame;
+                case DebugKey.OfferPowerUp: return K.oKey.wasPressedThisFrame;
                 default: return false;
             }
         }
@@ -110,6 +133,8 @@ namespace ZombiesFPS.Core
         public static bool SwitchWeaponPressed => Input.GetKeyDown(KeyCode.Q) || Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f;
         public static int SlotPressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : -1;
 
+        public static int ChoicePressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : Input.GetKeyDown(KeyCode.Alpha3) ? 2 : -1;
+
         public static bool DebugPressed(DebugKey key)
         {
             switch (key)
@@ -120,6 +145,7 @@ namespace ZombiesFPS.Core
                 case DebugKey.GivePoints: return Input.GetKeyDown(KeyCode.P);
                 case DebugKey.Restart: return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
                 case DebugKey.ToggleHelp: return Input.GetKeyDown(KeyCode.H);
+                case DebugKey.OfferPowerUp: return Input.GetKeyDown(KeyCode.O);
                 default: return false;
             }
         }

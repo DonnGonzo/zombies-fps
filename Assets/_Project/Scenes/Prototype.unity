@@ -58,6 +58,7 @@ MonoBehaviour:
   zombieData: {fileID: 11400000, guid: 43c5c19dfa4a421799a794defe4e9380, type: 2}
   roundData: {fileID: 11400000, guid: 2752b1b4979947c08e38d9e66e04f864, type: 2}
   priceTable: {fileID: 11400000, guid: 616f2bed3bd44273ac0e73aab8902f07, type: 2}
+  upgradeData: {fileID: 11400000, guid: 6c54494a919c4d53ac92b29cb414dfb6, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

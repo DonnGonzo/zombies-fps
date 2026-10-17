@@ -25,6 +25,7 @@ namespace ZombiesFPS.Core
         public ZombieData zombieData;
         public RoundData roundData;
         public PriceTable priceTable;
+        public UpgradeData upgradeData;
 
         const string NameKey = "ZombiesFPS.PlayerName";
         const string AddressKey = "ZombiesFPS.JoinAddress";
@@ -51,6 +52,7 @@ namespace ZombiesFPS.Core
             GameConfig.Round = roundData != null ? roundData : ScriptableObject.CreateInstance<RoundData>();
             GameConfig.Prices = priceTable != null ? priceTable : PriceTable.CreateDefault(GameConfig.Gun);
             GameConfig.Guns = GameConfig.Prices.BuildCatalog(GameConfig.Gun);
+            GameConfig.Upgrades = upgradeData != null ? upgradeData : ScriptableObject.CreateInstance<UpgradeData>();
             GameConfig.PlayerPrefab = Resources.Load<GameObject>("Net/NetPlayer");
             GameConfig.ZombiePrefab = Resources.Load<GameObject>("Net/NetZombie");
             GameConfig.DirectorPrefab = Resources.Load<GameObject>("Net/NetDirector");

@@ -114,6 +114,7 @@ namespace ZombiesFPS.Net
             if (GameInput.DebugPressed(DebugKey.GivePoints))
                 foreach (var p in NetPlayer.All) p.Points.Value += DebugPoints;
             if (IsGameOver) return;
+            if (GameInput.DebugPressed(DebugKey.OfferPowerUp)) OfferPowerUps(false);
             if (GameInput.DebugPressed(DebugKey.NextRound)) SkipToRound(Round.Value + 1);
             if (GameInput.DebugPressed(DebugKey.JumpTenRounds)) SkipToRound(Round.Value + 10);
         }
@@ -147,6 +148,8 @@ namespace ZombiesFPS.Net
             long bonus = GameConfig.Round.RoundBonus(Round.Value);
             foreach (var p in NetPlayer.All) p.Points.Value += bonus;
             RespawnBledOutPlayers();
+            var upgrades = GameConfig.Upgrades;
+            if (upgrades != null && upgrades.IsPowerUpRound(Round.Value)) OfferPowerUps(upgrades.IsEmpoweredRound(Round.Value));
 
             if (Round.Value >= RoundData.MaxRound)
             {
@@ -155,6 +158,11 @@ namespace ZombiesFPS.Net
                 return;
             }
             BeginIntermission(GameConfig.Round.intermissionTime);
+        }
+
+        static void OfferPowerUps(bool empowered)
+        {
+            foreach (var p in NetPlayer.All) p.ServerOfferPowerUps(empowered);
         }
 
         void RespawnBledOutPlayers()
