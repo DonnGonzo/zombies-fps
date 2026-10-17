@@ -5,7 +5,9 @@
         "Unity.InputSystem",
         "Unity.AI.Navigation",
         "Unity.Netcode.Runtime",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Unity.Networking.Transport",
+        "Unity.Mathematics"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
