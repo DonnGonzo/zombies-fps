@@ -176,7 +176,7 @@ namespace ZombiesFPS.Data
         {
             if (gunId < 0 || gunId >= MaxCamoGuns) return picks;
             ulong mask = 0xFUL << (gunId * 4);
-            return (picks & ~mask) | ((ulong)(camo & 0xF) << (gunId * 4));
+            return (picks & ~mask) | ((ulong)(uint)(camo & 0xF) << (gunId * 4));
         }
 
         public int Count => Mathf.Min(MaxAttachments, attachments != null ? attachments.Count : 0);

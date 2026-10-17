@@ -146,7 +146,7 @@ namespace ZombiesFPS.Data
         {
             level = Mathf.Clamp(level, 0, 255);
             ulong mask = 0xFFUL << (index * 8);
-            return (packed & ~mask) | ((ulong)level << (index * 8));
+            return (packed & ~mask) | ((ulong)(uint)level << (index * 8));
         }
 
         public bool IsPowerUpRound(int round) => powerUpEveryRounds > 0 && round > 0 && round % powerUpEveryRounds == 0

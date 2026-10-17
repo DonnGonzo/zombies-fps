@@ -128,11 +128,12 @@ namespace ZombiesFPS.Data
         public const int NoMission = 0xFF;
 
         public static ulong Pack(int id, bool done, int zone, int progress, int target) =>
-            (ulong)(id & 0xFF)
+            // Through uint first: int -> ulong would sign-extend (CS0675).
+            (ulong)(uint)(id & 0xFF)
             | ((done ? 1UL : 0UL) << 8)
-            | ((ulong)(zone & 0x7F) << 9)
-            | ((ulong)Mathf.Clamp(progress, 0, 0xFFFFFF) << 16)
-            | ((ulong)Mathf.Clamp(target, 0, 0xFFFFFF) << 40);
+            | ((ulong)(uint)(zone & 0x7F) << 9)
+            | ((ulong)(uint)Mathf.Clamp(progress, 0, 0xFFFFFF) << 16)
+            | ((ulong)(uint)Mathf.Clamp(target, 0, 0xFFFFFF) << 40);
 
         public static int IdOf(ulong slot) => (int)(slot & 0xFF);
         public static bool DoneOf(ulong slot) => ((slot >> 8) & 1) != 0;
