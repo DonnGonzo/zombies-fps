@@ -294,7 +294,7 @@ namespace ZombiesFPS.Net
             for (int i = 0; i < count; i++)
             {
                 var z = _overlap[i].GetComponentInParent<NetZombie>();
-                if (z == null || z == primary || !z.IsAlive) continue;
+                if (z == null || z == primary || !z.IsAlive || _pierced.Contains(z)) continue;
                 float sqr = (z.transform.position - end).sqrMagnitude;
                 if (sqr < bestSqr)
                 {
@@ -308,6 +308,7 @@ namespace ZombiesFPS.Net
             long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * Upgrades.chainDamage * best.Data.bodyMultiplier));
             var result = best.TakeDamage(new DamageInfo(damage, point, (point - end).normalized, false, OwnerClientId));
             AwardPoints(best, result, false);
+            OnServerKillHeal(result);
             ChainFxRpc(end, point);
         }
 
@@ -320,10 +321,12 @@ namespace ZombiesFPS.Net
             for (int i = 0; i < count; i++)
             {
                 var z = _overlap[i].GetComponentInParent<NetZombie>();
-                if (z == null || z == primary || !z.IsAlive || !_splashed.Add(z)) continue;
+                // Zombies the bullet already pierced took their hit; don't splash them as well.
+                if (z == null || z == primary || !z.IsAlive || _pierced.Contains(z) || !_splashed.Add(z)) continue;
                 long damage = System.Math.Max(1L, (long)System.Math.Round(splash * z.Data.bodyMultiplier));
                 var result = z.TakeDamage(new DamageInfo(damage, z.transform.position + Vector3.up, direction, false, OwnerClientId));
                 AwardPoints(z, result, false);
+                OnServerKillHeal(result);
             }
         }
 

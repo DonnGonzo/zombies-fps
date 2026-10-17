@@ -16,6 +16,7 @@ namespace ZombiesFPS.UI
     {
         const float LineGap = 0.6f;
         const float TraderCooldown = 25f;
+        const float AmbienceVolume = 0.35f;
 
         NetPlayer _player;
         AudioSource _radio, _ambience;
@@ -42,10 +43,11 @@ namespace ZombiesFPS.UI
             _player = player;
             _radio = GameSettings.Voice(gameObject.AddComponent<AudioSource>());
             _radio.playOnAwake = false;
-            _ambience = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
+            // Not in the effects registry, which would reset it to full volume; Update follows the slider instead.
+            _ambience = gameObject.AddComponent<AudioSource>();
             _ambience.clip = ProceduralAudio.Drone;
             _ambience.loop = true;
-            _ambience.volume *= 0.35f;
+            _ambience.volume = GameSettings.EffectsVolume * AmbienceVolume;
             _ambience.Play();
             CurrentAct = 0;
             LastBeat = null;
@@ -84,6 +86,7 @@ namespace ZombiesFPS.UI
         void Update()
         {
             if (_player == null) return;
+            _ambience.volume = GameSettings.EffectsVolume * AmbienceVolume;
             var rounds = RoundManager.Instance;
             if (rounds != null) WatchRounds(rounds);
             WatchShop();

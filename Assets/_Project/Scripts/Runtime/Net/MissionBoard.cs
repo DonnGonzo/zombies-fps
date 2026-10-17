@@ -317,7 +317,7 @@ namespace ZombiesFPS.Net
                 if (GameConfig.Shop != null) p.ServerAddXp(GameConfig.Shop.xpPerMission);
                 if (def.bonus == MissionBonus.MaxAmmo) p.ServerRefillAllAmmo();
                 else if (def.bonus == MissionBonus.PowerUpReroll) p.PowerRerolls.Value++;
-                else if (def.bonus == MissionBonus.RareWeapon) p.ServerGiveGun(GameConfig.GunId(GameConfig.Prices.RareGun(0)));
+                else if (def.bonus == MissionBonus.RareWeapon) p.ServerGiveRewardGun(GameConfig.GunId(GameConfig.Prices.RareGun(0)));
             }
             MissionCompletedRpc(id);
         }

@@ -43,6 +43,7 @@ namespace ZombiesFPS.UI
         PauseScreen _pause;
         bool _wasUnlocked;
         bool _consoleWasOpen;
+        bool _wasGameOver;
 
         // Blackout atmosphere.
         float _blackout;
@@ -151,10 +152,13 @@ namespace ZombiesFPS.UI
             }
             var rounds = RoundManager.Instance;
 
-            if (GameInput.DebugPressed(DebugKey.Console)) DebugConsole.Toggle();
+            if (!SettingsMenu.IsCapturing && GameInput.DebugPressed(DebugKey.Console)) DebugConsole.Toggle();
             else if (DebugConsole.IsOpen && GameInput.PausePressed) DebugConsole.Toggle();
             if (!DebugConsole.IsOpen && GameInput.DebugPressed(DebugKey.ToggleHelp)) _showHelp = !_showHelp;
 
+            bool gameOver = rounds != null && rounds.IsGameOver;
+            if (_wasGameOver && !gameOver) PlayerLook.SetCursorLocked(true);
+            _wasGameOver = gameOver;
             UpdatePause(rounds);
             WatchRounds();
             WatchPoints();
@@ -173,6 +177,7 @@ namespace ZombiesFPS.UI
             {
                 if (_pause == PauseScreen.Settings) SettingsMenu.Close();
                 _pause = PauseScreen.Main;
+                if (!console && GameInput.PausePressed) PlayerLook.SetCursorLocked(false);
             }
             else if (_wasUnlocked && !console && GameInput.PausePressed && !SettingsMenu.IsCapturing && !(rounds != null && rounds.IsGameOver))
             {

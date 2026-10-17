@@ -454,7 +454,10 @@ namespace ZombiesFPS.Zombies
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
 
-            if (_mode.Value == ZombieMode.Chasing && distance > StuckMinTargetDistance)
+            // Zombies crowding a protect-mission survivor are where they should be, not stuck.
+            var lured = MissionBoard.Lure;
+            bool atLure = lured.HasValue && (lured.Value - transform.position).sqrMagnitude < 6f * 6f;
+            if (_mode.Value == ZombieMode.Chasing && distance > StuckMinTargetDistance && !atLure)
             {
                 if ((transform.position - _stuckAnchor).sqrMagnitude > StuckMoveDistance * StuckMoveDistance)
                 {

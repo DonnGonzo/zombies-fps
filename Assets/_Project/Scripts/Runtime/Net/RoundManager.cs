@@ -180,7 +180,7 @@ namespace ZombiesFPS.Net
         static bool AnyPlayerStanding()
         {
             foreach (var p in NetPlayer.All)
-                if (p.IsAlive) return true;
+                if (p.IsAlive || p.SelfReviving) return true; // Solo Second Wind gets back up.
             return false;
         }
 
@@ -264,6 +264,7 @@ namespace ZombiesFPS.Net
         void ServerRestart()
         {
             ClearZombies();
+            Weapons.Throwable.ClearAll();
             int slot = 0;
             foreach (var p in NetPlayer.All) p.ServerResetForRestart(GameConfig.PlayerSpawn(slot++));
             if (MapState.Instance != null) MapState.Instance.ServerReset();

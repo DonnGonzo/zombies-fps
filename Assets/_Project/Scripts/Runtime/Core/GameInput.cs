@@ -117,20 +117,23 @@ namespace ZombiesFPS.Core
         }
 
         /// <summary>Test-mode keys on the host. God mode is F1 because G throws grenades.</summary>
+        /// <summary>A fixed test key, unless the player has bound a game action to it.</summary>
+        static bool TestKey(KeyCode key) => !Bindings.IsBound(key) && KeyDown(key);
+
         public static bool DebugPressed(DebugKey key)
         {
             if (key == DebugKey.Console) return KeyDown(KeyCode.BackQuote) || KeyDown(KeyCode.F2);
             if (Suspended) return false;
             switch (key)
             {
-                case DebugKey.NextRound: return KeyDown(KeyCode.Equals);
-                case DebugKey.JumpTenRounds: return KeyDown(KeyCode.RightBracket);
-                case DebugKey.GodMode: return KeyDown(KeyCode.F1);
-                case DebugKey.GivePoints: return KeyDown(KeyCode.P);
+                case DebugKey.NextRound: return TestKey(KeyCode.Equals);
+                case DebugKey.JumpTenRounds: return TestKey(KeyCode.RightBracket);
+                case DebugKey.GodMode: return TestKey(KeyCode.F1);
+                case DebugKey.GivePoints: return TestKey(KeyCode.P);
                 case DebugKey.Restart: return KeyDown(KeyCode.Return) || KeyDown(KeyCode.KeypadEnter) || Pad(PadButton.Start, down: true);
-                case DebugKey.ToggleHelp: return KeyDown(KeyCode.H);
-                case DebugKey.OfferPowerUp: return KeyDown(KeyCode.O);
-                case DebugKey.SpawnBoss: return KeyDown(KeyCode.B);
+                case DebugKey.ToggleHelp: return TestKey(KeyCode.H);
+                case DebugKey.OfferPowerUp: return TestKey(KeyCode.O);
+                case DebugKey.SpawnBoss: return TestKey(KeyCode.B);
                 default: return false;
             }
         }

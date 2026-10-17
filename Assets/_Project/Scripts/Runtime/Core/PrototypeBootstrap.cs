@@ -238,6 +238,7 @@ namespace ZombiesFPS.Core
                 Destroy(nm.gameObject);
             }
             NetPlayer.ClearRegistry();
+            Weapons.Throwable.ClearAll();
             var scene = SceneManager.GetActiveScene();
             if (scene.buildIndex >= 0) SceneManager.LoadScene(scene.buildIndex);
             else SceneManager.LoadScene(scene.name);

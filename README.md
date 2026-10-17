@@ -2,9 +2,39 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
-## Current state: Phase 5 (missions, XP and the spawn shop), on top of Phases 0-4
+## Current state: every gameplay system from the design doc, in greybox
 
-A first-person greybox co-op zombie game for up to 4 players: Netcode for GameObjects with a host-authoritative model, a round-based loop, and now a map to buy your way through.
+All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the map, power-ups, the upgrade machine, six zombie types and bosses, missions, XP and the spawn shop, perks, the story and voice lines. Art is still greybox and the voices are placeholder "blips" with subtitles. A plain-language feature list is in the project files as `feature-breakdown.pdf`.
+
+**Story, NPCs and voice (Phase 6)**
+- The Dispatcher talks to the squad over the radio in four acts that follow the design doc: Setup (rounds 1-25), Rising stakes (26-100), the Twist (101-250, the Dispatcher turns out to be Director Vale and every generator you powered fed the Lantern) and the Endgame (251-500, up the lift shaft), with calls at rounds 1, 2, 3, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 100, 101, 110, 125, 150, 175, 200, 225, 250, 251, 275, 300, 350, 400, 450, 475, 499 and on winning. She also comments on new mission sets, finished missions, boss rounds, blackouts and game overs
+- The Trader stands behind the spawn shop counter and tells a bit of lore each time you open the shop, different for each act
+- Pick one of four characters in the main menu: Marlow (ex-cop), Dee (mechanic), Dr. Hale (facility scientist) and Rook (courier). Each has lines for 16 events (round start and end, going down, being revived, a teammate down, buying doors, guns and perks, the upgrade machine, low ammo, power-ups, bosses, milestone rounds 50/100/250/500, blackouts, missions), and two players standing together between rounds trade banter
+- Lines show as subtitles (Settings, Accessibility) and play placeholder speech blips at each character's pitch; radio calls always show. The pause menu has a "story so far" card
+- Two sabotage missions join the pool in the Twist: Cut the Feed (round 101) and The Defector (round 110)
+
+**Perks, armour and rerolls**
+- Eight perk machines around the map (placeholder names): Ironhide Tonic 2,500 (double health), Slick Fingers 3,000 (reload 50% faster), Second Wind 1,500 (revive twice as fast; solo, get yourself up once), Hair Trigger 2,000 (fire 33% faster), Fleet Foot 2,000 (move 12% faster), Steady Hand 2,000 (40% less spread), Hazard Ward 2,500 (acid and slow immune, 15% less damage), Bloodline 4,000 (kills heal you, faster regen)
+- You lose every perk when you go down. Power-ups stay
+- Armour station: plates soak 50 damage each, up to 3. 750 each, plus 25 per round, capped at 5,000
+- The Fortune Shrine sells power-up rerolls: 3,000 plus 100 per round, capped at 20,000
+
+**Melee and throwables**
+- Melee (V): a quick knife swing, stronger on the head, scales with the round and staggers what it doesn't kill
+- Frag grenades (G, start with 2, carry 4), throwing knives (T, 3/3, instant-kill early on, sticks in walls) and concussion bangs (C, 1/2, stuns zombies for 3 s then slows them). Supplies top up every round and fill up with full ammo. Damage scales with zombie health so they stay useful late
+
+**More guns and rounds**
+- New wall guns: Mauler 12 shotgun (pellets), Kestrel AR and Vanta .50 sniper (bullets pierce through zombies). The Ion Lance is a rare prototype weapon only from The Prototype mission
+- Every 25th round is a blackout: the lights drop, runners flood in, and every kill pays double
+- Protect missions: Safe Passage (round 5) and The Prototype (round 25) put a survivor with a flare in an open zone. Zombies go for them; stay close and keep them alive. They show on screen through walls
+
+**Profile, settings and UI**
+- Prestige: at level 30 you can prestige from the main menu (10 ranks, Ember to Master). Your level resets, your camos stay, and prestige camos unlock at P1, P3, P5, P7 and P10. Your rank shows next to your name
+- XP to the next level shows in the menu and in game
+- Settings (main menu and pause menu): rebind every key, mouse sensitivity, invert Y, field of view, master, effects and voice volume, subtitles, reduced camera shake, colour-blind colours, tips, HUD size
+- A first-time tips system explains each thing the first time you meet it
+- New look for the main menu, HUD, shop, power-up cards, pause and game-over screens
+- Test console on the host (` or F2): `round 250`, `points 50000`, `xp 10000`, `spawn brute 5`, `boss`, `gun lance`, `perks`, `ammo`, `powerup emp`, `god`, `clear`, `help`
 
 **XP, levels and the spawn shop (Phase 5, part B)**
 - Everyone earns XP each run: kills (more for headshots and bosses), every round cleared, and every mission finished. Your level shows under your points and next to your name in the squad list
@@ -60,7 +90,7 @@ A first-person greybox co-op zombie game for up to 4 players: Netcode for GameOb
 - Points: everyone starts with 500. Hits, kills and headshot kills pay, and clearing a round pays everyone a bonus (100 + 10 per round). Nothing to spend them on until Phase 3 (doors, wall guns, ammo)
 - Players who bled out come back when the round is cleared. Game over when nobody is left standing, showing the round you reached
 - Zombies come from a network object pool (no Instantiate mid-round). A zombie that gets stuck far from everyone is recycled and spawns again
-- Test mode on the host: `=` next round, `]` jump 10 rounds, `G` god mode (no damage, endless ammo) for checking round 50 and beyond
+- Test mode on the host: `=` next round, `]` jump 10 rounds, `F1` god mode (no damage, endless ammo) for checking round 50 and beyond
 
 **Co-op (Phase 1)**
 - Host/Join menu: one player hosts, the others join by IP address and port (default 7777)
@@ -98,20 +128,23 @@ If the scene is ever missing or broken, **Zombies FPS → Rebuild Prototype Scen
 
 ## Controls
 
+Every keyboard and mouse key can be changed in Settings, Controls. Defaults:
+
 | Action | Key |
 |---|---|
 | Move / sprint / jump | WASD / Shift / Space |
 | Fire / aim / reload | Left mouse / right mouse / R |
-| Buy (door, wall gun, ammo, upgrade) | E |
+| Buy (doors, wall guns, ammo, perks, armour, upgrade) | E |
+| Revive a downed teammate | Hold E |
+| Melee / grenade / throwing knife / concussion bang | V / G / T / C |
+| Switch weapon | Q / mouse wheel / 1, 2 |
 | Pick a power-up / redraw the cards (with a reroll) | 1 / 2 / 3 / 4 |
 | Open the spawn shop / buy an attachment | E at the stall / 1-9 |
-| Switch weapon | Q / mouse wheel / 1, 2 |
-| Revive a downed teammate | Hold E |
-| Test mode (host): next round / jump 10 rounds / god mode / +5,000 points / power-up offer / spawn a boss | `=` / `]` / `G` / `P` / `O` / `B` |
-| Free the mouse (shows Leave) / toggle help | Esc / H |
+| Pause menu (resume, settings, story, leave) / toggle help | Esc / H |
+| Test mode (host): next round / jump 10 rounds / god mode / +5,000 points / power-up offer / spawn a boss / console | `=` / `]` / `F1` / `P` / `O` / `B` / `` ` `` or F2 |
 | Restart after game over (host) | Enter |
 
-A gamepad works too (sticks, triggers, south = jump, west = reload, north = buy / revive, east = switch weapon).
+A gamepad works too, with the Input System backend (sticks, triggers, south = jump, west = reload, north = buy / revive, east = switch weapon, right stick click = melee, RB = grenade, LB = knife, Select = bang, Start = pause).
 
 ## Tuning
 
@@ -123,9 +156,11 @@ Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even dur
 - `MissionData`: each mission's objective, target and reward (base plus growth per round), how often sets refresh, generator radius
 - `UpgradeData`: each power-up's max bonus and half level, how often offers come, empowered levels, machine tiers, chain and explosive damage
 - `Zombie_Walker`, `Zombie_Runner`, `Zombie_Crawler`, `Zombie_Brute`, `Zombie_Spitter`, `Zombie_Boss`: health multiplier, speeds per tier, attack damage/range/wind-up, stagger, points, first round and spawn share, alive limit, look, armour and weak point, leg-hit slow, acid spit
-- `RoundData`: boss rounds and boss bonus, zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
+- `PerkData`: each perk's name, price, colour and effect size, armour plates and the reroll shrine prices
+- `EquipmentData`: melee damage and range, each throwable's starting count, carry limit, refill, damage, radius, fuse and stun
+- `RoundData`: blackout rounds, boss rounds and boss bonus, zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets, XP curve, attachment slots and stats, camo and title unlocks) from **Window → General → Test Runner → EditMode**.
+Run the tests (story and voice tables, prestige, perks, explosions, blackout rounds, round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets, XP curve, attachment slots and stats, camo and title unlocks) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 
@@ -151,7 +186,6 @@ The prototype builds its scene from code (`PrototypeBootstrap`) so there are no 
 
 ## Next
 
-- Unity Relay + Lobby join codes, so friends can join without port forwarding. This needs the project linked to a Unity Cloud project (Edit → Project Settings → Services).
-- An autoplay bot for overnight balance runs to rounds 100, 250 and 500 (planned for Phase 2 in the design doc).
-- Perks: 8 buyable perks, lost when you go down (in the design doc, not scheduled yet).
-- Phase 6: the Dispatcher radio NPC, story beats every 25 rounds, and player voice lines.
+- Unity Relay + Lobby join codes, so friends can join without port forwarding, and Vivox voice chat. Both need the project linked to a Unity Cloud project (Edit → Project Settings → Services).
+- Real art, animation and recorded voices to replace the greybox and the speech blips. Moving to URP at the same time.
+- An autoplay bot for overnight balance runs to rounds 100, 250 and 500. The test console and god mode cover quick checks for now.

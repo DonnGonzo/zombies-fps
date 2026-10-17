@@ -70,7 +70,8 @@ namespace ZombiesFPS.Player
         void Update()
         {
             LockedThisFrame = false;
-            if (GameInput.PausePressed) SetCursorLocked(false);
+            // In game the HUD's pause menu owns Esc; this fallback is for when there is no HUD.
+            if (GameInput.PausePressed && ClickToResume) SetCursorLocked(false);
             else if (!CursorLocked && !InputLocked && ClickToResume && GameInput.KeyDown(KeyCode.Mouse0))
             {
                 SetCursorLocked(true);

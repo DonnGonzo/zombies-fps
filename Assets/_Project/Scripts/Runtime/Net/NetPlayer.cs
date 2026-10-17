@@ -94,7 +94,7 @@ namespace ZombiesFPS.Net
         float _lastDamageTime = -100f;
         bool _reviveHeld;
         int _lastRevivedFrame = -10;
-        readonly RaycastHit[] _hits = new RaycastHit[16];
+        readonly RaycastHit[] _hits = new RaycastHit[64];
 
         public string DisplayName => PlayerName.Value.IsEmpty ? "Player " + (OwnerClientId + 1) : PlayerName.Value.ToString();
         public bool IsAlive => State.Value == LifeState.Alive;
@@ -758,6 +758,32 @@ namespace ZombiesFPS.Net
             TierVariable(slot).Value = 0;
             AttVariable(slot).Value = 0;
             SlotVariable(slot).Value = gunId;
+        }
+
+        /// <summary>
+        /// Host only. A mission's reward gun: goes in an empty slot, or replaces the less invested of the two guns
+        /// (fewer upgrade tiers and attachments), so a reward never silently eats an upgraded gun if there's a plainer one.
+        /// </summary>
+        public void ServerGiveRewardGun(int gunId)
+        {
+            if (gunId < 0) return;
+            int owned = SlotOf(gunId);
+            if (owned >= 0)
+            {
+                AmmoBoughtRpc(owned);
+                return;
+            }
+            int slot = Gun1.Value < 0 ? 1 : Gun0.Value < 0 ? 0 : Invested(0) <= Invested(1) ? 0 : 1;
+            TierVariable(slot).Value = 0;
+            AttVariable(slot).Value = 0;
+            SlotVariable(slot).Value = gunId;
+        }
+
+        int Invested(int slot)
+        {
+            int atts = 0;
+            for (int v = AttVariable(slot).Value; v != 0; v &= v - 1) atts++;
+            return TierVariable(slot).Value * 4 + atts;
         }
 
         [Rpc(SendTo.Owner)]

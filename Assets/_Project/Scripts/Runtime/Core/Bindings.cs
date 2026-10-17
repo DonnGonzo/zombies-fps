@@ -105,6 +105,8 @@ namespace ZombiesFPS.Core
             PlayerPrefs.Save();
         }
 
+        public static bool IsBound(KeyCode key) => Array.IndexOf(Keys, key) >= 0;
+
         public static bool IsCapturable(KeyCode key) => Array.IndexOf(Capturable, key) >= 0;
 
         static KeyCode[] BuildCapturable()
@@ -113,14 +115,15 @@ namespace ZombiesFPS.Core
             for (var k = KeyCode.A; k <= KeyCode.Z; k++) list.Add(k);
             for (var k = KeyCode.Alpha0; k <= KeyCode.Alpha9; k++) list.Add(k);
             for (var k = KeyCode.Keypad0; k <= KeyCode.Keypad9; k++) list.Add(k);
-            for (var k = KeyCode.F1; k <= KeyCode.F12; k++) list.Add(k);
+            // F1 (god mode) and F2 (console) stay reserved for testing.
+            for (var k = KeyCode.F3; k <= KeyCode.F12; k++) list.Add(k);
             list.AddRange(new[]
             {
-                KeyCode.Space, KeyCode.Tab, KeyCode.Return, KeyCode.KeypadEnter, KeyCode.Backspace, KeyCode.CapsLock,
+                KeyCode.Space, KeyCode.Tab, KeyCode.Backspace, KeyCode.CapsLock,
                 KeyCode.LeftShift, KeyCode.RightShift, KeyCode.LeftControl, KeyCode.RightControl, KeyCode.LeftAlt, KeyCode.RightAlt,
                 KeyCode.UpArrow, KeyCode.DownArrow, KeyCode.LeftArrow, KeyCode.RightArrow,
                 KeyCode.Insert, KeyCode.Delete, KeyCode.Home, KeyCode.End, KeyCode.PageUp, KeyCode.PageDown,
-                KeyCode.BackQuote, KeyCode.Minus, KeyCode.Equals, KeyCode.LeftBracket, KeyCode.RightBracket,
+                KeyCode.Minus, KeyCode.LeftBracket,
                 KeyCode.Semicolon, KeyCode.Quote, KeyCode.Comma, KeyCode.Period, KeyCode.Slash, KeyCode.Backslash,
                 KeyCode.Mouse0, KeyCode.Mouse1, KeyCode.Mouse2, KeyCode.Mouse3, KeyCode.Mouse4,
             });
