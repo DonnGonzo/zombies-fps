@@ -80,6 +80,9 @@ namespace ZombiesFPS.Net
         // Remote body.
         Transform _body;
         Transform _remoteMuzzle;
+        Renderer _remoteGun;
+        Color _remoteGunColor = RemoteGunColor;
+        static readonly Color RemoteGunColor = new Color(0.16f, 0.17f, 0.18f);
         AudioSource _remoteAudio;
 
         // Server-only.
@@ -204,7 +207,7 @@ namespace ZombiesFPS.Net
             Greybox.Prim(PrimitiveType.Capsule, "LegR", _body, new Vector3(0.13f, 0.42f, 0f), new Vector3(0.2f, 0.42f, 0.2f), suit * 0.7f, collider: false);
             Greybox.Prim(PrimitiveType.Sphere, "Head", _body, new Vector3(0f, 1.68f, 0f), Vector3.one * 0.32f, skin, collider: false);
             var gun = Greybox.Empty("Gun", _body, new Vector3(0.22f, 1.3f, 0.35f));
-            Greybox.Box("Receiver", gun, Vector3.zero, new Vector3(0.08f, 0.1f, 0.6f), new Color(0.16f, 0.17f, 0.18f), collider: false);
+            _remoteGun = Greybox.Box("Receiver", gun, Vector3.zero, new Vector3(0.08f, 0.1f, 0.6f), RemoteGunColor, collider: false).GetComponent<Renderer>();
             _remoteMuzzle = Greybox.Empty("Muzzle", gun, new Vector3(0f, 0f, 0.32f));
 
             _remoteAudio = gameObject.AddComponent<AudioSource>();
@@ -249,6 +252,17 @@ namespace ZombiesFPS.Net
         {
             if (IsServer) ServerTick(Time.deltaTime);
             if (IsOwner) OwnerTick();
+            else UpdateRemoteGun();
+        }
+
+        /// <summary>Teammates see your camo on the gun in your hands.</summary>
+        void UpdateRemoteGun()
+        {
+            if (_remoteGun == null) return;
+            var color = CamoColorFor(ActiveSlot.Value) ?? RemoteGunColor;
+            if (color == _remoteGunColor) return;
+            _remoteGunColor = color;
+            _remoteGun.sharedMaterial = Greybox.Lit(color);
         }
 
         void OwnerTick()
@@ -337,6 +351,7 @@ namespace ZombiesFPS.Net
             ActiveSlot.Value = slot;
             var tier = GameConfig.Upgrades.Tier(TierInSlot(slot));
             _gun.ExplosiveRounds = tier != null && tier.explosive;
+            _gun.Camo = CamoColorFor(slot);
             _gun.ReloadSpeed = 1f + Bonus(PowerStat.ReloadSpeed);
             _gun.Equip(data, _slotMagazine[slot], _slotReserve[slot], CapacityScale(slot), GunName(slot));
         }

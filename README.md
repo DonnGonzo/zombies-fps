@@ -8,7 +8,8 @@ A first-person greybox co-op zombie game for up to 4 players: Netcode for GameOb
 
 **XP, levels and the spawn shop (Phase 5, part B)**
 - Everyone earns XP each run: kills (more for headshots and bosses), every round cleared, and every mission finished. Your level shows under your points and next to your name in the squad list
-- Levels carry over between runs: total XP is saved on each player's own PC (turn `saveBetweenRuns` off in `ShopData` to start everyone at level 1 each run)
+- Levels carry over between runs: total XP is saved on each player's own PC. Your level unlocks attachments in the shop, camos and prestige titles. Unlocked attachments still have to be bought with points in each match
+- Camos and titles are picked in the main menu (Camos and title) before a match and can't be changed in game. Camos: Factory, then Olive Drab (level 3) up to Dark Matter (level 50), one pick per gun, and teammates see yours. Titles show next to your name: Rookie, Survivor (5), Scavenger (10), Veteran (15) up to Undying (50)
 - The spawn shop is the stall in the Gate Yard. Press E there to open it, then a number key to fit an attachment to the gun in your hands, paid with points. Your level unlocks them:
   - Level 1 Red-Dot Sight, 2 Extended Mag, 4 Foregrip, 6 Suppressor, 9 Fast Mag, 12 Marksman Scope, 16 Heavy Barrel, 20 Hollow-Core Rounds, 25 Full-Auto Conversion
 - One attachment per gun slot (optic, magazine, underbarrel, muzzle, barrel, ammo, trigger): a new optic replaces the old one. Attachments stay on the gun until you replace it or the run ends
@@ -118,13 +119,13 @@ Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even dur
 
 - `Gun_Rook9`, `Gun_Hatchet44`, `Gun_Wren7`, `Gun_BrennanDMR`, `Gun_TalonLMG`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom, and the model's length and colour
 - `PriceTable`: door costs, upgrade machine costs, and each wall gun's price and ammo price
-- `ShopData`: attachments (unlock level, price, stat multipliers), the XP curve and XP rewards, and whether levels are saved between runs
+- `ShopData`: attachments (unlock level, price, stat multipliers), camos and titles with their unlock levels, the XP curve and XP rewards, and whether levels are saved between runs
 - `MissionData`: each mission's objective, target and reward (base plus growth per round), how often sets refresh, generator radius
 - `UpgradeData`: each power-up's max bonus and half level, how often offers come, empowered levels, machine tiers, chain and explosive damage
 - `Zombie_Walker`, `Zombie_Runner`, `Zombie_Crawler`, `Zombie_Brute`, `Zombie_Spitter`, `Zombie_Boss`: health multiplier, speeds per tier, attack damage/range/wind-up, stagger, points, first round and spawn share, alive limit, look, armour and weak point, leg-hit slow, acid spit
 - `RoundData`: boss rounds and boss bonus, zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets, XP curve, attachment slots and stats) from **Window → General → Test Runner → EditMode**.
+Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets, XP curve, attachment slots and stats, camo and title unlocks) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 

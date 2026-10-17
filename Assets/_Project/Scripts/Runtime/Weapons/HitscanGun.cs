@@ -50,6 +50,8 @@ namespace ZombiesFPS.Weapons
         public float ReloadSpeed { get; set; } = 1f;
         /// <summary>Upgraded guns with explosive rounds show a burst where they hit.</summary>
         public bool ExplosiveRounds { get; set; }
+        /// <summary>The camo colour of the gun in hand, or null for its own colours. Set before Equip.</summary>
+        public Color? Camo { get; set; }
         public int MagazineCapacity => ScaledMagazine(_data, CapacityScale);
         public int MaxReserve => ScaledReserve(_data.maxReserve, CapacityScale);
         public int StartingReserve => ScaledReserve(_data.startingReserve, CapacityScale);

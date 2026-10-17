@@ -301,7 +301,7 @@ namespace ZombiesFPS.UI
             float y = h * 0.2f + 190 * u;
             foreach (var p in NetPlayer.All)
             {
-                Shadowed(new Rect(0, y, w, 36 * u), $"{p.DisplayName}   ·   {p.Points.Value:N0} pts   ·   {p.Kills.Value} kills   ·   {p.Headshots.Value} headshots", _center);
+                Shadowed(new Rect(0, y, w, 36 * u), $"{p.TaggedName}   ·   {p.Points.Value:N0} pts   ·   {p.Kills.Value} kills   ·   {p.Headshots.Value} headshots", _center);
                 y += 38 * u;
             }
             bool hosting = rounds.IsServer;
@@ -614,7 +614,7 @@ namespace ZombiesFPS.UI
                 var style = new GUIStyle(_small);
                 style.normal.textColor = p.State.Value == LifeState.Alive ? Color.white : new Color(1f, 0.4f, 0.3f);
                 Fill(40 * u, y + 6 * u, 10 * u, 10 * u, p.SuitColor);
-                Shadowed(new Rect(58 * u, y, 600 * u, 26 * u), $"{p.DisplayName} (Lv {p.Level})  ·  {status}  ·  {p.Points.Value:N0} pts", style);
+                Shadowed(new Rect(58 * u, y, 600 * u, 26 * u), $"{p.TaggedName} (Lv {p.Level})  ·  {status}  ·  {p.Points.Value:N0} pts", style);
                 y += 26 * u;
             }
         }
@@ -631,7 +631,7 @@ namespace ZombiesFPS.UI
                 if (screen.z <= 0f) continue;
                 var style = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
                 style.normal.textColor = p.State.Value == LifeState.Downed ? new Color(1f, 0.4f, 0.3f) : Color.white;
-                string text = p.State.Value == LifeState.Downed ? $"{p.DisplayName} (DOWN)" : p.DisplayName;
+                string text = p.State.Value == LifeState.Downed ? $"{p.TaggedName} (DOWN)" : p.TaggedName;
                 Shadowed(new Rect(screen.x - 150 * u, Screen.height - screen.y - 14 * u, 300 * u, 28 * u), text, style);
             }
         }

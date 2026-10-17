@@ -28,6 +28,16 @@ namespace ZombiesFPS.Net
         /// <summary>Attachments on the gun in each slot, a bit per ShopData attachment.</summary>
         public NetworkVariable<int> Att0 = new NetworkVariable<int>(0);
         public NetworkVariable<int> Att1 = new NetworkVariable<int>(0);
+        /// <summary>The camo picked for each gun in the main menu (4 bits per gun id), published by the owner.</summary>
+        public NetworkVariable<ulong> CamoPicks = new NetworkVariable<ulong>(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        /// <summary>The prestige title picked in the main menu, published by the owner.</summary>
+        public NetworkVariable<int> TitleId = new NetworkVariable<int>(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        /// <summary>The main menu's camo and title picks for the local player. Fixed once the match starts.</summary>
+        public static ulong LocalCamoPicks;
+        public static int LocalTitle;
 
         long _savedXp;
         int _lastLevel = -1;
@@ -42,6 +52,17 @@ namespace ZombiesFPS.Net
 
         public long TotalXp => ProfileXp.Value + RunXp.Value;
         public int Level => Shop != null ? Shop.LevelFor(TotalXp) : 1;
+
+        public string TitleName => Shop != null && Shop.TitleAt(TitleId.Value) != null ? Shop.TitleAt(TitleId.Value).name : "";
+        /// <summary>Name with prestige title, for name tags and the squad list.</summary>
+        public string TaggedName => string.IsNullOrEmpty(TitleName) ? DisplayName : $"{DisplayName} [{TitleName}]";
+
+        /// <summary>The camo colour of the gun in a slot, or null for the gun's own colours.</summary>
+        public Color? CamoColorFor(int slot)
+        {
+            int gunId = GunInSlot(slot);
+            return Shop != null && gunId >= 0 ? Shop.CamoColor(ShopData.CamoOf(CamoPicks.Value, gunId)) : null;
+        }
 
         public int AttachmentsInSlot(int slot) => slot == 0 ? Att0.Value : slot == 1 ? Att1.Value : 0;
         NetworkVariable<int> AttVariable(int slot) => slot == 0 ? Att0 : Att1;
@@ -71,6 +92,22 @@ namespace ZombiesFPS.Net
             _savedXp = Shop != null && Shop.saveBetweenRuns ? ProfileSave.LoadXp() : 0;
             ProfileXp.Value = _savedXp;
             _lastLevel = Level;
+            PublishCosmetics();
+        }
+
+        /// <summary>Sends the menu's picks, dropping any the player's level hasn't unlocked.</summary>
+        void PublishCosmetics()
+        {
+            if (Shop == null) return;
+            int level = Level;
+            ulong picks = 0;
+            for (int gun = 0; gun < ShopData.MaxCamoGuns; gun++)
+            {
+                int camo = ShopData.CamoOf(LocalCamoPicks, gun);
+                if (Shop.IsCamoUnlocked(camo, level)) picks = ShopData.WithCamo(picks, gun, camo);
+            }
+            CamoPicks.Value = picks;
+            TitleId.Value = Shop.IsTitleUnlocked(LocalTitle, level) ? LocalTitle : 0;
         }
 
         void UnsubscribeShop()

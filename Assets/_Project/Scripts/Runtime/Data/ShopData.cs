@@ -53,10 +53,43 @@ namespace ZombiesFPS.Data
         }
     }
 
+    /// <summary>A gun finish unlocked by level and picked in the main menu before a match.</summary>
+    [Serializable]
+    public class Camo
+    {
+        public string name;
+        public int unlockLevel = 1;
+        [Tooltip("Ignored for the first camo, which keeps each gun's own colours.")]
+        public Color color = Color.white;
+
+        public Camo() { }
+        public Camo(string name, int unlockLevel, Color color)
+        {
+            this.name = name;
+            this.unlockLevel = unlockLevel;
+            this.color = color;
+        }
+    }
+
+    /// <summary>A prestige title shown next to the player's name, unlocked by level.</summary>
+    [Serializable]
+    public class Title
+    {
+        public string name;
+        public int unlockLevel = 1;
+
+        public Title() { }
+        public Title(string name, int unlockLevel)
+        {
+            this.name = name;
+            this.unlockLevel = unlockLevel;
+        }
+    }
+
     /// <summary>
     /// The spawn shop and player levels. Players earn XP every run (kills, rounds, missions), and their level
-    /// unlocks attachments that the shop sells for in-run points. Attachments last for the run; levels can be
-    /// saved between runs (saveBetweenRuns).
+    /// unlocks attachments that the shop sells for in-run points, plus camos and prestige titles picked in the
+    /// main menu. Attachments last for the run; levels are saved between runs (saveBetweenRuns).
     /// </summary>
     [CreateAssetMenu(menuName = "Zombies FPS/Shop Data", fileName = "ShopData")]
     public class ShopData : ScriptableObject
@@ -94,6 +127,57 @@ namespace ZombiesFPS.Data
             new Attachment("Hollow-Core Rounds", "+15% damage, +25% headshot damage", AttachmentSlot.Ammo, 20, 3000) { damage = 1.15f, headshot = 1.25f },
             new Attachment("Full-Auto Conversion", "Fires automatically, +15% fire rate", AttachmentSlot.Trigger, 25, 3500) { makesAutomatic = true, fireRate = 1.15f },
         };
+
+        [Header("Cosmetics (picked in the main menu)")]
+        public List<Camo> camos = new List<Camo>
+        {
+            new Camo("Factory", 1, Color.white),
+            new Camo("Olive Drab", 3, new Color(0.33f, 0.36f, 0.22f)),
+            new Camo("Desert", 5, new Color(0.66f, 0.56f, 0.38f)),
+            new Camo("Arctic", 8, new Color(0.85f, 0.88f, 0.9f)),
+            new Camo("Crimson", 12, new Color(0.55f, 0.08f, 0.08f)),
+            new Camo("Cobalt", 16, new Color(0.15f, 0.3f, 0.7f)),
+            new Camo("Carbon", 20, new Color(0.08f, 0.08f, 0.09f)),
+            new Camo("Gold", 30, new Color(0.9f, 0.7f, 0.2f)),
+            new Camo("Diamond", 40, new Color(0.7f, 0.95f, 1f)),
+            new Camo("Dark Matter", 50, new Color(0.35f, 0.1f, 0.55f)),
+        };
+        public List<Title> titles = new List<Title>
+        {
+            new Title("Rookie", 1),
+            new Title("Survivor", 5),
+            new Title("Scavenger", 10),
+            new Title("Veteran", 15),
+            new Title("Exterminator", 20),
+            new Title("Warden Slayer", 25),
+            new Title("Night Stalker", 30),
+            new Title("Legend", 40),
+            new Title("Undying", 50),
+        };
+
+        /// <summary>Camo picks are packed 4 bits per gun id into one network variable.</summary>
+        public const int MaxCamos = 16;
+        public const int MaxCamoGuns = 16;
+
+        public int CamoCount => Mathf.Min(MaxCamos, camos != null ? camos.Count : 0);
+        public Camo CamoAt(int id) => id >= 0 && id < CamoCount ? camos[id] : null;
+        public int TitleCount => titles != null ? titles.Count : 0;
+        public Title TitleAt(int id) => id >= 0 && id < TitleCount ? titles[id] : null;
+
+        public bool IsCamoUnlocked(int id, int level) => CamoAt(id) != null && level >= CamoAt(id).unlockLevel;
+        public bool IsTitleUnlocked(int id, int level) => TitleAt(id) != null && level >= TitleAt(id).unlockLevel;
+
+        /// <summary>The camo colour for a pick, or null for the gun's own colours (camo 0 or a bad id).</summary>
+        public Color? CamoColor(int id) => id > 0 && id < CamoCount ? camos[id].color : (Color?)null;
+
+        public static int CamoOf(ulong picks, int gunId) => gunId >= 0 && gunId < MaxCamoGuns ? (int)((picks >> (gunId * 4)) & 0xF) : 0;
+
+        public static ulong WithCamo(ulong picks, int gunId, int camo)
+        {
+            if (gunId < 0 || gunId >= MaxCamoGuns) return picks;
+            ulong mask = 0xFUL << (gunId * 4);
+            return (picks & ~mask) | ((ulong)(camo & 0xF) << (gunId * 4));
+        }
 
         public int Count => Mathf.Min(MaxAttachments, attachments != null ? attachments.Count : 0);
         public Attachment At(int id) => id >= 0 && id < Count ? attachments[id] : null;

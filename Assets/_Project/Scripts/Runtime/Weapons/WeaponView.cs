@@ -51,7 +51,7 @@ namespace ZombiesFPS.Weapons
             var data = _gun.Data;
             if (data == null || _model == null) return;
             _model.localScale = new Vector3(1f, 1f, Mathf.Clamp(data.modelLength, 0.3f, 2f));
-            var accent = Greybox.Lit(data.accent);
+            var accent = Greybox.Lit(_gun.Camo ?? data.accent);
             foreach (var r in _accentParts) r.sharedMaterial = accent;
         }
 

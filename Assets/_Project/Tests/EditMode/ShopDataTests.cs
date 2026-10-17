@@ -66,5 +66,29 @@ namespace ZombiesFPS.Tests
             Object.DestroyImmediate(fitted);
             Object.DestroyImmediate(gun);
         }
+
+        [Test]
+        public void Cosmetics_UnlockByLevel_AndFactoryKeepsGunColours()
+        {
+            Assert.IsTrue(_shop.IsCamoUnlocked(0, 1));
+            Assert.IsNull(_shop.CamoColor(0));
+            Assert.IsNotNull(_shop.CamoColor(1));
+            Assert.IsFalse(_shop.IsCamoUnlocked(_shop.CamoCount - 1, 1));
+            Assert.IsTrue(_shop.IsCamoUnlocked(_shop.CamoCount - 1, _shop.maxLevel));
+            Assert.IsTrue(_shop.IsTitleUnlocked(0, 1));
+            for (int i = 1; i < _shop.CamoCount; i++) Assert.GreaterOrEqual(_shop.CamoAt(i).unlockLevel, _shop.CamoAt(i - 1).unlockLevel);
+            for (int i = 1; i < _shop.TitleCount; i++) Assert.GreaterOrEqual(_shop.TitleAt(i).unlockLevel, _shop.TitleAt(i - 1).unlockLevel);
+        }
+
+        [Test]
+        public void CamoPicks_PackPerGun()
+        {
+            ulong picks = ShopData.WithCamo(0, 0, 3);
+            picks = ShopData.WithCamo(picks, 4, 9);
+            picks = ShopData.WithCamo(picks, 0, 5);
+            Assert.AreEqual(5, ShopData.CamoOf(picks, 0));
+            Assert.AreEqual(9, ShopData.CamoOf(picks, 4));
+            Assert.AreEqual(0, ShopData.CamoOf(picks, 2));
+        }
     }
 }

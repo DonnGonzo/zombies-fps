@@ -46,6 +46,10 @@ namespace ZombiesFPS.Core
         string _address;
         string _port;
         string _status;
+        bool _showLoadout;
+        int[] _camoPicks;
+        int _titlePick;
+        int _profileLevel = 1;
         bool _connecting;
         GUIStyle _title, _label, _button, _field;
 
@@ -76,6 +80,7 @@ namespace ZombiesFPS.Core
             _port = GameConfig.DefaultPort.ToString();
             _status = s_LastMessage;
             s_LastMessage = null;
+            LoadCosmetics();
             PlayerLook.SetCursorLocked(false);
         }
 
@@ -198,6 +203,7 @@ namespace ZombiesFPS.Core
             NetPlayer.LocalName = string.IsNullOrWhiteSpace(_name) ? "Survivor" : _name.Trim();
             PlayerPrefs.SetString(NameKey, NetPlayer.LocalName);
             PlayerPrefs.SetString(AddressKey, _address.Trim());
+            SaveCosmetics();
         }
 
         void OnClientConnected(ulong clientId)
@@ -241,7 +247,7 @@ namespace ZombiesFPS.Core
             if (_network == null || (_network.IsListening && !_connecting)) return;
             EnsureStyles();
             float u = Screen.height / 1080f;
-            float w = 560 * u, h = 640 * u;
+            float w = 560 * u, h = 820 * u;
             var area = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
             var old = GUI.color;
             GUI.color = new Color(0f, 0f, 0f, 0.75f);
@@ -253,10 +259,19 @@ namespace ZombiesFPS.Core
             GUILayout.Label("Co-op prototype · 1-4 players", _label);
             GUILayout.Space(24 * u);
 
+            if (_showLoadout)
+            {
+                DrawLoadout(u);
+                GUILayout.EndArea();
+                return;
+            }
+
             GUI.enabled = !_connecting;
             GUILayout.Label("Your name", _label);
             _name = GUILayout.TextField(_name ?? "", 20, _field);
             GUILayout.Space(16 * u);
+            if (GUILayout.Button($"Camos and title  (level {_profileLevel})", _button)) _showLoadout = true;
+            GUILayout.Space(8 * u);
             if (GUILayout.Button("Host game", _button)) Host();
             GUILayout.Label($"Friends join you at {LocalAddress()} port {_port} (same network, or forward the port).", _label);
             GUILayout.Space(16 * u);
@@ -271,6 +286,91 @@ namespace ZombiesFPS.Core
             GUILayout.Space(12 * u);
             if (!string.IsNullOrEmpty(_status)) GUILayout.Label(_status, _label);
             GUILayout.EndArea();
+        }
+
+        // ---------------------------------------------------------------- cosmetics (menu only)
+
+        /// <summary>Camos and title come from the save; they're picked here and can't change once a match starts.</summary>
+        void LoadCosmetics()
+        {
+            var shop = GameConfig.Shop;
+            var guns = GameConfig.Guns ?? new GunData[0];
+            _profileLevel = shop != null && shop.saveBetweenRuns ? shop.LevelFor(ProfileSave.LoadXp()) : 1;
+            _camoPicks = new int[guns.Length];
+            for (int i = 0; i < guns.Length; i++)
+            {
+                int camo = ProfileSave.LoadCamo(guns[i].name);
+                _camoPicks[i] = shop != null && shop.IsCamoUnlocked(camo, _profileLevel) ? camo : 0;
+            }
+            int title = ProfileSave.LoadTitle();
+            _titlePick = shop != null && shop.IsTitleUnlocked(title, _profileLevel) ? title : 0;
+            PublishCosmetics();
+        }
+
+        void SaveCosmetics()
+        {
+            var guns = GameConfig.Guns ?? new GunData[0];
+            for (int i = 0; i < guns.Length && i < _camoPicks.Length; i++) ProfileSave.SaveCamo(guns[i].name, _camoPicks[i]);
+            ProfileSave.SaveTitle(_titlePick);
+            PlayerPrefs.Save();
+            PublishCosmetics();
+        }
+
+        void PublishCosmetics()
+        {
+            ulong picks = 0;
+            for (int i = 0; i < _camoPicks.Length; i++) picks = ShopData.WithCamo(picks, i, _camoPicks[i]);
+            NetPlayer.LocalCamoPicks = picks;
+            NetPlayer.LocalTitle = _titlePick;
+        }
+
+        /// <summary>The next unlocked entry in a direction, wrapping round; entry 0 is always unlocked.</summary>
+        static int Cycle(int current, int dir, int count, System.Func<int, bool> unlocked)
+        {
+            for (int step = 1; step <= count; step++)
+            {
+                int i = ((current + dir * step) % count + count) % count;
+                if (unlocked(i)) return i;
+            }
+            return current;
+        }
+
+        void DrawLoadout(float u)
+        {
+            var shop = GameConfig.Shop;
+            var guns = GameConfig.Guns ?? new GunData[0];
+            GUILayout.Label($"Level {_profileLevel}. Higher levels unlock more camos and titles.", _label);
+            GUILayout.Space(12 * u);
+            if (shop != null)
+            {
+                int unlockedTitles = 0;
+                for (int i = 0; i < shop.TitleCount; i++) if (shop.IsTitleUnlocked(i, _profileLevel)) unlockedTitles++;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"Title: {shop.TitleAt(_titlePick)?.name}  ({unlockedTitles}/{shop.TitleCount})", _label, GUILayout.Width(340 * u));
+                if (GUILayout.Button("<", _button, GUILayout.Width(60 * u))) _titlePick = Cycle(_titlePick, -1, shop.TitleCount, i => shop.IsTitleUnlocked(i, _profileLevel));
+                if (GUILayout.Button(">", _button, GUILayout.Width(60 * u))) _titlePick = Cycle(_titlePick, 1, shop.TitleCount, i => shop.IsTitleUnlocked(i, _profileLevel));
+                GUILayout.EndHorizontal();
+                GUILayout.Space(10 * u);
+
+                for (int g = 0; g < guns.Length && g < ShopData.MaxCamoGuns; g++)
+                {
+                    int gun = g;
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label($"{guns[gun].displayName}: {shop.CamoAt(_camoPicks[gun])?.name}", _label, GUILayout.Width(340 * u));
+                    if (GUILayout.Button("<", _button, GUILayout.Width(60 * u))) _camoPicks[gun] = Cycle(_camoPicks[gun], -1, shop.CamoCount, i => shop.IsCamoUnlocked(i, _profileLevel));
+                    if (GUILayout.Button(">", _button, GUILayout.Width(60 * u))) _camoPicks[gun] = Cycle(_camoPicks[gun], 1, shop.CamoCount, i => shop.IsCamoUnlocked(i, _profileLevel));
+                    GUILayout.EndHorizontal();
+                }
+                int unlockedCamos = 0;
+                for (int i = 0; i < shop.CamoCount; i++) if (shop.IsCamoUnlocked(i, _profileLevel)) unlockedCamos++;
+                GUILayout.Label($"{unlockedCamos} of {shop.CamoCount} camos unlocked. Camos can't be changed during a match.", _label);
+            }
+            GUILayout.Space(12 * u);
+            if (GUILayout.Button("Done", _button))
+            {
+                SaveCosmetics();
+                _showLoadout = false;
+            }
         }
 
         void EnsureStyles()
