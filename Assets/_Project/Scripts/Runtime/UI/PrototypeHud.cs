@@ -122,12 +122,9 @@ namespace ZombiesFPS.UI
             return "Someone";
         }
 
-        void OnPartFound(int part, ulong finder)
+        void OnPartFound(int part, ulong finder, int found)
         {
-            var build = BuildManager.Instance;
-            if (build == null) return;
             int item = BuildManager.ItemOf(part);
-            int found = build.PartsFound(item);
             string sub = found >= ZoneMap.PartsPerBuildable
                 ? $"All parts found. Build the {BuildManager.BuildableNames[item]} at a build station (Garage Roof or Greenhouse Roof)."
                 : $"{BuildManager.BuildableNames[item]}: {found}/{ZoneMap.PartsPerBuildable} parts";
@@ -143,10 +140,9 @@ namespace ZombiesFPS.UI
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
         }
 
-        void OnRobotBroke()
+        void OnRobotBroke(int readyRound)
         {
-            var build = BuildManager.Instance;
-            ShowBanner("BUDDY BOT OFFLINE", build != null ? $"Back online at round {build.RobotReadyRound.Value}" : null, BuildManager.BuildableColors[BuildManager.Bot]);
+            ShowBanner("BUDDY BOT OFFLINE", $"Back online at round {readyRound}", BuildManager.BuildableColors[BuildManager.Bot]);
         }
 
         static string RewardText(MissionDef def, int round)
@@ -199,6 +195,7 @@ namespace ZombiesFPS.UI
             if (!DebugConsole.IsOpen && !SettingsMenu.IsCapturing && _player.Look.CursorLocked && GameInput.MapPressed) _mapOpen = !_mapOpen;
 
             bool gameOver = rounds != null && rounds.IsGameOver;
+            if (gameOver) _mapOpen = false;
             if (_wasGameOver && !gameOver) PlayerLook.SetCursorLocked(true);
             _wasGameOver = gameOver;
             UpdatePause(rounds);

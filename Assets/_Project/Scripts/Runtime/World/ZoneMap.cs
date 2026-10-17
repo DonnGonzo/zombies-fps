@@ -206,7 +206,7 @@ namespace ZombiesFPS.World
         static readonly Vector3[] HighSpotPoints =
         {
             L(1, 9.5f, 4f, 14.2f), L(2, 15f, 4.5f, 11f), L(7, 11.5f, 6f, 10.2f),
-            L(8, 9f, 3.6f, 7.5f), L(10, 10f, 4f, 15f), L(11, -9.5f, 4.5f, 6f),
+            L(8, 11.2f, 3.6f, 7.5f), L(10, 10f, 4f, 15f), L(11, -9.5f, 4.5f, 6f),
         };
 
         public static Vector3 HighSpot(int spot) => HighSpotPoints[Mathf.Clamp(spot, 0, HighSpotCount - 1)];
@@ -225,7 +225,7 @@ namespace ZombiesFPS.World
         {
             // Scrap Cannon: barrel, coil, grip.
             L(1, 6f, 4f, 14f), L(5, -14.5f, 3.2f, -14.5f), L(10, -14f, 0f, 13f),
-            L(2, -13f, 0f, -13f), L(8, 11f, 3.6f, 7.5f), L(4, -14.5f, 2.6f, -3f),
+            L(2, -13f, 0f, -13f), L(8, 7f, 3.6f, 7.5f), L(4, -14.5f, 2.6f, -3f),
             L(3, -13.5f, 2.6f, 14f), L(6, 14f, 1.4f, -12f), L(11, 12f, 0f, 13f),
             // Scrap Shield: frame, plate, handle.
             L(7, 10f, 6f, 11.5f), L(0, -11f, 2.2f, 12f), L(9, 12f, 0f, -12f),
@@ -531,7 +531,6 @@ namespace ZombiesFPS.World
         {
             Greybox.Box("Crate", Root, at + new Vector3(0f, 0.6f, 0f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
             Greybox.Box("Crate", Root, at + new Vector3(1.3f, 0.6f, 0.4f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
-            Greybox.Box("Crate", Root, at + new Vector3(0.6f, 1.8f, 0.2f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
         }
 
         void Sign(int zone, Vector3 local, Vector3 facing, string text, Color color, float height = 0.45f)
@@ -621,6 +620,7 @@ namespace ZombiesFPS.World
             Block("Truck", 6, 1.5f, -11.5f, 4.5f, -4.5f, 3f, new Color(0.3f, 0.34f, 0.4f));
             Greybox.Box("Cab", Root, L(6, 3f, 1.2f, -3.3f), new Vector3(2.8f, 2.4f, 2.2f), new Color(0.5f, 0.2f, 0.18f));
             AddLadder(6, 3f, -11.5f, Vector3.back, 3f);
+            Jump(6, 3f, 3f, -5.2f, 3f, 2.4f, -3.3f);
             Block("Container", 6, -12f, 7.7f, -6f, 10.3f, 2.6f, Rust);
             Block("Container", 6, -11.3f, -11f, -8.7f, -5f, 2.6f, new Color(0.25f, 0.38f, 0.45f));
 

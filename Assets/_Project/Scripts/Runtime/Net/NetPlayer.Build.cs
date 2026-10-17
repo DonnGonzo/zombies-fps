@@ -16,6 +16,9 @@ namespace ZombiesFPS.Net
         /// <summary>After a shield breaks, the round a new one can be taken from a station.</summary>
         public NetworkVariable<int> ShieldReadyRound = new NetworkVariable<int>(0);
 
+        /// <summary>Took this game's Scrap Cannon from a build station (one each per game).</summary>
+        public NetworkVariable<bool> TookCannon = new NetworkVariable<bool>(false);
+
         Transform _shieldView;
 
         public bool HasShield => ShieldHealth.Value > 0f;
@@ -78,6 +81,7 @@ namespace ZombiesFPS.Net
         {
             ShieldHealth.Value = 0f;
             ShieldReadyRound.Value = 0;
+            TookCannon.Value = false;
         }
 
         /// <summary>Shows the shield on the left arm: in view for the owner, in front of the body for everyone else.</summary>

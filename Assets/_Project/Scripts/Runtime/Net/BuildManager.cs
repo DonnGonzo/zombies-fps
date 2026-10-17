@@ -14,7 +14,7 @@ namespace ZombiesFPS.Net
     /// Scrap Shield and the Buddy Bot; every game the host picks one of three spots for each part, so they
     /// turn up somewhere different each time. Parts found by anyone count for the whole squad. With all three
     /// parts of something, any build station builds it, and from then on players take it from a station:
-    /// the Cannon once per player, a Shield whenever theirs has broken (from the next round), and the Bot
+    /// the Cannon once per player per game, a Shield whenever theirs has broken (from the next round), and the Bot
     /// whenever it is back online. The Bot follows whoever switched it on and shoots zombies for two minutes,
     /// then breaks and stays offline for five rounds.
     /// </summary>
@@ -43,12 +43,12 @@ namespace ZombiesFPS.Net
         };
 
         public static BuildManager Instance { get; private set; }
-        /// <summary>Every machine: a part was picked up (part, finder's client id).</summary>
-        public static event Action<int, ulong> PartFound;
+        /// <summary>Every machine: a part was picked up (part, finder's client id, parts of that buildable found so far).</summary>
+        public static event Action<int, ulong, int> PartFound;
         /// <summary>Every machine: something was built for the first time (buildable, builder's client id).</summary>
         public static event Action<int, ulong> ItemBuilt;
-        /// <summary>Every machine: the Buddy Bot broke down.</summary>
-        public static event Action RobotBroke;
+        /// <summary>Every machine: the Buddy Bot broke down (the round it's back online).</summary>
+        public static event Action<int> RobotBroke;
 
         /// <summary>Which of its three spots each part is at, two bits per part.</summary>
         public NetworkVariable<int> PartLayout = new NetworkVariable<int>(0);
@@ -136,6 +136,11 @@ namespace ZombiesFPS.Net
                     if (player.SlotOf(id) >= 0)
                     {
                         what = "you have the " + name;
+                        return -1;
+                    }
+                    if (player.TookCannon.Value)
+                    {
+                        what = "one " + name + " each per game";
                         return -1;
                     }
                     what = "take the " + name;
@@ -320,7 +325,8 @@ namespace ZombiesFPS.Net
             int part = PartWaitingAt(spot);
             if (!IsServer || part < 0) return;
             Collected.Value |= 1 << part;
-            PartFoundRpc(part, player.OwnerClientId);
+            // The count goes with the message: the variable may reach clients after it.
+            PartFoundRpc(part, player.OwnerClientId, PartsFound(ItemOf(part)));
         }
 
         /// <summary>Host only. A player used a station's place for a buildable: builds it if it's new, then hands it over.</summary>
@@ -337,6 +343,7 @@ namespace ZombiesFPS.Net
             {
                 case Cannon:
                     player.ServerGiveRewardGun(GameConfig.GunId(ScrapCannon));
+                    player.TookCannon.Value = true;
                     break;
                 case Shield:
                     player.ServerGiveShield();
@@ -438,22 +445,22 @@ namespace ZombiesFPS.Net
             RobotOwner.Value = -1;
             RobotTimeLeft.Value = 0f;
             RobotReadyRound.Value = CurrentRound + RobotOfflineRounds + 1;
-            RobotBrokeRpc();
+            RobotBrokeRpc(RobotReadyRound.Value);
         }
 
         // ---------------------------------------------------------------- RPCs
 
         [Rpc(SendTo.ClientsAndHost)]
-        void PartFoundRpc(int part, ulong finder) => PartFound?.Invoke(part, finder);
+        void PartFoundRpc(int part, ulong finder, int found) => PartFound?.Invoke(part, finder, found);
 
         [Rpc(SendTo.ClientsAndHost)]
         void ItemBuiltRpc(int item, ulong builder) => ItemBuilt?.Invoke(item, builder);
 
         [Rpc(SendTo.ClientsAndHost)]
-        void RobotBrokeRpc()
+        void RobotBrokeRpc(int readyRound)
         {
             if (_robot != null) FxSystem.Instance?.Impact(_robot.position, Vector3.up, FxSystem.Dust, 14, 3f, 0.08f);
-            RobotBroke?.Invoke();
+            RobotBroke?.Invoke(readyRound);
         }
 
         [Rpc(SendTo.ClientsAndHost)]

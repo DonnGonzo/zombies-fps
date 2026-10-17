@@ -15,11 +15,11 @@ All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the 
   | **Courtyard** | **Gate Yard** (start) | **Depot** | **Loading Dock** |
 
 - Every zone has something to climb: stairs up to a watch platform, choir loft, mezzanine, pump house, loading dock and catwalk; parkour block runs in the Garage, Courtyard and Crane Yard; and ladders in the Depot, Barracks, Loading Dock (up the truck), Pump Station, Lantern Core, Archives and Greenhouse
-- Ladders: walk into one facing it to climb, S to go down, jump to let go. Zombies climb ladders and jump the parkour gaps too, so nowhere is safe for long
+- Ladders: walk into one facing it to climb, S to go down, jump to let go (from the top, just drop off; there is no fall damage). Zombies climb ladders and jump the parkour gaps too, so nowhere is safe for long
 - Six high spots can only be reached by climbing: Depot Loft, Garage Roof, Water Tower, Container Stack, Records Loft and Greenhouse Roof
 - New mission type, high ground: King of the Hill (round 6, full ammo) and Signal Boost (round 15, power-up reroll) light the signal beacon on one of the high spots; climb up and hold it
 - Build stations on the Garage Roof and the Greenhouse Roof build three things from parts hidden around the map. Each part can be in one of three places, picked fresh every game, many of them up on the high spots. Parts anyone finds count for the whole squad:
-  - Scrap Cannon (barrel, coil, grip): a slow, explosive cannon whose shots punch through four zombies. Once built, everyone can take one
+  - Scrap Cannon (barrel, coil, grip): a slow, explosive cannon whose shots punch through four zombies. Once built, everyone can take one each per game
   - Scrap Shield (frame, plate, strap): carried on your arm, it takes 90% of hits from in front (not acid) until it has soaked 1,500 damage. When it breaks you can take a new one from the next round
   - Buddy Bot (chassis, rotor, brain): a drone that follows whoever switched it on and shoots the nearest zombie it can see for two minutes, then breaks and stays offline for five rounds. Its kills count as yours
 - Map screen (M): every zone and its name, which are open, the doors and their prices, where you and your squad are and which way you face, the high spots, build stations, shop, upgrade machine and current missions, and which parts are still missing

@@ -38,7 +38,7 @@ namespace ZombiesFPS.Zombies
         const float ClimbSpeed = 2.4f;
         const float ClimbRise = 1.6f;
         // A player more than this far above or below can't be hit (on a ledge over the zombie's head).
-        const float AttackHeight = 1.6f;
+        const float AttackHeight = 1.9f;
 
         static readonly Color[] SkinTones =
         {
@@ -322,6 +322,12 @@ namespace ZombiesFPS.Zombies
             if (killed)
             {
                 _mode.Value = ZombieMode.Dead;
+                if (_onLink)
+                {
+                    // Killed mid-climb or mid-leap: drop to the lower end rather than hang in the air.
+                    _onLink = false;
+                    transform.position = _linkStart.y <= _linkEnd.y ? _linkStart : _linkEnd;
+                }
                 if (_agent.isOnNavMesh) _agent.isStopped = true;
                 _agent.enabled = false;
                 _despawnAt = Time.time + DeathFallTime + CorpseTime + SinkTime;
