@@ -14,7 +14,14 @@ namespace ZombiesFPS.Weapons
     /// </summary>
     public class HitscanGun : MonoBehaviour
     {
-        public float baseFov = 75f;
+        /// <summary>Hip-fire field of view, from Settings. Aim zoom keeps the same ratio as at 75 degrees.</summary>
+        public float BaseFov => GameSettings.Fov;
+        /// <summary>Melee and throws keep the gun from firing until this time.</summary>
+        public float BusyUntil { get; set; }
+        /// <summary>Perk multipliers: fire rate (Hair Trigger) and spread and aim speed (Steady Hand).</summary>
+        public float FireRateScale { get; set; } = 1f;
+        public float SpreadScale { get; set; } = 1f;
+        public WeaponView View => _view;
 
         GunData _data;
         Camera _camera;
@@ -70,7 +77,7 @@ namespace ZombiesFPS.Weapons
         public event Action<bool, bool> Hit;
 
         /// <summary>Raised on every shot with (origin, direction) so the host can resolve it.</summary>
-        public event Action<Vector3, Vector3> Fired;
+        public event Action<Vector3, Vector3, bool> Fired;
 
         public void Init(GunData data, Camera cam, PlayerLook look, PlayerMotor motor, Func<bool> canShoot, AudioSource gunAudio, AudioSource uiAudio, WeaponView view)
         {
@@ -85,22 +92,22 @@ namespace ZombiesFPS.Weapons
             DisplayName = data.displayName;
             Magazine = MagazineCapacity;
             Reserve = StartingReserve;
-            _camera.fieldOfView = baseFov;
+            _camera.fieldOfView = BaseFov;
         }
 
         void Update()
         {
             if (_data == null) return;
             float dt = Time.deltaTime;
-            bool canAct = _canShoot() && _look.CursorLocked && !_look.LockedThisFrame;
+            bool canAct = _canShoot() && _look.CursorLocked && !_look.LockedThisFrame && Time.time >= BusyUntil;
 
             UpdateReload();
 
             bool wantsAim = canAct && GameInput.AimHeld && !IsReloading && !IsRaising && !_motor.IsSprinting;
-            AimAmount = Mathf.MoveTowards(AimAmount, wantsAim ? 1f : 0f, dt / _data.aimTime);
+            AimAmount = Mathf.MoveTowards(AimAmount, wantsAim ? 1f : 0f, dt / (_data.aimTime * Mathf.Lerp(1f, SpreadScale, 0.5f)));
             _look.AimAmount = AimAmount;
             float eased = AimAmount * AimAmount * (3f - 2f * AimAmount);
-            _camera.fieldOfView = Mathf.Lerp(baseFov, _data.aimFov, eased);
+            _camera.fieldOfView = Mathf.Lerp(BaseFov, _data.aimFov * BaseFov / 75f, eased);
 
             _bloom = Mathf.MoveTowards(_bloom, 0f, dt * 4f);
             float moveFactor = Mathf.Clamp01(_motor.PlanarSpeed / _motor.walkSpeed);
@@ -108,6 +115,7 @@ namespace ZombiesFPS.Weapons
             CurrentSpread = Mathf.Lerp(_data.hipSpread, _data.aimSpread, eased)
                             + (moveFactor * _data.movingSpread + airPenalty) * (1f - eased * 0.75f)
                             + _bloom;
+            CurrentSpread *= SpreadScale;
 
             if (!canAct) return;
 
@@ -136,30 +144,32 @@ namespace ZombiesFPS.Weapons
         void Fire()
         {
             Magazine--;
-            _nextFireTime = Time.time + _data.SecondsPerShot;
+            _nextFireTime = Time.time + _data.SecondsPerShot / Mathf.Max(0.1f, FireRateScale);
             LastShotTime = Time.time;
 
             Transform cam = _camera.transform;
-            Vector2 offset = UnityEngine.Random.insideUnitCircle * CurrentSpread;
-            Vector3 dir = Quaternion.AngleAxis(offset.x, cam.up) * Quaternion.AngleAxis(offset.y, cam.right) * cam.forward;
-
-            Vector3 end = cam.position + dir * _data.range;
-            // Local raycast is for effects only; damage is decided by the host.
-            if (Physics.Raycast(cam.position, dir, out var hit, _data.range, ~0, QueryTriggerInteraction.Ignore))
+            int pellets = Mathf.Max(1, _data.pellets);
+            if (_view != null) _view.OnFire();
+            for (int p = 0; p < pellets; p++)
             {
-                end = hit.point;
-                var hitbox = hit.collider.GetComponent<Hitbox>();
-                bool flesh = hitbox != null && hitbox.Owner != null && hitbox.Owner.IsAlive;
-                if (flesh) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
-                else FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, 4, 2.5f, 0.05f);
-                if (ExplosiveRounds) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
-            }
-            Fired?.Invoke(cam.position, dir);
+                float spread = CurrentSpread + (pellets > 1 ? _data.pelletSpread * SpreadScale : 0f);
+                Vector2 offset = UnityEngine.Random.insideUnitCircle * spread;
+                Vector3 dir = Quaternion.AngleAxis(offset.x, cam.up) * Quaternion.AngleAxis(offset.y, cam.right) * cam.forward;
 
-            if (_view != null)
-            {
-                _view.OnFire();
-                FxSystem.Instance?.ShowTracer(_view.Muzzle.position, end);
+                Vector3 end = cam.position + dir * _data.range;
+                // Local raycast is for effects only; damage is decided by the host.
+                if (Physics.Raycast(cam.position, dir, out var hit, _data.range, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    end = hit.point;
+                    var hitbox = hit.collider.GetComponent<Hitbox>();
+                    bool flesh = hitbox != null && hitbox.Owner != null && hitbox.Owner.IsAlive;
+                    if (flesh) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
+                    else FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, pellets > 1 ? 2 : 4, 2.5f, 0.05f);
+                    if (ExplosiveRounds && p == 0) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
+                }
+                // The first pellet carries the machine tier's chain and explosive effects.
+                Fired?.Invoke(cam.position, dir, p == 0);
+                if (_view != null) FxSystem.Instance?.ShowTracer(_view.Muzzle.position, end);
             }
 
             _audio.pitch = UnityEngine.Random.Range(0.94f, 1.06f);

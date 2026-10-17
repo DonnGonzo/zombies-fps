@@ -27,6 +27,9 @@ namespace ZombiesFPS.Weapons
         Vector2 _sway;
         float _sprintWeight;
         Renderer[] _accentParts;
+        Transform _knife;
+        float _meleeStart = -100f, _throwStart = -100f;
+        const float MeleeTime = 0.38f, ThrowTime = 0.45f;
 
         public Transform Muzzle { get; private set; }
 
@@ -90,7 +93,20 @@ namespace ZombiesFPS.Weapons
             _flash.SetActive(false);
 
             Greybox.DisableShadows(_model.gameObject);
+
+            // The melee knife, held in the off hand and only shown mid-swing.
+            _knife = Greybox.Empty("Knife", transform, new Vector3(-0.12f, -0.16f, 0.36f));
+            Greybox.Box("Blade", _knife, new Vector3(0f, 0f, 0.08f), new Vector3(0.012f, 0.035f, 0.16f), new Color(0.82f, 0.84f, 0.87f), collider: false);
+            Greybox.Box("Grip", _knife, new Vector3(0f, 0f, -0.04f), new Vector3(0.024f, 0.032f, 0.09f), new Color(0.1f, 0.09f, 0.08f), collider: false);
+            Greybox.DisableShadows(_knife.gameObject);
+            _knife.gameObject.SetActive(false);
         }
+
+        /// <summary>A knife slash across the screen; the gun ducks out of the way.</summary>
+        public void Melee() => _meleeStart = Time.time;
+
+        /// <summary>The gun dips while the off hand throws.</summary>
+        public void Throw() => _throwStart = Time.time;
 
         public void OnFire()
         {
@@ -145,6 +161,23 @@ namespace ZombiesFPS.Weapons
                             + new Vector3(12f, -32f, 12f) * _sprintWeight
                             + new Vector3(35f, 0f, 28f) * reloadWeight
                             + new Vector3(40f, 0f, 0f) * lowered;
+
+            // Melee and throws pull the gun down and to the side for a moment.
+            float melee = Mathf.Clamp01((Time.time - _meleeStart) / MeleeTime);
+            float meleeWeight = melee < 1f ? Mathf.Sin(Mathf.PI * melee) : 0f;
+            float thrown = Mathf.Clamp01((Time.time - _throwStart) / ThrowTime);
+            float throwWeight = thrown < 1f ? Mathf.Sin(Mathf.PI * thrown) : 0f;
+            pos += new Vector3(0.06f, -0.12f, -0.04f) * meleeWeight + new Vector3(0.02f, -0.16f, -0.05f) * throwWeight;
+            euler += new Vector3(25f, 20f, -25f) * meleeWeight + new Vector3(30f, 0f, -10f) * throwWeight;
+
+            bool slashing = melee < 1f;
+            if (_knife.gameObject.activeSelf != slashing) _knife.gameObject.SetActive(slashing);
+            if (slashing)
+            {
+                float k = melee * melee * (3f - 2f * melee);
+                _knife.localPosition = Vector3.Lerp(new Vector3(0.28f, 0.02f, 0.3f), new Vector3(-0.3f, -0.18f, 0.42f), k);
+                _knife.localRotation = Quaternion.Euler(Mathf.Lerp(-20f, 30f, k), Mathf.Lerp(-60f, -110f, k), Mathf.Lerp(-30f, -80f, k));
+            }
 
             _model.localPosition = pos;
             _model.localRotation = Quaternion.Euler(euler);

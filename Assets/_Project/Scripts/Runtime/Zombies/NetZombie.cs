@@ -85,6 +85,7 @@ namespace ZombiesFPS.Zombies
         float _attackTimer;
         bool _attackLanded;
         float _staggerUntil;
+        float _stunUntil, _slowUntil, _slowScale = 1f, _holdUntil;
         NetPlayer _target;
         float _despawnAt;
         long _pendingHealth;
@@ -159,6 +160,9 @@ namespace ZombiesFPS.Zombies
                 _attackTimer = 0f;
                 _attackLanded = false;
                 _staggerUntil = 0f;
+                _stunUntil = 0f;
+                _slowUntil = 0f;
+                _holdUntil = 0f;
                 _despawnAt = float.MaxValue;
                 _stuckAnchor = transform.position;
                 _stuckSince = Time.time;
@@ -179,6 +183,7 @@ namespace ZombiesFPS.Zombies
         /// <summary>Puts the body back to a fresh, standing zombie (pooled objects keep last life's pose).</summary>
         void ResetVisuals()
         {
+            _stunVisualUntil = 0f;
             _deathTime = 0f;
             _deadSeenAt = -1f;
             _flashUntil = 0f;
@@ -205,7 +210,7 @@ namespace ZombiesFPS.Zombies
             rb.isKinematic = true;
             rb.useGravity = false;
 
-            _audio = gameObject.AddComponent<AudioSource>();
+            _audio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
             _audio.spatialBlend = 1f;
             _audio.minDistance = 2f;
             _audio.maxDistance = 30f;
@@ -319,6 +324,30 @@ namespace ZombiesFPS.Zombies
             return new DamageResult(dealt, killed);
         }
 
+        /// <summary>Host: a concussion bang. Stunned in place (bosses only slowed), then slowed for a while.</summary>
+        public void ServerStun(float stunTime, float slowTime, float slowScale)
+        {
+            if (!IsServer || _mode.Value == ZombieMode.Dead) return;
+            if (!_data.IsBoss) _stunUntil = Mathf.Max(_stunUntil, Time.time + stunTime);
+            _slowUntil = Mathf.Max(_slowUntil, Time.time + stunTime + slowTime);
+            _slowScale = _data.IsBoss ? Mathf.Max(slowScale, 0.7f) : slowScale;
+            StunRpc(_data.IsBoss ? 0f : stunTime);
+        }
+
+        /// <summary>Host: a melee hit stops it for a moment (not bosses or brutes).</summary>
+        public void ServerStagger(float time)
+        {
+            if (!IsServer || _mode.Value == ZombieMode.Dead || _data.IsBoss || _data.armored) return;
+            _holdUntil = Mathf.Max(_holdUntil, Time.time + time);
+        }
+
+        /// <summary>Whether the zombie is stunned right now (every machine, for the wobble).</summary>
+        public bool IsStunned => Time.time < _stunVisualUntil;
+        float _stunVisualUntil;
+
+        [Rpc(SendTo.ClientsAndHost)]
+        void StunRpc(float time) => _stunVisualUntil = Time.time + time;
+
         // ---------------------------------------------------------------- RPCs (host -> everyone)
 
         [Rpc(SendTo.ClientsAndHost)]
@@ -400,7 +429,18 @@ namespace ZombiesFPS.Zombies
             float dt = Time.deltaTime;
             var rounds = RoundManager.Instance;
             bool gameOver = rounds != null && rounds.IsGameOver;
-            _agent.speed = Time.time < _staggerUntil ? _moveSpeed * _data.staggerSpeedScale : _moveSpeed;
+            float speed = Time.time < _staggerUntil ? _moveSpeed * _data.staggerSpeedScale : _moveSpeed;
+            if (Time.time < _slowUntil) speed *= _slowScale;
+            _agent.speed = speed;
+
+            // Stunned (concussion) or knocked back (melee): stands still and can't attack.
+            if (Time.time < _stunUntil || Time.time < _holdUntil)
+            {
+                _agent.isStopped = true;
+                _spitAt = -1f;
+                if (_mode.Value == ZombieMode.Attacking && !_attackLanded) _mode.Value = ZombieMode.Chasing;
+                return;
+            }
 
             if (_target == null || !_target.IsSpawned || !_target.IsAlive) _target = FindTarget();
             if (_target == null || gameOver)
@@ -442,7 +482,11 @@ namespace ZombiesFPS.Zombies
                 if (_repathTimer <= 0f)
                 {
                     _target = FindTarget() ?? _target;
-                    _agent.SetDestination(_target.transform.position);
+                    // A survivor being protected draws zombies that are closer to them than to any player.
+                    Vector3 dest = _target.transform.position;
+                    var lure = MissionBoard.Lure;
+                    if (lure.HasValue && (lure.Value - transform.position).sqrMagnitude < distance * distance) dest = lure.Value;
+                    _agent.SetDestination(dest);
                     _repathTimer = RepathInterval;
                 }
                 if (distance <= _data.attackRange)
@@ -611,7 +655,8 @@ namespace ZombiesFPS.Zombies
         {
             _walkPhase += Time.deltaTime * (2f + 6f * move01);
             float sway = Mathf.Sin(_walkPhase) * 6f * Mathf.Clamp01(move01 + 0.2f);
-            _visual.localRotation = Quaternion.Euler(8f - _flinch * 18f, 0f, sway);
+            if (IsStunned) sway += Mathf.Sin(Time.time * 9f) * 14f;
+            _visual.localRotation = Quaternion.Euler(8f - _flinch * 18f + (IsStunned ? 12f : 0f), 0f, sway);
 
             float armPitch;
             if (swing <= 0f) armPitch = 8f + Mathf.Sin(_walkPhase * 0.5f) * 6f;

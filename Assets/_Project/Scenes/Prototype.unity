@@ -61,6 +61,8 @@ MonoBehaviour:
   upgradeData: {fileID: 11400000, guid: 6c54494a919c4d53ac92b29cb414dfb6, type: 2}
   missionData: {fileID: 11400000, guid: e22a5a2c360e4cc08d6b9ea8decfe345, type: 2}
   shopData: {fileID: 11400000, guid: 121ecc9d7414472aba4f2bf405974d43, type: 2}
+  equipmentData: {fileID: 11400000, guid: e64a4c6e99d043809e9cafefe2ec39ea, type: 2}
+  perkData: {fileID: 11400000, guid: 96703abdcf094329a81f1848273a5c01, type: 2}
   zombieTypes:
   - {fileID: 11400000, guid: 2c46d044b7f1464780ab1af89b523e26, type: 2}
   - {fileID: 11400000, guid: a71538a8d4dd49d08345469893bb10fb, type: 2}

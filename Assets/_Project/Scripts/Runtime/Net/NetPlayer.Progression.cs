@@ -49,7 +49,8 @@ namespace ZombiesFPS.Net
 
         public int PowerLevel(int index) => UpgradeData.LevelOf(PowerLevels.Value, index);
         public float Bonus(PowerStat stat) => Upgrades != null ? Upgrades.StatBonus(PowerLevels.Value, stat) : 0f;
-        public float MaxHealthNow => MaxHealth * (1f + Bonus(PowerStat.MaxHealth));
+        public float MaxHealthNow => MaxHealth * (1f + Bonus(PowerStat.MaxHealth)) * PerkHealthScale;
+        float ReloadSpeedNow => (1f + Bonus(PowerStat.ReloadSpeed)) * PerkReloadScale;
 
         public bool HasPowerUpOffer => PowerOffer.Value >= 0;
         public bool OfferIsEmpowered => HasPowerUpOffer && (PowerOffer.Value & (1 << 12)) != 0;
@@ -135,9 +136,11 @@ namespace ZombiesFPS.Net
 
         void ApplyOwnerBonuses()
         {
-            if (_motor != null) _motor.SpeedMultiplier = 1f + Bonus(PowerStat.MoveSpeed);
+            if (_motor != null) _motor.SpeedMultiplier = (1f + Bonus(PowerStat.MoveSpeed)) * PerkSpeedScale;
             if (_gun == null) return;
-            _gun.ReloadSpeed = 1f + Bonus(PowerStat.ReloadSpeed);
+            _gun.ReloadSpeed = ReloadSpeedNow;
+            _gun.FireRateScale = PerkFireRateScale;
+            _gun.SpreadScale = PerkSpreadScale;
             if (_gun.Data != null) _gun.SetCapacityScale(CapacityScale(ActiveSlot.Value));
         }
 

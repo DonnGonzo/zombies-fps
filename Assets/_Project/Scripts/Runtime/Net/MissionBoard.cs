@@ -19,12 +19,23 @@ namespace ZombiesFPS.Net
         public static MissionBoard Instance { get; private set; }
         /// <summary>Raised on every machine when a mission is finished, with its id.</summary>
         public static event Action<int> MissionCompleted;
+        /// <summary>Raised on every machine when a mission is lost (the survivor died), with its id.</summary>
+        public static event Action<int> MissionFailed;
+
+        /// <summary>Host: where zombies are drawn to besides players (a survivor being protected), if anywhere.</summary>
+        public static Vector3? Lure { get; private set; }
 
         public NetworkVariable<ulong> Slot0 = new NetworkVariable<ulong>(MissionData.Empty);
         public NetworkVariable<ulong> Slot1 = new NetworkVariable<ulong>(MissionData.Empty);
         public NetworkVariable<ulong> Slot2 = new NetworkVariable<ulong>(MissionData.Empty);
         /// <summary>The round the current set was handed out on (0 = none yet).</summary>
         public NetworkVariable<int> SetRound = new NetworkVariable<int>(0);
+        /// <summary>Health of the survivor in a protect mission.</summary>
+        public NetworkVariable<float> SurvivorHealth = new NetworkVariable<float>(0f);
+
+        Survivor _survivor;
+        readonly Collider[] _near = new Collider[48];
+        readonly HashSet<NetZombie> _nearZombies = new HashSet<NetZombie>();
 
         readonly List<int> _pool = new List<int>();
         readonly List<int> _zones = new List<int>();
@@ -43,7 +54,37 @@ namespace ZombiesFPS.Net
             Slot0.OnValueChanged += OnSlotChanged;
             Slot1.OnValueChanged += OnSlotChanged;
             Slot2.OnValueChanged += OnSlotChanged;
+            SurvivorHealth.OnValueChanged += OnSurvivorHealthChanged;
+            _survivor = Survivor.Create();
             ApplyGenerators();
+        }
+
+        void OnSurvivorHealthChanged(float previous, float current)
+        {
+            if (current < previous - 0.5f && _survivor != null) _survivor.Hurt();
+        }
+
+        /// <summary>The protect mission in progress, or -1.</summary>
+        public int ActiveSurvivorSlot
+        {
+            get
+            {
+                for (int i = 0; i < MissionData.SlotCount; i++)
+                {
+                    var def = DefIn(i);
+                    ulong slot = SlotValue(i);
+                    if (def != null && def.objective == MissionObjective.ProtectSurvivor && !MissionData.DoneOf(slot) && !MissionData.FailedOf(slot)) return i;
+                }
+                return -1;
+            }
+        }
+
+        /// <summary>Where the survivor is, if a protect mission is running.</summary>
+        public bool TryGetSurvivor(out Vector3 position)
+        {
+            int slot = ActiveSurvivorSlot;
+            position = slot >= 0 ? ZoneMap.SurvivorSpot(MissionData.ZoneOf(SlotValue(slot))) : Vector3.zero;
+            return slot >= 0;
         }
 
         public override void OnNetworkDespawn()
@@ -51,6 +92,9 @@ namespace ZombiesFPS.Net
             Slot0.OnValueChanged -= OnSlotChanged;
             Slot1.OnValueChanged -= OnSlotChanged;
             Slot2.OnValueChanged -= OnSlotChanged;
+            SurvivorHealth.OnValueChanged -= OnSurvivorHealthChanged;
+            if (_survivor != null) Destroy(_survivor.gameObject);
+            Lure = null;
             if (Instance == this) Instance = null;
         }
 
@@ -59,6 +103,15 @@ namespace ZombiesFPS.Net
         /// <summary>Lights the generator of each hold mission: amber while it's being worked on, green once done.</summary>
         void ApplyGenerators()
         {
+            if (_survivor != null)
+            {
+                if (TryGetSurvivor(out var at))
+                {
+                    int zone = MissionData.ZoneOf(SlotValue(ActiveSurvivorSlot));
+                    _survivor.Show(at, ZoneMap.ZoneCenter(zone) - at);
+                }
+                else _survivor.Hide();
+            }
             var map = GameConfig.Map;
             if (map == null || map.Generators == null) return;
             foreach (var g in map.Generators) g.SetState(GeneratorState.Idle, 0f);
@@ -80,8 +133,10 @@ namespace ZombiesFPS.Net
         {
             if (!IsServer || Data == null) return;
             var rounds = RoundManager.Instance;
+            Lure = TryGetSurvivor(out var lure) ? lure : (Vector3?)null;
             // Holding only counts while the horde is coming.
             if (rounds == null || rounds.Phase.Value != GamePhase.RoundActive) return;
+            ProtectTick();
             var map = GameConfig.Map;
             for (int i = 0; i < MissionData.SlotCount; i++)
             {
@@ -98,6 +153,44 @@ namespace ZombiesFPS.Net
                 }
             }
         }
+
+        /// <summary>Host: the survivor counts down while alive; zombies in reach hurt them.</summary>
+        void ProtectTick()
+        {
+            int i = ActiveSurvivorSlot;
+            if (i < 0 || !Lure.HasValue) return;
+            Vector3 at = Lure.Value;
+            _nearZombies.Clear();
+            int n = Physics.OverlapSphereNonAlloc(at + Vector3.up, Data.survivorReach, _near, ~0, QueryTriggerInteraction.Ignore);
+            float dps = 0f;
+            for (int c = 0; c < n; c++)
+            {
+                var hb = _near[c].GetComponent<ZombiesFPS.Combat.Hitbox>();
+                if (hb == null || !(hb.Owner is NetZombie z) || !z.IsAlive || !_nearZombies.Add(z)) continue;
+                var zd = z.Data;
+                dps += zd.damage / Mathf.Max(0.5f, zd.attackWindup + zd.attackRecovery) * Data.survivorDamageShare;
+            }
+            if (dps > 0f)
+            {
+                SurvivorHealth.Value = Mathf.Max(0f, SurvivorHealth.Value - dps * Time.deltaTime);
+                if (SurvivorHealth.Value <= 0f)
+                {
+                    ulong slot = SlotValue(i);
+                    SlotVariable(i).Value = MissionData.Pack(MissionData.IdOf(slot), false, MissionData.ZoneOf(slot), MissionData.ProgressOf(slot), MissionData.TargetOf(slot), failed: true);
+                    MissionFailedRpc(MissionData.IdOf(slot));
+                    return;
+                }
+            }
+            _holdTime[i] += Time.deltaTime;
+            while (_holdTime[i] >= 1f)
+            {
+                _holdTime[i] -= 1f;
+                Advance(i, 1);
+            }
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        void MissionFailedRpc(int id) => MissionFailed?.Invoke(id);
 
         static bool AnyoneNear(Vector3 position)
         {
@@ -143,7 +236,9 @@ namespace ZombiesFPS.Net
                 }
                 int id = _pool[i];
                 var def = Data.At(id);
-                int zone = def.objective == MissionObjective.HoldGenerator ? PickGeneratorZone(openMask) : 0;
+                bool placed = def.objective == MissionObjective.HoldGenerator || def.objective == MissionObjective.ProtectSurvivor;
+                int zone = placed ? PickGeneratorZone(openMask) : 0;
+                if (def.objective == MissionObjective.ProtectSurvivor) SurvivorHealth.Value = Data.survivorHealth;
                 SlotVariable(i).Value = MissionData.Pack(id, false, zone, 0, def.TargetFor(round));
             }
         }
@@ -199,7 +294,7 @@ namespace ZombiesFPS.Net
         void Advance(int i, int amount)
         {
             ulong slot = SlotValue(i);
-            if (MissionData.DoneOf(slot) || MissionData.IdOf(slot) == MissionData.NoMission) return;
+            if (MissionData.DoneOf(slot) || MissionData.FailedOf(slot) || MissionData.IdOf(slot) == MissionData.NoMission) return;
             int progress = MissionData.ProgressOf(slot) + amount;
             int target = MissionData.TargetOf(slot);
             bool done = progress >= target;
@@ -217,6 +312,7 @@ namespace ZombiesFPS.Net
                 if (GameConfig.Shop != null) p.ServerAddXp(GameConfig.Shop.xpPerMission);
                 if (def.bonus == MissionBonus.MaxAmmo) p.ServerRefillAllAmmo();
                 else if (def.bonus == MissionBonus.PowerUpReroll) p.PowerRerolls.Value++;
+                else if (def.bonus == MissionBonus.RareWeapon) p.ServerGiveGun(GameConfig.GunId(GameConfig.Prices.RareGun(0)));
             }
             MissionCompletedRpc(id);
         }
@@ -234,6 +330,8 @@ namespace ZombiesFPS.Net
                 _holdTime[i] = 0f;
             }
             SetRound.Value = 0;
+            SurvivorHealth.Value = 0f;
+            Lure = null;
         }
     }
 }

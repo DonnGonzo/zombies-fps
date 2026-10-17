@@ -65,6 +65,9 @@ namespace ZombiesFPS.Net
         public long CurrentZombieHealth => GameConfig.Round.HealthForRound(DisplayRound);
         public ZombieSpeedTier CurrentSpeedTier => GameConfig.Round.SpeedTierForRound(DisplayRound);
         public int LiveCap => GameConfig.Round.LiveCapFor(NetPlayer.All.Count);
+        /// <summary>The lights are out this round (a mini-event every 25th round): dark, runner-heavy, double points.</summary>
+        public bool IsBlackout => Phase.Value == GamePhase.RoundActive && GameConfig.Round.IsBlackoutRound(Round.Value);
+        public float PointsMultiplier => IsBlackout ? GameConfig.Round.blackoutPointsMultiplier : 1f;
 
         double Now => NetworkManager.ServerTime.Time;
 
@@ -161,6 +164,8 @@ namespace ZombiesFPS.Net
             _bossesToSpawn = GameConfig.Round.BossCountForRound(Round.Value);
             _nextBossTime = Time.time + FirstBossDelay;
             if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnRoundStarted(Round.Value);
+            if (Round.Value > 1)
+                foreach (var p in NetPlayer.All) p.ServerRefillEquipment(full: false);
             Phase.Value = GamePhase.RoundActive;
             UpdateZombiesLeft();
         }
@@ -255,6 +260,7 @@ namespace ZombiesFPS.Net
             {
                 var data = GameConfig.ZombieType((ZombieKind)i);
                 float w = i == 0 ? 1f : data.kind == (ZombieKind)i ? data.WeightForRound(round) : 0f;
+                if ((ZombieKind)i == ZombieKind.Runner && IsBlackout) w *= GameConfig.Round.blackoutRunnerWeight;
                 if (data.maxAlive > 0 && _aliveByKind[i] >= data.maxAlive) w = 0f;
                 _weights[i] = w;
                 total += w;

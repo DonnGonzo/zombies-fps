@@ -77,7 +77,7 @@ namespace ZombiesFPS.Zombies
                     Vector3 d = p.transform.position - _to;
                     if (Mathf.Abs(d.y) > MaxHeightDifference) continue;
                     d.y = 0f;
-                    if (d.sqrMagnitude <= _radius * _radius) p.ServerApplyDamage(_dps * DamageTick, _to);
+                    if (d.sqrMagnitude <= _radius * _radius) p.ServerApplyDamage(_dps * DamageTick, _to, acid: true);
                 }
             }
         }

@@ -35,6 +35,19 @@ namespace ZombiesFPS.Weapons
             public float Life;
         }
 
+        const int FlashCount = 6;
+        const int VoiceCount = 10;
+
+        struct FlashLight
+        {
+            public Light Light;
+            public float Life, MaxLife, Intensity;
+        }
+
+        readonly List<FlashLight> _flashes = new List<FlashLight>(FlashCount);
+        readonly List<AudioSource> _voices = new List<AudioSource>(VoiceCount);
+        int _nextFlash, _nextVoice;
+
         readonly List<Chunk> _chunks = new List<Chunk>(ChunkCount);
         readonly List<Tracer> _tracers = new List<Tracer>(TracerCount);
         int _nextChunk, _nextTracer;
@@ -66,11 +79,60 @@ namespace ZombiesFPS.Weapons
                 line.enabled = false;
                 _tracers.Add(new Tracer { Line = line });
             }
+
+            for (int i = 0; i < FlashCount; i++)
+            {
+                var go = new GameObject("Flash");
+                go.transform.SetParent(transform, false);
+                var light = go.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.shadows = LightShadows.None;
+                light.enabled = false;
+                _flashes.Add(new FlashLight { Light = light });
+            }
+            for (int i = 0; i < VoiceCount; i++)
+            {
+                var go = new GameObject("FxAudio");
+                go.transform.SetParent(transform, false);
+                var src = GameSettings.Effect(go.AddComponent<AudioSource>());
+                src.playOnAwake = false;
+                src.spatialBlend = 1f;
+                src.minDistance = 4f;
+                src.maxDistance = 70f;
+                src.rolloffMode = AudioRolloffMode.Linear;
+                _voices.Add(src);
+            }
         }
 
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
+        }
+
+        /// <summary>A brief burst of light, for explosions and bangs.</summary>
+        public void Flash(Vector3 point, Color color, float range, float duration)
+        {
+            var f = _flashes[_nextFlash];
+            f.Light.transform.position = point + Vector3.up * 0.4f;
+            f.Light.color = color;
+            f.Light.range = range;
+            f.Intensity = 6f;
+            f.Light.intensity = f.Intensity;
+            f.Light.enabled = true;
+            f.MaxLife = f.Life = Mathf.Max(0.05f, duration);
+            _flashes[_nextFlash] = f;
+            _nextFlash = (_nextFlash + 1) % _flashes.Count;
+        }
+
+        /// <summary>A sound in the world, from a small pool of 3D sources.</summary>
+        public void PlayAt(Vector3 point, AudioClip clip, float volume)
+        {
+            if (clip == null) return;
+            var src = _voices[_nextVoice];
+            _nextVoice = (_nextVoice + 1) % _voices.Count;
+            src.transform.position = point;
+            src.pitch = Random.Range(0.95f, 1.05f);
+            src.PlayOneShot(clip, volume);
         }
 
         public void Impact(Vector3 point, Vector3 normal, Color color, int count, float speed = 3f, float size = 0.06f)
@@ -123,6 +185,16 @@ namespace ZombiesFPS.Weapons
                     c.T.localScale = Vector3.one * (c.Size * (c.Life / c.MaxLife));
                 }
                 _chunks[i] = c;
+            }
+
+            for (int i = 0; i < _flashes.Count; i++)
+            {
+                var f = _flashes[i];
+                if (f.Life <= 0f) continue;
+                f.Life -= dt;
+                if (f.Life <= 0f) f.Light.enabled = false;
+                else f.Light.intensity = f.Intensity * (f.Life / f.MaxLife);
+                _flashes[i] = f;
             }
 
             for (int i = 0; i < _tracers.Count; i++)

@@ -17,6 +17,8 @@ namespace ZombiesFPS.Data
         HoldGenerator,
         /// <summary>The squad clears a number of rounds in a row without anyone going down.</summary>
         NoDowns,
+        /// <summary>A survivor holes up in an open zone: keep the zombies off them for a number of seconds.</summary>
+        ProtectSurvivor,
     }
 
     /// <summary>What a finished mission gives every player, on top of its points.</summary>
@@ -27,6 +29,8 @@ namespace ZombiesFPS.Data
         MaxAmmo,
         /// <summary>A free redraw of a power-up offer's cards.</summary>
         PowerUpReroll,
+        /// <summary>The rare Ion Lance, put in every player's hands.</summary>
+        RareWeapon,
     }
 
     [Serializable]
@@ -94,12 +98,20 @@ namespace ZombiesFPS.Data
             new MissionDef("Low Blow", "Kill {0} crawlers", MissionObjective.KillType, 12, 0.2f, 80, 500, 40, MissionBonus.MaxAmmo, 12, ZombieKind.Crawler),
             new MissionDef("Bring Down the Brutes", "Kill {0} brutes", MissionObjective.KillType, 6, 0.1f, 40, 700, 50, MissionBonus.MaxAmmo, 20, ZombieKind.Brute),
             new MissionDef("Acid Test", "Kill {0} spitters", MissionObjective.KillType, 5, 0.08f, 30, 700, 50, MissionBonus.PowerUpReroll, 30, ZombieKind.Spitter),
+            new MissionDef("Safe Passage", "Keep the survivor alive for {0} seconds", MissionObjective.ProtectSurvivor, 40, 0.3f, 90, 700, 50, MissionBonus.MaxAmmo, 5),
+            new MissionDef("The Prototype", "Protect the engineer for {0} seconds. She's carrying a prototype weapon", MissionObjective.ProtectSurvivor, 60, 0.3f, 120, 1000, 60, MissionBonus.RareWeapon, 25),
         };
 
         [Tooltip("A fresh set of missions every Nth round (and on round 1).")]
         public int refreshEveryRounds = 10;
         [Tooltip("How close to a generator counts as holding it.")]
         public float generatorRadius = 3f;
+        [Header("Protect the survivor")]
+        public float survivorHealth = 400f;
+        [Tooltip("Zombies this close to the survivor hurt them.")]
+        public float survivorReach = 1.8f;
+        [Tooltip("Damage each zombie in reach does per second, as a share of its normal hit.")]
+        public float survivorDamageShare = 0.5f;
 
         public int Count => Mathf.Min(MaxMissions, missions != null ? missions.Count : 0);
         public MissionDef At(int id) => id >= 0 && id < Count ? missions[id] : null;
@@ -124,20 +136,23 @@ namespace ZombiesFPS.Data
             return true;
         }
 
-        // A slot packs into one ulong: mission id (8 bits), done flag (1), generator zone (7), progress (24), target (24).
+        // A slot packs into one ulong: mission id (8 bits), done flag (1), zone (6), failed flag (1), progress (24), target (24).
         public const int NoMission = 0xFF;
 
-        public static ulong Pack(int id, bool done, int zone, int progress, int target) =>
+        public static ulong Pack(int id, bool done, int zone, int progress, int target, bool failed = false) =>
             // Through uint first: int -> ulong would sign-extend (CS0675).
             (ulong)(uint)(id & 0xFF)
             | ((done ? 1UL : 0UL) << 8)
-            | ((ulong)(uint)(zone & 0x7F) << 9)
+            | ((ulong)(uint)(zone & 0x3F) << 9)
+            | ((failed ? 1UL : 0UL) << 15)
             | ((ulong)(uint)Mathf.Clamp(progress, 0, 0xFFFFFF) << 16)
             | ((ulong)(uint)Mathf.Clamp(target, 0, 0xFFFFFF) << 40);
 
         public static int IdOf(ulong slot) => (int)(slot & 0xFF);
         public static bool DoneOf(ulong slot) => ((slot >> 8) & 1) != 0;
-        public static int ZoneOf(ulong slot) => (int)((slot >> 9) & 0x7F);
+        public static int ZoneOf(ulong slot) => (int)((slot >> 9) & 0x3F);
+        /// <summary>A mission that can be lost (the survivor died) and was.</summary>
+        public static bool FailedOf(ulong slot) => ((slot >> 15) & 1) != 0;
         public static int ProgressOf(ulong slot) => (int)((slot >> 16) & 0xFFFFFF);
         public static int TargetOf(ulong slot) => (int)((slot >> 40) & 0xFFFFFF);
         public static ulong Empty => Pack(NoMission, false, 0, 0, 0);

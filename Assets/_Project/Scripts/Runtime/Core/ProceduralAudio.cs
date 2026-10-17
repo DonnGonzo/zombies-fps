@@ -33,6 +33,145 @@ namespace ZombiesFPS.Core
         public static AudioClip RoundEnd => s_RoundEnd ? s_RoundEnd : (s_RoundEnd = MakeChime("RoundEnd", 2.2f, 2.2f, 0.4f,
             new[] { 220f, 261.6f, 329.6f }, new[] { 0f, 0.22f, 0.44f }));
 
+        static AudioClip s_Explosion, s_Concussion, s_Whoosh, s_KnifeHit, s_MeleeHit, s_PerkJingle, s_Radio, s_Plate, s_Drone, s_Pin;
+        static AudioClip[] s_Blips;
+
+        public static AudioClip Explosion => s_Explosion ? s_Explosion : (s_Explosion = MakeExplosion("Explosion", 1.6f, 1f, 7));
+        /// <summary>A sharp bang with a long high ring.</summary>
+        public static AudioClip Concussion => s_Concussion ? s_Concussion : (s_Concussion = MakeConcussion());
+        /// <summary>Air whoosh for melee swings and thrown knives.</summary>
+        public static AudioClip Whoosh => s_Whoosh ? s_Whoosh : (s_Whoosh = MakeWhoosh());
+        public static AudioClip KnifeHit => s_KnifeHit ? s_KnifeHit : (s_KnifeHit = MakeClick("KnifeHit", 0.1f, 0.9f, 21));
+        public static AudioClip MeleeHit => s_MeleeHit ? s_MeleeHit : (s_MeleeHit = MakeThud());
+        /// <summary>Grenade pin and spoon.</summary>
+        public static AudioClip Pin => s_Pin ? s_Pin : (s_Pin = MakeTone("Pin", 0.08f, 3200f, 2600f, 0.3f));
+        /// <summary>A bright little tune when a perk tonic is bought.</summary>
+        public static AudioClip PerkJingle => s_PerkJingle ? s_PerkJingle : (s_PerkJingle = MakeChime("PerkJingle", 1.4f, 3.5f, 0.35f,
+            new[] { 523.3f, 659.3f, 784f, 1046.5f }, new[] { 0f, 0.12f, 0.24f, 0.36f }));
+        /// <summary>Radio squelch before and after the Dispatcher speaks.</summary>
+        public static AudioClip Radio => s_Radio ? s_Radio : (s_Radio = MakeRadio());
+        public static AudioClip ArmorPlate => s_Plate ? s_Plate : (s_Plate = MakeChime("Plate", 0.5f, 9f, 0.4f, new[] { 410f, 655f, 1230f }, new[] { 0f, 0.01f, 0.02f }));
+        /// <summary>A low looping drone for the facility's ambience.</summary>
+        public static AudioClip Drone => s_Drone ? s_Drone : (s_Drone = MakeDrone());
+
+        /// <summary>A short syllable of placeholder "speech", for voice lines until real recordings exist.</summary>
+        public static AudioClip RandomBlip()
+        {
+            if (s_Blips == null || s_Blips[0] == null)
+            {
+                s_Blips = new AudioClip[6];
+                for (int i = 0; i < s_Blips.Length; i++) s_Blips[i] = MakeBlip(i);
+            }
+            return s_Blips[Random.Range(0, s_Blips.Length)];
+        }
+
+        static AudioClip MakeExplosion(string name, float length, float gain, int seed)
+        {
+            var rng = new System.Random(seed);
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            float lp = 0f, lp2 = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (noise - lp) * Mathf.Lerp(0.6f, 0.02f, Mathf.Clamp01(t * 3f));
+                lp2 += (lp - lp2) * 0.15f;
+                float boom = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(70f, 28f, Mathf.Clamp01(t * 2f)) * t) * Mathf.Exp(-t * 4f);
+                float env = Mathf.Clamp01(t * 400f) * Mathf.Exp(-t * 2.6f);
+                d[i] = Mathf.Clamp((lp2 * 2.2f + boom * 0.9f) * env * gain, -1f, 1f);
+            }
+            return Build(name, d);
+        }
+
+        static AudioClip MakeConcussion()
+        {
+            var rng = new System.Random(31);
+            int n = (int)(Rate * 2.2f);
+            var d = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float bang = (float)(rng.NextDouble() * 2.0 - 1.0) * Mathf.Exp(-t * 30f);
+                float ring = Mathf.Sin(2f * Mathf.PI * 3400f * t) * 0.12f * Mathf.Exp(-t * 1.2f) * Mathf.Clamp01(t * 20f);
+                d[i] = Mathf.Clamp(bang * 0.9f + ring, -1f, 1f);
+            }
+            return Build("Concussion", d);
+        }
+
+        static AudioClip MakeWhoosh()
+        {
+            var rng = new System.Random(41);
+            int n = (int)(Rate * 0.28f);
+            var d = new float[n];
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                float cutoff = Mathf.Lerp(0.05f, 0.35f, Mathf.Sin(Mathf.PI * t / 0.28f));
+                lp += (noise - lp) * cutoff;
+                d[i] = lp * Mathf.Sin(Mathf.PI * t / 0.28f) * 0.7f;
+            }
+            return Build("Whoosh", d);
+        }
+
+        static AudioClip MakeRadio()
+        {
+            var rng = new System.Random(51);
+            int n = (int)(Rate * 0.32f);
+            var d = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0) * 0.35f;
+                float beep = t < 0.09f ? Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 1250f * t)) * 0.18f : 0f;
+                float env = Mathf.Clamp01(t * 80f) * Mathf.Clamp01((0.32f - t) * 20f);
+                d[i] = (noise + beep) * env;
+            }
+            return Build("Radio", d);
+        }
+
+        /// <summary>A formant-ish syllable: a buzzy tone with a vowel-like filter sweep.</summary>
+        static AudioClip MakeBlip(int variant)
+        {
+            float length = 0.11f + 0.03f * (variant % 3);
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            float f0 = 150f + 18f * variant;
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float phase = (f0 * (1f + 0.15f * Mathf.Sin(t * 30f))) * t;
+                float saw = 2f * (phase - Mathf.Floor(phase + 0.5f));
+                float cutoff = Mathf.Lerp(0.08f, 0.3f, 0.5f + 0.5f * Mathf.Sin(t * (40f + variant * 9f)));
+                lp += (saw - lp) * cutoff;
+                float env = Mathf.Sin(Mathf.PI * t / length);
+                d[i] = lp * env * 0.55f;
+            }
+            return Build("Blip" + variant, d);
+        }
+
+        static AudioClip MakeDrone()
+        {
+            const float length = 8f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            var rng = new System.Random(61);
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                // Whole cycles of every partial in 8 s, so the loop has no seam.
+                float hum = Mathf.Sin(2f * Mathf.PI * 55f * t) * 0.35f + Mathf.Sin(2f * Mathf.PI * 82.5f * t) * 0.15f
+                            + Mathf.Sin(2f * Mathf.PI * 110.25f * t) * 0.08f * (0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * t / 4f));
+                lp += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp) * 0.01f;
+                d[i] = (hum + lp * 0.6f) * 0.35f;
+            }
+            return Build("Drone", d);
+        }
+
         public static AudioClip RandomGroan()
         {
             if (s_Groans == null || s_Groans[0] == null)

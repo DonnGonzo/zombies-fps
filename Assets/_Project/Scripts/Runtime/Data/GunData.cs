@@ -17,6 +17,14 @@ namespace ZombiesFPS.Data
         [Header("Fire")]
         public bool automatic = true;
         [Min(1f)] public float roundsPerMinute = 650f;
+        [Tooltip("Bullets per shot (shotguns fire several). Damage is per pellet.")]
+        [Min(1)] public int pellets = 1;
+        [Tooltip("Extra spread for each pellet, in degrees.")]
+        public float pelletSpread;
+        [Tooltip("How many zombies a bullet goes through after the first.")]
+        [Min(0)] public int pierce;
+        [Tooltip("Every shot explodes on impact (the rare Ion Lance), like an upgrade machine Mk IV.")]
+        public bool explosiveRounds;
 
         [Header("Ammo")]
         [Min(1)] public int magazineSize = 30;

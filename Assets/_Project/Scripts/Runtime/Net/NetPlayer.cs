@@ -42,6 +42,8 @@ namespace ZombiesFPS.Net
         public static NetPlayer Local { get; private set; }
         /// <summary>The name typed in the menu; the owner publishes it on spawn.</summary>
         public static string LocalName = "Survivor";
+        /// <summary>The survivor picked in the menu (Characters); the owner publishes it on spawn.</summary>
+        public static int LocalCharacter;
 
         static readonly Color[] SuitColors =
         {
@@ -53,6 +55,9 @@ namespace ZombiesFPS.Net
 
         public NetworkVariable<FixedString32Bytes> PlayerName = new NetworkVariable<FixedString32Bytes>(
             default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        /// <summary>Which survivor this player is (Characters), for their voice lines.</summary>
+        public NetworkVariable<int> CharacterId = new NetworkVariable<int>(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<float> Health = new NetworkVariable<float>(MaxHealth);
         public NetworkVariable<LifeState> State = new NetworkVariable<LifeState>(LifeState.Alive);
         public NetworkVariable<float> BleedOutRemaining = new NetworkVariable<float>(0f);
@@ -98,6 +103,7 @@ namespace ZombiesFPS.Net
         /// <summary>Owner-side time of the last health drop, for the damage vignette.</summary>
         public float LocalLastDamageTime { get; private set; } = -100f;
         public Color SuitColor => SuitColors[(int)(OwnerClientId % (ulong)SuitColors.Length)];
+        public Character Character => Characters.At(CharacterId.Value);
         /// <summary>Owner only: the door or wall gun the player is standing at, if any.</summary>
         public Buyable FocusedBuyable { get; private set; }
 
@@ -116,16 +122,22 @@ namespace ZombiesFPS.Net
         {
             s_All.Add(this);
             State.OnValueChanged += OnStateChanged;
-            if (IsServer) Points.Value = GameConfig.Round.startingPoints;
+            if (IsServer)
+            {
+                Points.Value = GameConfig.Round.startingPoints;
+                ServerResetEquipment();
+            }
             if (IsOwner)
             {
                 Local = this;
                 PlayerName.Value = new FixedString32Bytes(Truncate(LocalName, 20));
+                CharacterId.Value = Mathf.Clamp(LocalCharacter, 0, Characters.Count - 1);
                 Health.OnValueChanged += OnOwnerHealthChanged;
                 Gun0.OnValueChanged += OnGun0Changed;
                 Gun1.OnValueChanged += OnGun1Changed;
                 SubscribeProgression();
                 SubscribeShop();
+                SubscribePerks();
                 BuildLocalRig();
                 ApplyOwnerBonuses();
             }
@@ -143,7 +155,11 @@ namespace ZombiesFPS.Net
             Gun0.OnValueChanged -= OnGun0Changed;
             Gun1.OnValueChanged -= OnGun1Changed;
             UnsubscribeProgression();
-            if (IsOwner) UnsubscribeShop();
+            if (IsOwner)
+            {
+                UnsubscribeShop();
+                UnsubscribePerks();
+            }
             if (Local == this) Local = null;
         }
 
@@ -182,16 +198,16 @@ namespace ZombiesFPS.Net
             cam.backgroundColor = RenderSettings.fogColor;
             camGo.AddComponent<AudioListener>();
 
-            var gunAudio = camGo.AddComponent<AudioSource>();
+            var gunAudio = GameSettings.Effect(camGo.AddComponent<AudioSource>());
             gunAudio.playOnAwake = false;
-            _uiAudio = camGo.AddComponent<AudioSource>();
+            _uiAudio = GameSettings.Effect(camGo.AddComponent<AudioSource>());
             _uiAudio.playOnAwake = false;
 
             var view = Greybox.Empty("Weapon", camGo.transform, Vector3.zero).gameObject.AddComponent<WeaponView>();
             _look.Init(_pivot, camGo.transform);
             _gun.Init(GameConfig.Gun, cam, _look, _motor, () => IsAlive, gunAudio, _uiAudio, view);
             view.Init(_gun, _motor, _look);
-            _gun.Fired += (origin, dir) => ShootRpc(origin, dir);
+            _gun.Fired += (origin, dir, primary) => ShootRpc(origin, dir, primary);
             ResetLoadoutAmmo();
 
             new GameObject("HUD").AddComponent<PrototypeHud>().Init(this);
@@ -210,7 +226,7 @@ namespace ZombiesFPS.Net
             _remoteGun = Greybox.Box("Receiver", gun, Vector3.zero, new Vector3(0.08f, 0.1f, 0.6f), RemoteGunColor, collider: false).GetComponent<Renderer>();
             _remoteMuzzle = Greybox.Empty("Muzzle", gun, new Vector3(0f, 0f, 0.32f));
 
-            _remoteAudio = gameObject.AddComponent<AudioSource>();
+            _remoteAudio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
             _remoteAudio.spatialBlend = 1f;
             _remoteAudio.minDistance = 3f;
             _remoteAudio.maxDistance = 60f;
@@ -291,6 +307,8 @@ namespace ZombiesFPS.Net
                 if (want >= 0 && want != ActiveSlot.Value && GunInSlot(want) >= 0) EquipSlot(want, saveCurrent: true);
             }
 
+            OwnerEquipmentTick(canAct && !picking && !ShopOpen);
+
             bool nearDowned = FindReviveTarget(transform.position) != null;
             FocusedBuyable = canAct && !nearDowned ? FindBuyable() : null;
             OwnerShopTick(canAct, picking);
@@ -314,16 +332,17 @@ namespace ZombiesFPS.Net
             {
                 case LifeState.Alive:
                     float max = MaxHealthNow;
-                    if (Health.Value < max && Time.time - _lastDamageTime >= RegenDelay)
+                    if (Health.Value < max && Time.time - _lastDamageTime >= RegenDelayNow)
                         Health.Value = Mathf.Min(max, Health.Value + RegenPerSecond * dt);
                     if (_reviveHeld)
                     {
                         var target = FindReviveTarget(transform.position);
-                        if (target != null) target.ServerReviveTick(dt * (1f + Bonus(PowerStat.ReviveSpeed)));
+                        if (target != null) target.ServerReviveTick(dt * (1f + Bonus(PowerStat.ReviveSpeed)) * PerkReviveScale);
                     }
                     break;
 
                 case LifeState.Downed:
+                    if (ServerSelfReviveTick()) break;
                     bool beingRevived = Time.frameCount - _lastRevivedFrame <= 1;
                     if (!beingRevived)
                     {
@@ -350,9 +369,9 @@ namespace ZombiesFPS.Net
             if (data == null) return;
             ActiveSlot.Value = slot;
             var tier = GameConfig.Upgrades.Tier(TierInSlot(slot));
-            _gun.ExplosiveRounds = tier != null && tier.explosive;
+            _gun.ExplosiveRounds = (tier != null && tier.explosive) || data.explosiveRounds;
             _gun.Camo = CamoColorFor(slot);
-            _gun.ReloadSpeed = 1f + Bonus(PowerStat.ReloadSpeed);
+            _gun.ReloadSpeed = ReloadSpeedNow;
             _gun.Equip(data, _slotMagazine[slot], _slotReserve[slot], CapacityScale(slot), GunName(slot));
         }
 
@@ -426,6 +445,7 @@ namespace ZombiesFPS.Net
                 return GameConfig.Prices.DoorCost(b.Index);
             }
             if (b.Kind == BuyableKind.UpgradeMachine) return MachinePrice(out what);
+            if (b.Kind == BuyableKind.Perk || b.Kind == BuyableKind.Armor || b.Kind == BuyableKind.Reroll) return PerkStationPrice(b, out what);
             if (b.Kind == BuyableKind.Shop)
             {
                 what = "browse the shop";
@@ -473,16 +493,19 @@ namespace ZombiesFPS.Net
         // ---------------------------------------------------------------- server API
 
         /// <summary>Host only. Zombie hits land here.</summary>
-        public void ServerApplyDamage(float amount, Vector3 from)
+        public void ServerApplyDamage(float amount, Vector3 from, bool acid = false)
         {
             if (!IsServer || State.Value != LifeState.Alive || amount <= 0f) return;
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.GodMode.Value) return;
+            amount = ServerAbsorb(amount, acid);
             _lastDamageTime = Time.time;
+            if (amount <= 0f) return;
             Health.Value = Mathf.Max(0f, Health.Value - amount);
             if (Health.Value <= 0f)
             {
                 if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnPlayerDowned();
+                ServerOnDowned();
                 State.Value = LifeState.Downed;
                 BleedOutRemaining.Value = BleedOutTime;
                 ReviveProgress.Value = 0f;
@@ -495,6 +518,7 @@ namespace ZombiesFPS.Net
             if (!IsServer || State.Value != LifeState.Alive) return;
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.GodMode.Value) return;
+            if (HasPerk(PerkKind.HazardWard)) return;
             SlowRpc(scale, duration);
         }
 
@@ -534,6 +558,8 @@ namespace ZombiesFPS.Net
             Headshots.Value = 0;
             ServerResetLoadout();
             ServerResetProgression();
+            ServerResetPerks();
+            ServerResetEquipment();
             ServerRespawn(spawn);
         }
 
@@ -545,9 +571,9 @@ namespace ZombiesFPS.Net
             _reviveHeld = held;
         }
 
-        /// <summary>Owner fired: the host resolves the hit against its own copy of the world.</summary>
+        /// <summary>Owner fired (one call per pellet): the host resolves the hit against its own copy of the world.</summary>
         [Rpc(SendTo.Server)]
-        void ShootRpc(Vector3 origin, Vector3 direction)
+        void ShootRpc(Vector3 origin, Vector3 direction, bool primary)
         {
             if (State.Value != LifeState.Alive) return;
             var gun = EffectiveGun(ActiveSlot.Value) ?? GameConfig.Gun;
@@ -559,56 +585,76 @@ namespace ZombiesFPS.Net
             Vector3 end = origin + direction * gun.range;
             Vector3 normal = -direction;
             bool flesh = false;
-            NetZombie primary = null;
+            NetZombie primaryZombie = null;
             double baseDamage = gun.damage * (double)GunDamageMultiplier(ActiveSlot.Value);
             int count = Physics.RaycastNonAlloc(origin, direction, _hits, gun.range, ~0, QueryTriggerInteraction.Ignore);
-            float nearest = float.MaxValue;
-            int nearestIndex = -1;
+            // Nearest first, so a bullet stops at the first wall and pierces zombies in order.
+            System.Array.Sort(_hits, 0, count, HitDistanceComparer.Instance);
+            _pierced.Clear();
+            int pierceLeft = Mathf.Max(0, gun.pierce);
             for (int i = 0; i < count; i++)
             {
+                var hit = _hits[i];
                 // Players never block shots (no friendly fire, no blocking your teammates' bullets).
-                if (_hits[i].collider.GetComponentInParent<NetPlayer>() != null) continue;
-                if (_hits[i].distance < nearest)
-                {
-                    nearest = _hits[i].distance;
-                    nearestIndex = i;
-                }
-            }
-
-            if (nearestIndex >= 0)
-            {
-                var hit = _hits[nearestIndex];
-                end = hit.point;
-                normal = hit.normal;
+                if (hit.collider.GetComponentInParent<NetPlayer>() != null) continue;
                 var hitbox = hit.collider.GetComponent<Hitbox>();
-                if (hitbox != null && hitbox.Owner is NetZombie zombie && zombie.IsAlive)
+                if (hitbox != null && hitbox.Owner is NetZombie zombie)
                 {
+                    if (!zombie.IsAlive || !_pierced.Add(zombie)) continue;
                     flesh = true;
-                    primary = zombie;
+                    end = hit.point;
+                    normal = hit.normal;
+                    if (primaryZombie == null) primaryZombie = zombie;
                     float mult = hitbox.isHead ? gun.headshotMultiplier * (1f + Bonus(PowerStat.HeadshotDamage)) : hitbox.multiplier;
-                    long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * mult));
+                    // Each zombie pierced takes a little less.
+                    double falloff = System.Math.Pow(0.8, _pierced.Count - 1);
+                    long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * mult * falloff));
                     var result = zombie.TakeDamage(new DamageInfo(damage, hit.point, direction, hitbox.isHead, OwnerClientId));
                     AwardPoints(zombie, result, hitbox.isHead);
+                    OnServerKillHeal(result);
                     HitConfirmRpc(result.Killed, hitbox.isHead);
+                    if (pierceLeft-- <= 0) break;
+                    continue;
                 }
+                // A wall or prop: the bullet stops here.
+                end = hit.point;
+                normal = hit.normal;
+                break;
             }
 
-            var tier = GameConfig.Upgrades.Tier(TierInSlot(ActiveSlot.Value));
-            if (tier != null && tier.chain && primary != null) ServerChain(primary, end, baseDamage, direction);
-            if (tier != null && tier.explosive) ServerExplode(primary, end, baseDamage, direction);
-            ShotFxRpc(end, normal, flesh, tier != null && tier.explosive);
+            if (primary)
+            {
+                var tier = GameConfig.Upgrades.Tier(TierInSlot(ActiveSlot.Value));
+                if (tier != null && tier.chain && primaryZombie != null) ServerChain(primaryZombie, end, baseDamage, direction);
+                bool explosive = (tier != null && tier.explosive) || gun.explosiveRounds;
+                if (explosive) ServerExplode(primaryZombie, end, baseDamage, direction);
+                ShotFxRpc(end, normal, flesh, explosive, true);
+            }
+            else
+            {
+                ShotFxRpc(end, normal, flesh, false, false);
+            }
+        }
+
+        readonly HashSet<NetZombie> _pierced = new HashSet<NetZombie>();
+
+        sealed class HitDistanceComparer : IComparer<RaycastHit>
+        {
+            public static readonly HitDistanceComparer Instance = new HitDistanceComparer();
+            public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
         }
 
         void AwardPoints(NetZombie zombie, DamageResult result, bool headshot)
         {
             var data = zombie.Data;
+            double eventScale = RoundManager.Instance != null ? RoundManager.Instance.PointsMultiplier : 1.0;
             if (!result.Killed)
             {
-                Points.Value += data.pointsPerHit;
+                Points.Value += (long)System.Math.Round(data.pointsPerHit * eventScale);
                 return;
             }
             long reward = headshot ? data.pointsPerHeadshotKill : data.pointsPerKill;
-            Points.Value += (long)System.Math.Round(reward * (1.0 + Bonus(PowerStat.KillPoints)));
+            Points.Value += (long)System.Math.Round(reward * (1.0 + Bonus(PowerStat.KillPoints)) * eventScale);
             if (Shop != null) ServerAddXp(data.IsBoss ? Shop.xpPerBossKill : headshot ? Shop.xpPerHeadshotKill : Shop.xpPerKill);
             Kills.Value++;
             if (headshot) Headshots.Value++;
@@ -622,12 +668,13 @@ namespace ZombiesFPS.Net
 
         /// <summary>Everyone but the shooter sees and hears the shot.</summary>
         [Rpc(SendTo.NotOwner)]
-        void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive)
+        void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive, bool withSound)
         {
             if (_remoteMuzzle == null) return;
             FxSystem.Instance?.ShowTracer(_remoteMuzzle.position, end);
             FxSystem.Instance?.Impact(end, normal, flesh ? FxSystem.Blood : FxSystem.Dust, flesh ? 5 : 3, 3f, 0.06f);
             if (explosive) FxSystem.Instance?.Impact(end, normal, FxSystem.Blast, 16, 6f, 0.09f);
+            if (!withSound) return;
             _remoteAudio.pitch = Random.Range(0.94f, 1.06f);
             _remoteAudio.PlayOneShot(ProceduralAudio.Gunshot, 0.8f);
         }
@@ -669,20 +716,34 @@ namespace ZombiesFPS.Net
             {
                 ServerUpgradeGunInHand();
             }
+            else if (b.Kind == BuyableKind.Perk || b.Kind == BuyableKind.Armor || b.Kind == BuyableKind.Reroll)
+            {
+                ServerBuyFromStation(b);
+            }
             else
             {
                 int gunId = GameConfig.GunId(GameConfig.Prices.WallGunAt(b.Index).gun);
                 int owned = SlotOf(gunId);
                 if (owned >= 0) AmmoBoughtRpc(owned);
-                else
-                {
-                    int slot = Gun1.Value < 0 ? 1 : Mathf.Clamp(ActiveSlot.Value, 0, SlotCount - 1);
-                    TierVariable(slot).Value = 0;
-                    AttVariable(slot).Value = 0;
-                    SlotVariable(slot).Value = gunId;
-                }
+                else ServerGiveGun(gunId);
             }
             PurchaseResultRpc(true);
+        }
+
+        /// <summary>Host only. Puts a gun in the empty slot, or in place of the one in hand (a wall buy or a reward).</summary>
+        public void ServerGiveGun(int gunId)
+        {
+            if (gunId < 0) return;
+            int owned = SlotOf(gunId);
+            if (owned >= 0)
+            {
+                AmmoBoughtRpc(owned);
+                return;
+            }
+            int slot = Gun1.Value < 0 ? 1 : Mathf.Clamp(ActiveSlot.Value, 0, SlotCount - 1);
+            TierVariable(slot).Value = 0;
+            AttVariable(slot).Value = 0;
+            SlotVariable(slot).Value = gunId;
         }
 
         [Rpc(SendTo.Owner)]
@@ -692,7 +753,11 @@ namespace ZombiesFPS.Net
         }
 
         /// <summary>Host only. Every gun this player owns back to full (a mission reward).</summary>
-        public void ServerRefillAllAmmo() => RefillAllRpc();
+        public void ServerRefillAllAmmo()
+        {
+            ServerRefillEquipment(full: true);
+            RefillAllRpc();
+        }
 
         [Rpc(SendTo.Owner)]
         void RefillAllRpc()

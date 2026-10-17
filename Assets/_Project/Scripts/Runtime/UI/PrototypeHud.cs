@@ -40,7 +40,7 @@ namespace ZombiesFPS.UI
             _player = player;
             _gun = player.Gun;
             _gun.Hit += OnHit;
-            _audio = gameObject.AddComponent<AudioSource>();
+            _audio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
             _audio.playOnAwake = false;
             RoundManager.BossDefeated += OnBossDefeated;
             MissionBoard.MissionCompleted += OnMissionCompleted;

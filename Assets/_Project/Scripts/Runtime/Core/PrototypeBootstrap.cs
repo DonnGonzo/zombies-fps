@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using ZombiesFPS.Data;
 using ZombiesFPS.Net;
 using ZombiesFPS.Player;
+using ZombiesFPS.UI;
 using ZombiesFPS.Weapons;
 using ZombiesFPS.World;
 using ZombiesFPS.Zombies;
@@ -28,6 +29,8 @@ namespace ZombiesFPS.Core
         public UpgradeData upgradeData;
         public MissionData missionData;
         public ShopData shopData;
+        public EquipmentData equipmentData;
+        public PerkData perkData;
         [Tooltip("Runner, crawler, brute, spitter and boss. Any type missing here uses built-in values.")]
         public ZombieData[] zombieTypes;
 
@@ -46,12 +49,15 @@ namespace ZombiesFPS.Core
         string _address;
         string _port;
         string _status;
-        bool _showLoadout;
+        MenuScreen _screen;
         int[] _camoPicks;
         int _titlePick;
+        int _character;
+        long _profileXp;
         int _profileLevel = 1;
+        int _bestLevel = 1;
+        int _prestige;
         bool _connecting;
-        GUIStyle _title, _label, _button, _field;
 
         void Awake()
         {
@@ -64,6 +70,8 @@ namespace ZombiesFPS.Core
             GameConfig.Upgrades = upgradeData != null ? upgradeData : ScriptableObject.CreateInstance<UpgradeData>();
             GameConfig.Missions = missionData != null ? missionData : ScriptableObject.CreateInstance<MissionData>();
             GameConfig.Shop = shopData != null ? shopData : ScriptableObject.CreateInstance<ShopData>();
+            GameConfig.Equipment = equipmentData != null ? equipmentData : ScriptableObject.CreateInstance<EquipmentData>();
+            GameConfig.Perks = perkData != null ? perkData : ScriptableObject.CreateInstance<PerkData>();
             GameConfig.PlayerPrefab = Resources.Load<GameObject>("Net/NetPlayer");
             GameConfig.ZombiePrefab = Resources.Load<GameObject>("Net/NetZombie");
             GameConfig.DirectorPrefab = Resources.Load<GameObject>("Net/NetDirector");
@@ -242,50 +250,182 @@ namespace ZombiesFPS.Core
             if (_menuCamera != null && NetPlayer.Local != null) _menuCamera.gameObject.SetActive(false);
         }
 
+        enum MenuScreen { Main, Loadout, Prestige, Settings }
+
         void OnGUI()
         {
             if (_network == null || (_network.IsListening && !_connecting)) return;
-            EnsureStyles();
-            float u = Screen.height / 1080f;
-            float w = 560 * u, h = 820 * u;
-            var area = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
-            var old = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, 0.75f);
-            GUI.DrawTexture(new Rect(area.x - 30 * u, area.y - 30 * u, area.width + 60 * u, area.height + 60 * u), Texture2D.whiteTexture);
-            GUI.color = old;
+            float u = Ui.MenuU;
+            Ui.EnsureStyles(u);
+            float sw = Screen.width, sh = Screen.height;
 
-            GUILayout.BeginArea(area);
-            GUILayout.Label("ZOMBIES FPS", _title);
-            GUILayout.Label("Co-op prototype · 1-4 players", _label);
-            GUILayout.Space(24 * u);
+            // Backdrop: darken the map behind, with a red glow behind the title.
+            Ui.Fill(new Rect(0, 0, sw, sh), new Color(0f, 0f, 0f, 0.55f));
+            Ui.GlowSpot(new Rect(sw * 0.5f - 700 * u, -300 * u, 1400 * u, 700 * u), new Color(0.8f, 0.08f, 0.05f, 0.35f));
+            Ui.Label(new Rect(0, 46 * u, sw, 110 * u), "ZOMBIES FPS", Ui.Title, Ui.Blood, TextAnchor.MiddleCenter);
+            Ui.Label(new Rect(0, 140 * u, sw, 30 * u), "ASHGROVE FACILITY  ·  CO-OP SURVIVAL  ·  1-4 PLAYERS", Ui.Small, Ui.Muted, TextAnchor.MiddleCenter);
 
-            if (_showLoadout)
+            var panel = new Rect((sw - 1180 * u) / 2f, 200 * u, 1180 * u, Mathf.Min(sh - 240 * u, 820 * u));
+            switch (_screen)
             {
-                DrawLoadout(u);
-                GUILayout.EndArea();
-                return;
+                case MenuScreen.Settings:
+                    if (!SettingsMenu.Draw(panel, u)) _screen = MenuScreen.Main;
+                    return;
+                case MenuScreen.Loadout:
+                    DrawLoadout(panel, u);
+                    return;
+                case MenuScreen.Prestige:
+                    DrawPrestige(panel, u);
+                    return;
             }
+            DrawMain(panel, u);
+        }
 
+        void DrawMain(Rect panel, float u)
+        {
+            float gap = 24 * u;
+            var left = new Rect(panel.x, panel.y, panel.width * 0.5f - gap / 2f, panel.height);
+            var right = new Rect(left.xMax + gap, panel.y, panel.width * 0.5f - gap / 2f, panel.height);
+
+            // Profile: name, survivor, level and XP, prestige.
+            Ui.PanelBox(left, Ui.Blood, u);
+            float pad = 26 * u, x = left.x + pad, w = left.width - pad * 2, y = left.y + pad;
             GUI.enabled = !_connecting;
-            GUILayout.Label("Your name", _label);
-            _name = GUILayout.TextField(_name ?? "", 20, _field);
-            GUILayout.Space(16 * u);
-            if (GUILayout.Button($"Camos and title  (level {_profileLevel})", _button)) _showLoadout = true;
-            GUILayout.Space(8 * u);
-            if (GUILayout.Button("Host game", _button)) Host();
-            GUILayout.Label($"Friends join you at {LocalAddress()} port {_port} (same network, or forward the port).", _label);
-            GUILayout.Space(16 * u);
-            GUILayout.Label("Host address", _label);
-            _address = GUILayout.TextField(_address ?? "", 64, _field);
-            GUILayout.Label("Port", _label);
-            _port = GUILayout.TextField(_port ?? "", 5, _field);
-            if (GUILayout.Button("Join game", _button)) Join();
+            Ui.Label(new Rect(x, y, w, 30 * u), "YOUR SURVIVOR", Ui.Small, Ui.Muted, TextAnchor.UpperLeft);
+            y += 34 * u;
+            _name = GUI.TextField(new Rect(x, y, w, 42 * u), _name ?? "", 20, Ui.Field);
+            y += 56 * u;
+
+            var c = Characters.At(_character);
+            var card = new Rect(x, y, w, 118 * u);
+            Ui.RoundRect(card, new Color(1f, 1f, 1f, 0.04f));
+            Ui.Fill(new Rect(card.x, card.y + 12 * u, 4 * u, card.height - 24 * u), c.color);
+            if (Ui.Button(new Rect(card.x + 16 * u, card.y + 35 * u, 48 * u, 48 * u), "<")) _character = (_character + Characters.Count - 1) % Characters.Count;
+            if (Ui.Button(new Rect(card.xMax - 64 * u, card.y + 35 * u, 48 * u, 48 * u), ">")) _character = (_character + 1) % Characters.Count;
+            Ui.Label(new Rect(card.x + 80 * u, card.y + 12 * u, card.width - 160 * u, 34 * u), c.name, Ui.Header, c.color, TextAnchor.UpperLeft);
+            Ui.Label(new Rect(card.x + 80 * u + Ui.Width(c.name, Ui.Header) + 12 * u, card.y + 20 * u, 300 * u, 28 * u), c.role.ToUpperInvariant(), Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+            var blurb = new GUIStyle(Ui.Small) { wordWrap = true };
+            Ui.Label(new Rect(card.x + 80 * u, card.y + 54 * u, card.width - 160 * u, 60 * u), c.blurb, blurb, Ui.Text, TextAnchor.UpperLeft);
+            y += card.height + 20 * u;
+
+            DrawProfileLevel(new Rect(x, y, w, 110 * u), u);
+            y += 124 * u;
+
+            if (Ui.Button(new Rect(x, y, w, 50 * u), "Camos and title")) _screen = MenuScreen.Loadout;
+            y += 58 * u;
+            var shop = GameConfig.Shop;
+            if (shop != null && shop.saveBetweenRuns && _prestige < shop.MaxPrestige)
+            {
+                bool can = shop.CanPrestige(_profileLevel, _prestige);
+                string label = can ? $"Prestige to P{_prestige + 1}  ·  {shop.PrestigeName(_prestige + 1)}" : $"Prestige unlocks at level {shop.prestigeLevel}";
+                GUI.enabled = can && !_connecting;
+                if (Ui.Button(new Rect(x, y, w, 50 * u), label, accent: can)) _screen = MenuScreen.Prestige;
+                GUI.enabled = !_connecting;
+                y += 58 * u;
+            }
+            if (Ui.Button(new Rect(x, y, w, 50 * u), "Settings")) _screen = MenuScreen.Settings;
+
+            // Play: host, or join a friend.
+            Ui.PanelBox(right, Ui.Amber, u);
+            x = right.x + pad;
+            w = right.width - pad * 2;
+            y = right.y + pad;
+            Ui.Label(new Rect(x, y, w, 30 * u), "PLAY", Ui.Small, Ui.Muted, TextAnchor.UpperLeft);
+            y += 34 * u;
+            if (Ui.Button(new Rect(x, y, w, 64 * u), "HOST GAME", accent: true)) Host();
+            y += 72 * u;
+            var wrap = new GUIStyle(Ui.Small) { wordWrap = true };
+            Ui.Label(new Rect(x, y, w, 52 * u), $"Play solo, or have friends join you at {LocalAddress()} port {_port} (same network, or forward the port).", wrap, Ui.Muted, TextAnchor.UpperLeft);
+            y += 74 * u;
+            Ui.Fill(new Rect(x, y, w, 1), Ui.Line);
+            y += 18 * u;
+            Ui.Label(new Rect(x, y, w, 30 * u), "JOIN A FRIEND", Ui.Small, Ui.Muted, TextAnchor.UpperLeft);
+            y += 34 * u;
+            Ui.Label(new Rect(x, y, w, 30 * u), "Host address", Ui.Small, Ui.Text, TextAnchor.UpperLeft);
+            Ui.Label(new Rect(x + w - 140 * u, y, 140 * u, 30 * u), "Port", Ui.Small, Ui.Text, TextAnchor.UpperLeft);
+            y += 30 * u;
+            _address = GUI.TextField(new Rect(x, y, w - 156 * u, 42 * u), _address ?? "", 64, Ui.Field);
+            _port = GUI.TextField(new Rect(x + w - 140 * u, y, 140 * u, 42 * u), _port ?? "", 5, Ui.Field);
+            y += 54 * u;
+            if (Ui.Button(new Rect(x, y, w, 56 * u), "JOIN GAME")) Join();
+            y += 70 * u;
             GUI.enabled = true;
 
-            if (_connecting && GUILayout.Button("Cancel", _button)) ReturnToMenu("Cancelled.");
-            GUILayout.Space(12 * u);
-            if (!string.IsNullOrEmpty(_status)) GUILayout.Label(_status, _label);
-            GUILayout.EndArea();
+            if (_connecting && Ui.Button(new Rect(x, y, w, 48 * u), "Cancel")) ReturnToMenu("Cancelled.");
+            if (_connecting) y += 58 * u;
+            if (!string.IsNullOrEmpty(_status))
+                Ui.Label(new Rect(x, y, w, 80 * u), _status, wrap, Ui.Amber, TextAnchor.UpperLeft);
+
+            if (Ui.Button(new Rect(right.xMax - pad - 140 * u, right.yMax - pad - 46 * u, 140 * u, 46 * u), "Quit"))
+                Application.Quit();
+        }
+
+        /// <summary>Level, prestige emblem and the XP still needed for the next level.</summary>
+        void DrawProfileLevel(Rect r, float u)
+        {
+            var shop = GameConfig.Shop;
+            Ui.RoundRect(r, new Color(1f, 1f, 1f, 0.04f));
+            float x = r.x + 16 * u, w = r.width - 32 * u;
+            if (_prestige > 0 && shop != null)
+            {
+                var col = ShopData.PrestigeColor(_prestige);
+                var emblem = new Rect(x, r.y + 14 * u, 70 * u, 70 * u);
+                Ui.RoundRect(emblem, Ui.A(col, 0.2f));
+                Ui.Label(emblem, "P" + _prestige, Ui.Header, col, TextAnchor.MiddleCenter);
+                Ui.Label(new Rect(emblem.x, emblem.yMax, emblem.width, 22 * u), shop.PrestigeName(_prestige).ToUpperInvariant(), Ui.Tiny, col, TextAnchor.UpperCenter);
+                x += 86 * u;
+                w -= 86 * u;
+            }
+            Ui.Label(new Rect(x, r.y + 12 * u, w, 40 * u), $"LEVEL {_profileLevel}", Ui.Header, Ui.Text, TextAnchor.UpperLeft);
+            if (shop == null) return;
+            long into = shop.XpIntoLevel(_profileXp);
+            bool max = _profileLevel >= shop.maxLevel;
+            long need = max ? 0 : shop.XpToNext(_profileLevel) - into;
+            string next = !shop.saveBetweenRuns ? "Levels reset every run (saving is off)"
+                : max ? (shop.CanPrestige(_profileLevel, _prestige) ? "Max level. Prestige to climb again." : "Max level")
+                : $"{need:N0} XP to level {_profileLevel + 1}";
+            Ui.Label(new Rect(x, r.y + 18 * u, w, 30 * u), next, Ui.Small, Ui.Amber, TextAnchor.UpperRight);
+            Ui.Bar(new Rect(x, r.y + 60 * u, w, 12 * u), max ? 1f : (float)into / shop.XpToNext(_profileLevel), Ui.Amber);
+            Ui.Label(new Rect(x, r.y + 78 * u, w, 26 * u), max ? $"{_profileXp:N0} XP total" : $"{into:N0} / {shop.XpToNext(_profileLevel):N0} XP", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+        }
+
+        // ---------------------------------------------------------------- prestige (menu only)
+
+        void DrawPrestige(Rect panel, float u)
+        {
+            var shop = GameConfig.Shop;
+            var box = new Rect(panel.center.x - 380 * u, panel.y + 40 * u, 760 * u, 520 * u);
+            Ui.PanelBox(box, ShopData.PrestigeColor(_prestige + 1), u);
+            if (shop == null || !shop.CanPrestige(_profileLevel, _prestige))
+            {
+                _screen = MenuScreen.Main;
+                return;
+            }
+            float pad = 34 * u, x = box.x + pad, w = box.width - pad * 2, y = box.y + pad;
+            var col = ShopData.PrestigeColor(_prestige + 1);
+            Ui.Label(new Rect(x, y, w, 50 * u), $"PRESTIGE {_prestige + 1}: {shop.PrestigeName(_prestige + 1).ToUpperInvariant()}", Ui.Header, col, TextAnchor.UpperCenter);
+            y += 70 * u;
+            var wrap = new GUIStyle(Ui.Body) { wordWrap = true };
+            string camo = "";
+            for (int i = 0; i < shop.CamoCount; i++)
+                if (shop.CamoAt(i).unlockPrestige == _prestige + 1) camo = $"\n•  You unlock the {shop.CamoAt(i).name} camo.";
+            Ui.Label(new Rect(x, y, w, 300 * u),
+                $"•  Your level goes back to 1 and climbs again from there.\n" +
+                $"•  Attachments in the spawn shop lock again until you re-level.\n" +
+                $"•  You keep every camo and title you've unlocked.\n" +
+                $"•  Your name shows the P{_prestige + 1} {shop.PrestigeName(_prestige + 1)} emblem to your squad." + camo +
+                $"\n\nThere are {shop.MaxPrestige} prestige ranks. This can't be undone.", wrap, Ui.Text, TextAnchor.UpperLeft);
+            float bw = (w - 20 * u) / 2f;
+            if (Ui.Button(new Rect(x, box.yMax - pad - 56 * u, bw, 56 * u), "Cancel")) _screen = MenuScreen.Main;
+            if (Ui.Button(new Rect(x + bw + 20 * u, box.yMax - pad - 56 * u, bw, 56 * u), "PRESTIGE", accent: true))
+            {
+                ProfileSave.SaveBestLevel(_profileLevel);
+                ProfileSave.SaveXp(0);
+                ProfileSave.SavePrestige(_prestige + 1);
+                LoadCosmetics();
+                _status = $"Welcome to Prestige {_prestige}: {shop.PrestigeName(_prestige)}.";
+                _screen = MenuScreen.Main;
+            }
         }
 
         // ---------------------------------------------------------------- cosmetics (menu only)
@@ -295,15 +435,21 @@ namespace ZombiesFPS.Core
         {
             var shop = GameConfig.Shop;
             var guns = GameConfig.Guns ?? new GunData[0];
-            _profileLevel = shop != null && shop.saveBetweenRuns ? shop.LevelFor(ProfileSave.LoadXp()) : 1;
+            bool saved = shop != null && shop.saveBetweenRuns;
+            _profileXp = saved ? ProfileSave.LoadXp() : 0;
+            _profileLevel = shop != null ? shop.LevelFor(_profileXp) : 1;
+            if (saved) ProfileSave.SaveBestLevel(_profileLevel);
+            _bestLevel = saved ? Mathf.Max(_profileLevel, ProfileSave.LoadBestLevel()) : _profileLevel;
+            _prestige = saved && shop != null ? Mathf.Min(ProfileSave.LoadPrestige(), shop.MaxPrestige) : 0;
             _camoPicks = new int[guns.Length];
             for (int i = 0; i < guns.Length; i++)
             {
                 int camo = ProfileSave.LoadCamo(guns[i].name);
-                _camoPicks[i] = shop != null && shop.IsCamoUnlocked(camo, _profileLevel) ? camo : 0;
+                _camoPicks[i] = shop != null && shop.IsCamoUnlocked(camo, _bestLevel, _prestige) ? camo : 0;
             }
             int title = ProfileSave.LoadTitle();
-            _titlePick = shop != null && shop.IsTitleUnlocked(title, _profileLevel) ? title : 0;
+            _titlePick = shop != null && shop.IsTitleUnlocked(title, _bestLevel) ? title : 0;
+            _character = Characters.LoadPick();
             PublishCosmetics();
         }
 
@@ -312,6 +458,7 @@ namespace ZombiesFPS.Core
             var guns = GameConfig.Guns ?? new GunData[0];
             for (int i = 0; i < guns.Length && i < _camoPicks.Length; i++) ProfileSave.SaveCamo(guns[i].name, _camoPicks[i]);
             ProfileSave.SaveTitle(_titlePick);
+            Characters.SavePick(_character);
             PlayerPrefs.Save();
             PublishCosmetics();
         }
@@ -322,6 +469,7 @@ namespace ZombiesFPS.Core
             for (int i = 0; i < _camoPicks.Length; i++) picks = ShopData.WithCamo(picks, i, _camoPicks[i]);
             NetPlayer.LocalCamoPicks = picks;
             NetPlayer.LocalTitle = _titlePick;
+            NetPlayer.LocalCharacter = _character;
         }
 
         /// <summary>The next unlocked entry in a direction, wrapping round; entry 0 is always unlocked.</summary>
@@ -335,55 +483,73 @@ namespace ZombiesFPS.Core
             return current;
         }
 
-        void DrawLoadout(float u)
+        void DrawLoadout(Rect panel, float u)
         {
             var shop = GameConfig.Shop;
             var guns = GameConfig.Guns ?? new GunData[0];
-            GUILayout.Label($"Level {_profileLevel}. Higher levels unlock more camos and titles.", _label);
-            GUILayout.Space(12 * u);
-            if (shop != null)
-            {
-                int unlockedTitles = 0;
-                for (int i = 0; i < shop.TitleCount; i++) if (shop.IsTitleUnlocked(i, _profileLevel)) unlockedTitles++;
-                GUILayout.BeginHorizontal();
-                GUILayout.Label($"Title: {shop.TitleAt(_titlePick)?.name}  ({unlockedTitles}/{shop.TitleCount})", _label, GUILayout.Width(340 * u));
-                if (GUILayout.Button("<", _button, GUILayout.Width(60 * u))) _titlePick = Cycle(_titlePick, -1, shop.TitleCount, i => shop.IsTitleUnlocked(i, _profileLevel));
-                if (GUILayout.Button(">", _button, GUILayout.Width(60 * u))) _titlePick = Cycle(_titlePick, 1, shop.TitleCount, i => shop.IsTitleUnlocked(i, _profileLevel));
-                GUILayout.EndHorizontal();
-                GUILayout.Space(10 * u);
+            Ui.PanelBox(panel, Ui.Violet, u);
+            float pad = 28 * u, x = panel.x + pad, w = panel.width - pad * 2, y = panel.y + pad;
+            Ui.Label(new Rect(x, y, w, 44 * u), "CAMOS AND TITLE", Ui.Header, Ui.Text, TextAnchor.UpperLeft);
+            Ui.Label(new Rect(x, y + 8 * u, w, 30 * u), "Picked here before a match. They can't change during one.", Ui.Small, Ui.Muted, TextAnchor.UpperRight);
+            y += 60 * u;
+            if (shop == null) return;
 
-                for (int g = 0; g < guns.Length && g < ShopData.MaxCamoGuns; g++)
-                {
-                    int gun = g;
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label($"{guns[gun].displayName}: {shop.CamoAt(_camoPicks[gun])?.name}", _label, GUILayout.Width(340 * u));
-                    if (GUILayout.Button("<", _button, GUILayout.Width(60 * u))) _camoPicks[gun] = Cycle(_camoPicks[gun], -1, shop.CamoCount, i => shop.IsCamoUnlocked(i, _profileLevel));
-                    if (GUILayout.Button(">", _button, GUILayout.Width(60 * u))) _camoPicks[gun] = Cycle(_camoPicks[gun], 1, shop.CamoCount, i => shop.IsCamoUnlocked(i, _profileLevel));
-                    GUILayout.EndHorizontal();
-                }
-                int unlockedCamos = 0;
-                for (int i = 0; i < shop.CamoCount; i++) if (shop.IsCamoUnlocked(i, _profileLevel)) unlockedCamos++;
-                GUILayout.Label($"{unlockedCamos} of {shop.CamoCount} camos unlocked. Camos can't be changed during a match.", _label);
+            int unlockedTitles = 0, unlockedCamos = 0;
+            for (int i = 0; i < shop.TitleCount; i++) if (shop.IsTitleUnlocked(i, _bestLevel)) unlockedTitles++;
+            for (int i = 0; i < shop.CamoCount; i++) if (shop.IsCamoUnlocked(i, _bestLevel, _prestige)) unlockedCamos++;
+
+            float rowH = 54 * u;
+            DrawCycler(new Rect(x, y, w, rowH), "Title", shop.TitleAt(_titlePick)?.name, Ui.Text, $"{unlockedTitles}/{shop.TitleCount} unlocked", u,
+                dir => _titlePick = Cycle(_titlePick, dir, shop.TitleCount, i => shop.IsTitleUnlocked(i, _bestLevel)));
+            y += rowH + 14 * u;
+            Ui.Label(new Rect(x, y, w, 28 * u), $"GUN CAMOS  ·  {unlockedCamos}/{shop.CamoCount} unlocked", Ui.Small, Ui.Muted, TextAnchor.UpperLeft);
+            y += 32 * u;
+            float colW = (w - 20 * u) / 2f;
+            for (int g = 0; g < guns.Length && g < ShopData.MaxCamoGuns; g++)
+            {
+                int gun = g;
+                var camo = shop.CamoAt(_camoPicks[gun]);
+                var r = new Rect(x + (g % 2) * (colW + 20 * u), y + (g / 2) * (rowH + 6 * u), colW, rowH);
+                Color swatch = _camoPicks[gun] == 0 ? guns[gun].accent : camo.color;
+                DrawCycler(r, guns[gun].displayName, camo?.name, swatch, null, u,
+                    dir => _camoPicks[gun] = Cycle(_camoPicks[gun], dir, shop.CamoCount, i => shop.IsCamoUnlocked(i, _bestLevel, _prestige)));
             }
-            GUILayout.Space(12 * u);
-            if (GUILayout.Button("Done", _button))
+            y += ((guns.Length + 1) / 2) * (rowH + 6 * u) + 10 * u;
+
+            // What's still locked, so there's something to aim for.
+            var next = new System.Text.StringBuilder();
+            for (int i = 0; i < shop.CamoCount; i++)
+            {
+                var cm = shop.CamoAt(i);
+                if (shop.IsCamoUnlocked(i, _bestLevel, _prestige)) continue;
+                if (next.Length > 0) next.Append("  ·  ");
+                next.Append(cm.unlockPrestige > 0 ? $"{cm.name} (P{cm.unlockPrestige})" : $"{cm.name} (Lv {cm.unlockLevel})");
+            }
+            if (next.Length > 0)
+            {
+                var wrap = new GUIStyle(Ui.Tiny) { wordWrap = true };
+                Ui.Label(new Rect(x, y, w, 60 * u), "Still locked: " + next, wrap, Ui.Muted, TextAnchor.UpperLeft);
+            }
+
+            if (Ui.Button(new Rect(x, panel.yMax - pad - 52 * u, 240 * u, 52 * u), "Done", accent: true))
             {
                 SaveCosmetics();
-                _showLoadout = false;
+                _screen = MenuScreen.Main;
             }
         }
 
-        void EnsureStyles()
+        static void DrawCycler(Rect r, string label, string value, Color swatch, string note, float u, System.Action<int> step)
         {
-            float u = Screen.height / 1080f;
-            int size = Mathf.Max(12, Mathf.RoundToInt(22 * u));
-            if (_label != null && _label.fontSize == size) return;
-            _label = new GUIStyle(GUI.skin.label) { fontSize = size, wordWrap = true };
-            _label.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
-            _title = new GUIStyle(_label) { fontSize = Mathf.RoundToInt(size * 2.6f), fontStyle = FontStyle.Bold };
-            _title.normal.textColor = new Color(0.9f, 0.25f, 0.2f);
-            _button = new GUIStyle(GUI.skin.button) { fontSize = Mathf.RoundToInt(size * 1.1f), fixedHeight = 52 * u };
-            _field = new GUIStyle(GUI.skin.textField) { fontSize = size, fixedHeight = 40 * u };
+            Ui.RoundRect(r, new Color(1f, 1f, 1f, 0.04f), small: true);
+            Ui.Fill(new Rect(r.x + 10 * u, r.y + 12 * u, 6 * u, r.height - 24 * u), swatch);
+            Ui.Label(new Rect(r.x + 28 * u, r.y, r.width * 0.45f, r.height), label, Ui.Small, Ui.Muted, TextAnchor.MiddleLeft);
+            float bw = 44 * u;
+            if (Ui.Button(new Rect(r.xMax - bw * 2 - 14 * u, r.y + (r.height - bw) / 2f, bw, bw), "<")) step(-1);
+            if (Ui.Button(new Rect(r.xMax - bw - 8 * u, r.y + (r.height - bw) / 2f, bw, bw), ">")) step(1);
+            float vx = r.x + r.width * 0.45f;
+            Ui.Label(new Rect(vx, r.y, r.xMax - bw * 2 - 24 * u - vx, r.height), value, Ui.Bold, Ui.Text, TextAnchor.MiddleRight);
+            if (!string.IsNullOrEmpty(note))
+                Ui.Label(new Rect(r.x + 28 * u + Ui.Width(label, Ui.Small) + 12 * u, r.y, 300 * u, r.height), note, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
         }
 
         static string s_LocalAddress;

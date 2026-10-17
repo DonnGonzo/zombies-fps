@@ -51,6 +51,13 @@ namespace ZombiesFPS.Data
         [Tooltip("Points every player gets when a boss goes down.")]
         public long bossBonus = 500;
 
+        [Header("Blackout rounds (mini-event)")]
+        [Tooltip("Every Nth round the lights fail: the map goes dark, runners swarm, and kills pay double.")]
+        public int blackoutEveryRounds = 25;
+        public float blackoutPointsMultiplier = 2f;
+        [Tooltip("Runners are this many times as likely during a blackout.")]
+        public float blackoutRunnerWeight = 3f;
+
         [Header("Health")]
         public long healthBase = 150;
         [Tooltip("Flat health added each round up to linearUntilRound.")]
@@ -100,6 +107,7 @@ namespace ZombiesFPS.Data
         }
 
         public bool IsBossRound(int round) => bossEveryRounds > 0 && round > 0 && round % bossEveryRounds == 0;
+        public bool IsBlackoutRound(int round) => blackoutEveryRounds > 0 && round > 0 && round % blackoutEveryRounds == 0;
 
         public int BossCountForRound(int round)
         {

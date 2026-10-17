@@ -59,15 +59,18 @@ namespace ZombiesFPS.Data
     {
         public string name;
         public int unlockLevel = 1;
+        [Tooltip("Prestige rank needed as well (0 = none). Prestige camos unlock at any level once you reach the rank.")]
+        public int unlockPrestige;
         [Tooltip("Ignored for the first camo, which keeps each gun's own colours.")]
         public Color color = Color.white;
 
         public Camo() { }
-        public Camo(string name, int unlockLevel, Color color)
+        public Camo(string name, int unlockLevel, Color color, int unlockPrestige = 0)
         {
             this.name = name;
             this.unlockLevel = unlockLevel;
             this.color = color;
+            this.unlockPrestige = unlockPrestige;
         }
     }
 
@@ -141,6 +144,11 @@ namespace ZombiesFPS.Data
             new Camo("Gold", 30, new Color(0.9f, 0.7f, 0.2f)),
             new Camo("Diamond", 40, new Color(0.7f, 0.95f, 1f)),
             new Camo("Dark Matter", 50, new Color(0.35f, 0.1f, 0.55f)),
+            new Camo("Ember", 1, new Color(0.95f, 0.42f, 0.12f), 1),
+            new Camo("Ironclad", 1, new Color(0.42f, 0.44f, 0.47f), 3),
+            new Camo("Bloodsteel", 1, new Color(0.45f, 0.02f, 0.06f), 5),
+            new Camo("Obsidian Glass", 1, new Color(0.12f, 0.06f, 0.2f), 7),
+            new Camo("Master's Gold", 1, new Color(1f, 0.82f, 0.35f), 10),
         };
         public List<Title> titles = new List<Title>
         {
@@ -155,6 +163,35 @@ namespace ZombiesFPS.Data
             new Title("Undying", 50),
         };
 
+        [Header("Prestige")]
+        [Tooltip("Level needed to prestige from the main menu.")]
+        public int prestigeLevel = 30;
+        public int maxPrestige = 10;
+        [Tooltip("Name of each prestige rank, from 1 up.")]
+        public List<string> prestigeNames = new List<string>
+        {
+            "Ember", "Ash", "Iron", "Steel", "Cobalt", "Crimson", "Obsidian", "Gold", "Platinum", "Master",
+        };
+
+        public int MaxPrestige => Mathf.Clamp(maxPrestige, 0, 15);
+        public bool CanPrestige(int level, int prestige) => prestige < MaxPrestige && level >= prestigeLevel;
+
+        /// <summary>The name of a prestige rank, or empty for rank 0.</summary>
+        public string PrestigeName(int prestige)
+        {
+            if (prestige <= 0) return "";
+            if (prestigeNames != null && prestige - 1 < prestigeNames.Count && !string.IsNullOrEmpty(prestigeNames[prestige - 1])) return prestigeNames[prestige - 1];
+            return "Prestige " + prestige;
+        }
+
+        /// <summary>Colour of a prestige emblem, warming up as the rank climbs.</summary>
+        public static Color PrestigeColor(int prestige)
+        {
+            if (prestige <= 0) return Color.white;
+            float t = Mathf.Clamp01((prestige - 1) / 9f);
+            return prestige >= 10 ? new Color(1f, 0.82f, 0.35f) : Color.Lerp(new Color(0.95f, 0.5f, 0.2f), new Color(0.75f, 0.55f, 1f), t);
+        }
+
         /// <summary>Camo picks are packed 4 bits per gun id into one network variable.</summary>
         public const int MaxCamos = 16;
         public const int MaxCamoGuns = 16;
@@ -164,7 +201,9 @@ namespace ZombiesFPS.Data
         public int TitleCount => titles != null ? titles.Count : 0;
         public Title TitleAt(int id) => id >= 0 && id < TitleCount ? titles[id] : null;
 
-        public bool IsCamoUnlocked(int id, int level) => CamoAt(id) != null && level >= CamoAt(id).unlockLevel;
+        /// <summary>Whether a camo is unlocked. Level here is the best level ever reached, so prestiging keeps earned camos.</summary>
+        public bool IsCamoUnlocked(int id, int level, int prestige = 0) =>
+            CamoAt(id) != null && level >= CamoAt(id).unlockLevel && prestige >= CamoAt(id).unlockPrestige;
         public bool IsTitleUnlocked(int id, int level) => TitleAt(id) != null && level >= TitleAt(id).unlockLevel;
 
         /// <summary>The camo colour for a pick, or null for the gun's own colours (camo 0 or a bad id).</summary>

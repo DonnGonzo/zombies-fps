@@ -71,6 +71,43 @@ namespace ZombiesFPS.Core
             return t;
         }
 
+        static Font s_LabelFont;
+
+        /// <summary>World-space text (machine names, signs), facing along the parent's forward.</summary>
+        public static TextMesh Label(string name, Transform parent, Vector3 localPos, string text, Color color, float height = 0.2f)
+        {
+            if (s_LabelFont == null)
+            {
+                // Unity 2022.2+ ships LegacyRuntime.ttf; older versions had Arial.ttf.
+                try { s_LabelFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
+                catch (System.Exception) { s_LabelFont = null; }
+                if (s_LabelFont == null)
+                {
+                    try { s_LabelFont = Resources.GetBuiltinResource<Font>("Arial.ttf"); }
+                    catch (System.Exception) { s_LabelFont = null; }
+                }
+            }
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            // TextMesh reads from behind by default; turn it to face the parent's forward.
+            go.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            var tm = go.AddComponent<TextMesh>();
+            tm.text = text;
+            tm.color = color;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.fontSize = 64;
+            tm.characterSize = height / 6.4f;
+            if (s_LabelFont != null)
+            {
+                tm.font = s_LabelFont;
+                go.GetComponent<MeshRenderer>().sharedMaterial = s_LabelFont.material;
+            }
+            go.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return tm;
+        }
+
         public static void DisableShadows(GameObject root)
         {
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))

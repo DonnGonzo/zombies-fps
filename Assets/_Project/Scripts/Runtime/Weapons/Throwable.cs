@@ -1,0 +1,200 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using ZombiesFPS.Combat;
+using ZombiesFPS.Core;
+using ZombiesFPS.Data;
+using ZombiesFPS.Net;
+
+namespace ZombiesFPS.Weapons
+{
+    /// <summary>
+    /// A thrown grenade, knife or concussion bang. Every machine flies its own copy with the same simple
+    /// physics; only the host's copy decides where it goes off and what it hits, and tells everyone (Detonate).
+    /// Copies on clients just get removed when that word arrives.
+    /// </summary>
+    public class Throwable : MonoBehaviour
+    {
+        const float Radius = 0.07f;
+        const float Bounce = 0.35f;
+        const float GroundFriction = 4f;
+
+        static readonly Dictionary<long, Throwable> s_Live = new Dictionary<long, Throwable>();
+        static readonly RaycastHit[] s_Hits = new RaycastHit[12];
+
+        public long Id { get; private set; }
+        public ThrowableKind Kind { get; private set; }
+        public ulong Thrower { get; private set; }
+
+        Vector3 _velocity;
+        float _fuse;
+        float _age;
+        bool _authoritative;
+        bool _stuck;
+        float _removeAt = -1f;
+        Transform _spin;
+        Action<Throwable, Vector3, Hitbox> _onHit;
+
+        /// <summary>
+        /// Starts a throwable flying. The host's copy is authoritative and calls onDetonate when the fuse runs
+        /// out, or (knives) on the first thing it hits, with the zombie hitbox if there was one.
+        /// </summary>
+        public static Throwable Launch(long id, ThrowableKind kind, ulong thrower, Vector3 position, Vector3 velocity, float fuse,
+            bool authoritative, Action<Throwable, Vector3, Hitbox> onDetonate)
+        {
+            if (s_Live.TryGetValue(id, out var existing) && existing != null) return existing;
+            var go = new GameObject(kind.ToString());
+            go.transform.position = position;
+            var t = go.AddComponent<Throwable>();
+            t.Id = id;
+            t.Kind = kind;
+            t.Thrower = thrower;
+            t._velocity = velocity;
+            t._fuse = fuse;
+            t._authoritative = authoritative;
+            t._onHit = onDetonate;
+            t.BuildVisual();
+            s_Live[id] = t;
+            return t;
+        }
+
+        /// <summary>The host said this one went off (or hit something) at a point: show it there and clean up.</summary>
+        public static void Detonated(long id, Vector3 point)
+        {
+            if (!s_Live.TryGetValue(id, out var t) || t == null) return;
+            s_Live.Remove(id);
+            if (t.Kind == ThrowableKind.Knife)
+            {
+                // Leave the knife where it landed for a moment.
+                t.transform.position = point;
+                t._stuck = true;
+                t._removeAt = Time.time + 1.5f;
+                return;
+            }
+            Destroy(t.gameObject);
+        }
+
+        public static void ClearAll()
+        {
+            foreach (var t in s_Live.Values)
+                if (t != null) Destroy(t.gameObject);
+            s_Live.Clear();
+        }
+
+        void BuildVisual()
+        {
+            _spin = Greybox.Empty("Spin", transform, Vector3.zero);
+            switch (Kind)
+            {
+                case ThrowableKind.Grenade:
+                    Greybox.Prim(PrimitiveType.Sphere, "Body", _spin, Vector3.zero, new Vector3(0.11f, 0.13f, 0.11f), new Color(0.25f, 0.3f, 0.2f), collider: false);
+                    Greybox.Box("Spoon", _spin, new Vector3(0.03f, 0.06f, 0f), new Vector3(0.02f, 0.08f, 0.03f), new Color(0.5f, 0.5f, 0.5f), collider: false);
+                    break;
+                case ThrowableKind.Knife:
+                    Greybox.Box("Blade", _spin, new Vector3(0f, 0f, 0.06f), new Vector3(0.015f, 0.04f, 0.16f), new Color(0.8f, 0.82f, 0.85f), collider: false);
+                    Greybox.Box("Grip", _spin, new Vector3(0f, 0f, -0.06f), new Vector3(0.025f, 0.035f, 0.09f), new Color(0.12f, 0.1f, 0.08f), collider: false);
+                    break;
+                default:
+                    Greybox.Prim(PrimitiveType.Cylinder, "Body", _spin, Vector3.zero, new Vector3(0.08f, 0.07f, 0.08f), new Color(0.2f, 0.25f, 0.35f), collider: false);
+                    Greybox.Prim(PrimitiveType.Sphere, "Light", _spin, new Vector3(0f, 0.075f, 0f), Vector3.one * 0.04f, new Color(0.5f, 0.8f, 1f), collider: false, unlit: true);
+                    break;
+            }
+            foreach (var r in GetComponentsInChildren<Renderer>()) Greybox.DisableShadows(r.gameObject);
+        }
+
+        void Update()
+        {
+            float dt = Time.deltaTime;
+            _age += dt;
+            if (_removeAt > 0f)
+            {
+                if (Time.time >= _removeAt) Destroy(gameObject);
+                return;
+            }
+            // A client copy whose word from the host never came (lost packet, host left).
+            if (!_authoritative && _age > _fuse + 3f && Kind != ThrowableKind.Knife) Detonated(Id, transform.position);
+            if (!_authoritative && Kind == ThrowableKind.Knife && _age > 4f) Detonated(Id, transform.position);
+
+            if (!_stuck) Fly(dt);
+
+            if (_authoritative && Kind != ThrowableKind.Knife)
+            {
+                _fuse -= dt;
+                if (_fuse <= 0f) Fire(transform.position, null);
+            }
+            if (_authoritative && Kind == ThrowableKind.Knife && _age > 3f) Fire(transform.position, null);
+        }
+
+        void Fly(float dt)
+        {
+            _velocity += Physics.gravity * (Kind == ThrowableKind.Knife ? 0.35f : 1f) * dt;
+            Vector3 step = _velocity * dt;
+            float dist = step.magnitude;
+            if (dist > 0.0001f)
+            {
+                Vector3 dir = step / dist;
+                int count = Physics.SphereCastNonAlloc(transform.position, Radius, dir, s_Hits, dist, ~0, QueryTriggerInteraction.Ignore);
+                int best = -1;
+                float bestDist = float.MaxValue;
+                for (int i = 0; i < count; i++)
+                {
+                    var c = s_Hits[i].collider;
+                    if (c.GetComponentInParent<NetPlayer>() != null) continue;
+                    // Grenades and bangs bounce off bodies too, but a zombie's hitbox only matters to knives.
+                    if (s_Hits[i].distance < bestDist && s_Hits[i].distance > 0f)
+                    {
+                        bestDist = s_Hits[i].distance;
+                        best = i;
+                    }
+                }
+                if (best >= 0)
+                {
+                    var hit = s_Hits[best];
+                    transform.position = hit.point + hit.normal * (Radius + 0.01f);
+                    if (Kind == ThrowableKind.Knife)
+                    {
+                        _stuck = true;
+                        var hitbox = hit.collider.GetComponent<Hitbox>();
+                        if (_authoritative) Fire(hit.point, hitbox);
+                        return;
+                    }
+                    _velocity = Vector3.Reflect(_velocity, hit.normal) * Bounce;
+                    if (hit.normal.y > 0.6f && _velocity.y < 1.2f)
+                    {
+                        // Rolling to a stop on the floor.
+                        _velocity.y = 0f;
+                        _velocity = Vector3.MoveTowards(_velocity, Vector3.zero, GroundFriction * dt * 4f);
+                    }
+                }
+                else
+                {
+                    transform.position += step;
+                }
+            }
+
+            if (Kind == ThrowableKind.Knife)
+            {
+                if (_velocity.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(_velocity);
+                _spin.localRotation = Quaternion.Euler(_age * 1400f, 0f, 0f);
+            }
+            else
+            {
+                _spin.Rotate(_velocity.magnitude * 120f * dt, 0f, _velocity.magnitude * 60f * dt, Space.Self);
+            }
+        }
+
+        void Fire(Vector3 point, Hitbox hitbox)
+        {
+            if (!_authoritative) return;
+            _authoritative = false;
+            var cb = _onHit;
+            _onHit = null;
+            cb?.Invoke(this, point, hitbox);
+        }
+
+        void OnDestroy()
+        {
+            if (s_Live.TryGetValue(Id, out var t) && t == this) s_Live.Remove(Id);
+        }
+    }
+}

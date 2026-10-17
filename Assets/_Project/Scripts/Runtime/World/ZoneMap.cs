@@ -12,6 +12,12 @@ namespace ZombiesFPS.World
         WallGun,
         UpgradeMachine,
         Shop,
+        /// <summary>A perk tonic machine; Index is the PerkKind.</summary>
+        Perk,
+        /// <summary>The armour plate station.</summary>
+        Armor,
+        /// <summary>The shrine that sells power-up rerolls.</summary>
+        Reroll,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -86,7 +92,24 @@ namespace ZombiesFPS.World
         };
 
         /// <summary>Which zone each wall gun is in, in wall-buy order. PriceTable.wallGuns follows this order.</summary>
-        public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 3 };
+        public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 3, 1, 4, 2 };
+
+        /// <summary>Perk machines in PerkKind order: a wall face and the direction into the room.</summary>
+        static readonly (Vector3 face, Vector3 inward)[] PerkSpots =
+        {
+            (new Vector3(-11.7f, 0f, 31f), Vector3.right),     // Ironhide Tonic, Chapel
+            (new Vector3(16f, 0f, -12f), Vector3.forward),     // Slick Fingers, Depot
+            (new Vector3(-11.7f, 0f, -7f), Vector3.right),     // Second Wind, Gate Yard
+            (new Vector3(36f, 0f, 31f), Vector3.left),         // Hair Trigger, Garage
+            (new Vector3(-31f, 0f, 12.3f), Vector3.forward),   // Fleet Foot, Barracks
+            (new Vector3(11.7f, 0f, 17f), Vector3.left),       // Steady Hand, Chapel
+            (new Vector3(-31f, 0f, 11.7f), Vector3.back),      // Hazard Ward, Courtyard
+            (new Vector3(-12.3f, 0f, 8f), Vector3.left),       // Bloodline, Courtyard
+        };
+        /// <summary>Armour plates in the Gate Yard; power-up rerolls in the Chapel.</summary>
+        static readonly (Vector3 face, Vector3 inward) ArmorSpot = (new Vector3(11.7f, 0f, -8f), Vector3.left);
+        static readonly (Vector3 face, Vector3 inward) RerollSpot = (new Vector3(-11.7f, 0f, 19f), Vector3.right);
+        const float StationRange = 2f;
 
         /// <summary>One mission generator per zone (zone order), against a wall and clear of windows and doors.</summary>
         static readonly (Vector3 position, float yaw)[] GeneratorSpots =
@@ -98,6 +121,17 @@ namespace ZombiesFPS.World
             (new Vector3(-31f, 0f, 34.6f), 0f),
             (new Vector3(-32f, 0f, -10.6f), 180f),
         };
+
+        public static Vector3 ZoneCenter(int zone) => ZoneCenters[Mathf.Clamp(zone, 0, ZoneCount - 1)];
+
+        /// <summary>Where a protect mission's survivor crouches: a few metres out from the zone's generator, towards the middle.</summary>
+        public static Vector3 SurvivorSpot(int zone)
+        {
+            var gen = GeneratorSpots[Mathf.Clamp(zone, 0, ZoneCount - 1)].position;
+            var toCenter = ZoneCenter(zone) - gen;
+            toCenter.y = 0f;
+            return gen + toCenter.normalized * 3.2f;
+        }
 
         static readonly Color[] FloorTints =
         {
@@ -179,6 +213,7 @@ namespace ZombiesFPS.World
             BuildLamps();
             BuildGenerators();
             BuildShop();
+            BuildStations();
 
             var surface = Root.gameObject.AddComponent<NavMeshSurface>();
             surface.collectObjects = CollectObjects.Children;
@@ -191,6 +226,10 @@ namespace ZombiesFPS.World
             BuildWallBuys(prices, buyables);
             BuildUpgradeMachine(buyables);
             buyables.Add(new Buyable { Kind = BuyableKind.Shop, Index = 0, Position = ShopPosition + new Vector3(-1.5f, 1f, 0f), Range = ShopRange });
+            for (int i = 0; i < PerkSpots.Length; i++)
+                buyables.Add(new Buyable { Kind = BuyableKind.Perk, Index = i, Position = StandPoint(PerkSpots[i]), Range = StationRange });
+            buyables.Add(new Buyable { Kind = BuyableKind.Armor, Index = 0, Position = StandPoint(ArmorSpot), Range = StationRange });
+            buyables.Add(new Buyable { Kind = BuyableKind.Reroll, Index = 0, Position = StandPoint(RerollSpot), Range = StationRange });
             Buyables = buyables.ToArray();
 
             PlayerStart = new Vector3(0f, 0.05f, -4f);
@@ -376,6 +415,9 @@ namespace ZombiesFPS.World
                 (new Vector3(36f, 0f, 24f), Vector3.left),
                 (new Vector3(-36f, 0f, 28f), Vector3.right),
                 (new Vector3(6f, 0f, 36f), Vector3.back),
+                (new Vector3(30f, 0f, south), Vector3.back),
+                (new Vector3(-12.3f, 0f, 31f), Vector3.left),
+                (new Vector3(12.3f, 0f, 17f), Vector3.right),
             };
             for (int i = 0; i < spots.Length; i++)
             {
@@ -398,6 +440,67 @@ namespace ZombiesFPS.World
                 Generators[i] = go.AddComponent<Generator>();
                 Generators[i].Init();
             }
+        }
+
+        /// <summary>Where a player stands to use a station against a wall.</summary>
+        static Vector3 StandPoint((Vector3 face, Vector3 inward) spot) => spot.face + spot.inward * 1.4f + Vector3.up;
+
+        /// <summary>Perk machines, the armour station and the reroll shrine. Built before the bake so zombies walk round them.</summary>
+        void BuildStations()
+        {
+            var perks = GameConfig.Perks;
+            for (int i = 0; i < PerkSpots.Length; i++)
+            {
+                var def = perks != null ? perks.At(i) : null;
+                BuildVendingMachine(PerkSpots[i], def != null ? def.name : "Perk", def != null ? def.color : Color.white,
+                    def != null ? def.price.ToString("N0") : "");
+            }
+            BuildVendingMachine(ArmorSpot, "Armour Plates", new Color(0.6f, 0.65f, 0.72f), "");
+            BuildShrine(RerollSpot);
+        }
+
+        void BuildVendingMachine((Vector3 face, Vector3 inward) spot, string title, Color color, string price)
+        {
+            var root = Greybox.Empty("Machine " + title, Root, spot.face + spot.inward * 0.45f);
+            root.localRotation = Quaternion.LookRotation(spot.inward, Vector3.up);
+            Greybox.Box("Body", root, new Vector3(0f, 1.05f, 0f), new Vector3(1.1f, 2.1f, 0.8f), new Color(0.12f, 0.12f, 0.14f));
+            Greybox.Box("Top", root, new Vector3(0f, 2.16f, 0f), new Vector3(1.2f, 0.12f, 0.9f), color * 0.6f, collider: false);
+            // Front: a glowing panel in the perk's colour, with bottles behind glass.
+            Greybox.Prim(PrimitiveType.Cube, "Panel", root, new Vector3(0f, 1.45f, 0.41f), new Vector3(0.9f, 0.9f, 0.02f), color * 0.85f, collider: false, unlit: true);
+            for (int b = 0; b < 3; b++)
+                Greybox.Prim(PrimitiveType.Cylinder, "Bottle", root, new Vector3(-0.25f + b * 0.25f, 0.62f, 0.32f), new Vector3(0.1f, 0.14f, 0.1f), color, collider: false, unlit: true);
+            Greybox.Box("Slot", root, new Vector3(0f, 0.35f, 0.41f), new Vector3(0.6f, 0.12f, 0.02f), new Color(0.05f, 0.05f, 0.05f), collider: false);
+            var labelColor = Color.Lerp(color, Color.white, 0.6f);
+            Greybox.Label("Name", root, new Vector3(0f, 2.45f, 0.2f), title.ToUpperInvariant(), labelColor, 0.2f);
+            if (!string.IsNullOrEmpty(price)) Greybox.Label("Price", root, new Vector3(0f, 1.45f, 0.43f), price, new Color(0.05f, 0.05f, 0.05f), 0.16f);
+            var light = new GameObject("Glow").AddComponent<Light>();
+            light.transform.SetParent(root, false);
+            light.transform.localPosition = new Vector3(0f, 1.5f, 1.1f);
+            light.type = LightType.Point;
+            light.color = color;
+            light.range = 4.5f;
+            light.intensity = 1.6f;
+            light.shadows = LightShadows.None;
+        }
+
+        void BuildShrine((Vector3 face, Vector3 inward) spot)
+        {
+            var glow = new Color(1f, 0.75f, 0.3f);
+            var root = Greybox.Empty("Reroll Shrine", Root, spot.face + spot.inward * 0.45f);
+            root.localRotation = Quaternion.LookRotation(spot.inward, Vector3.up);
+            Greybox.Box("Plinth", root, new Vector3(0f, 0.5f, 0f), new Vector3(1f, 1f, 0.8f), new Color(0.35f, 0.33f, 0.3f));
+            var card = Greybox.Prim(PrimitiveType.Cube, "Cards", root, new Vector3(0f, 1.25f, 0f), new Vector3(0.5f, 0.06f, 0.35f), glow, collider: false, unlit: true);
+            card.transform.localRotation = Quaternion.Euler(0f, 20f, 0f);
+            Greybox.Label("Name", root, new Vector3(0f, 1.8f, 0f), "FORTUNE SHRINE", Color.Lerp(glow, Color.white, 0.5f), 0.18f);
+            Greybox.Label("What", root, new Vector3(0f, 1.6f, 0f), "power-up rerolls", new Color(1f, 1f, 1f, 0.7f), 0.11f);
+            var light = new GameObject("Glow").AddComponent<Light>();
+            light.transform.SetParent(root, false);
+            light.transform.localPosition = new Vector3(0f, 1.4f, 0.8f);
+            light.type = LightType.Point;
+            light.color = glow;
+            light.range = 4f;
+            light.intensity = 1.4f;
+            light.shadows = LightShadows.None;
         }
 
         /// <summary>A market stall: counter, posts and an awning. Built before the bake so zombies walk round it.</summary>

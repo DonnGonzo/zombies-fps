@@ -33,7 +33,7 @@ namespace ZombiesFPS.World
             _obstacle.size = Vector3.one; // Local space, so it matches the scaled box.
             _obstacle.carving = true;
             _obstacle.carveOnlyStationary = true;
-            _audio = gameObject.AddComponent<AudioSource>();
+            _audio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
             _audio.spatialBlend = 1f;
             _audio.minDistance = 4f;
             _audio.maxDistance = 50f;

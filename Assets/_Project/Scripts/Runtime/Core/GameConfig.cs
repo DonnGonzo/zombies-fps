@@ -24,6 +24,8 @@ namespace ZombiesFPS.Core
         public static UpgradeData Upgrades;
         public static MissionData Missions;
         public static ShopData Shop;
+        public static EquipmentData Equipment;
+        public static PerkData Perks;
         /// <summary>Every gun in the game; a gun's index is its network id.</summary>
         public static GunData[] Guns;
 

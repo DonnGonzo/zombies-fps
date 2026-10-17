@@ -35,6 +35,10 @@ namespace ZombiesFPS.Net
         public NetworkVariable<int> TitleId = new NetworkVariable<int>(
             0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+        /// <summary>Prestige rank (0-10), published by the owner from their save.</summary>
+        public NetworkVariable<int> Prestige = new NetworkVariable<int>(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         /// <summary>The main menu's camo and title picks for the local player. Fixed once the match starts.</summary>
         public static ulong LocalCamoPicks;
         public static int LocalTitle;
@@ -54,8 +58,20 @@ namespace ZombiesFPS.Net
         public int Level => Shop != null ? Shop.LevelFor(TotalXp) : 1;
 
         public string TitleName => Shop != null && Shop.TitleAt(TitleId.Value) != null ? Shop.TitleAt(TitleId.Value).name : "";
-        /// <summary>Name with prestige title, for name tags and the squad list.</summary>
-        public string TaggedName => string.IsNullOrEmpty(TitleName) ? DisplayName : $"{DisplayName} [{TitleName}]";
+        /// <summary>Name with prestige rank and title, for name tags and the squad list, e.g. "P3 Ivan [Veteran]".</summary>
+        public string TaggedName
+        {
+            get
+            {
+                string name = Prestige.Value > 0 ? $"P{Prestige.Value} {DisplayName}" : DisplayName;
+                return string.IsNullOrEmpty(TitleName) ? name : $"{name} [{TitleName}]";
+            }
+        }
+
+        /// <summary>XP still needed for the next level (0 at the level cap).</summary>
+        public long XpToNextLevel => Shop == null || Level >= Shop.maxLevel ? 0 : Shop.XpToNext(Level) - Shop.XpIntoLevel(TotalXp);
+        /// <summary>How far through the current level, 0-1 (1 at the level cap).</summary>
+        public float LevelProgress => Shop == null || Level >= Shop.maxLevel ? 1f : (float)Shop.XpIntoLevel(TotalXp) / Shop.XpToNext(Level);
 
         /// <summary>The camo colour of the gun in a slot, or null for the gun's own colours.</summary>
         public Color? CamoColorFor(int slot)
@@ -91,7 +107,9 @@ namespace ZombiesFPS.Net
             Att1.OnValueChanged += OnAtt1Changed;
             _savedXp = Shop != null && Shop.saveBetweenRuns ? ProfileSave.LoadXp() : 0;
             ProfileXp.Value = _savedXp;
+            Prestige.Value = Shop != null && Shop.saveBetweenRuns ? Mathf.Min(ProfileSave.LoadPrestige(), Shop.MaxPrestige) : 0;
             _lastLevel = Level;
+            if (Shop != null && Shop.saveBetweenRuns) ProfileSave.SaveBestLevel(_lastLevel);
             PublishCosmetics();
         }
 
@@ -99,12 +117,12 @@ namespace ZombiesFPS.Net
         void PublishCosmetics()
         {
             if (Shop == null) return;
-            int level = Level;
+            int level = Mathf.Max(Level, Shop.saveBetweenRuns ? ProfileSave.LoadBestLevel() : 1);
             ulong picks = 0;
             for (int gun = 0; gun < ShopData.MaxCamoGuns; gun++)
             {
                 int camo = ShopData.CamoOf(LocalCamoPicks, gun);
-                if (Shop.IsCamoUnlocked(camo, level)) picks = ShopData.WithCamo(picks, gun, camo);
+                if (Shop.IsCamoUnlocked(camo, level, Prestige.Value)) picks = ShopData.WithCamo(picks, gun, camo);
             }
             CamoPicks.Value = picks;
             TitleId.Value = Shop.IsTitleUnlocked(LocalTitle, level) ? LocalTitle : 0;
@@ -130,6 +148,7 @@ namespace ZombiesFPS.Net
             }
             if (persist) ProfileSave.SaveXp(_savedXp + current);
             int level = Level;
+            if (persist) ProfileSave.SaveBestLevel(level);
             if (_lastLevel >= 0 && level > _lastLevel)
             {
                 LevelUpLevel = level;

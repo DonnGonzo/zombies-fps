@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23b00a274eff448d8ffa6940bccb2af3, type: 3}
+  m_Name: Gun_Vanta50
+  m_EditorClassIdentifier: 
+  displayName: Vanta .50 Sniper
+  damage: 650
+  headshotMultiplier: 4
+  range: 200
+  automatic: 0
+  roundsPerMinute: 45
+  pellets: 1
+  pelletSpread: 0
+  pierce: 3
+  explosiveRounds: 0
+  magazineSize: 5
+  startingReserve: 30
+  maxReserve: 45
+  reloadTime: 3.2
+  emptyReloadTime: 3.8
+  hipSpread: 4
+  aimSpread: 0
+  movingSpread: 3
+  bloomPerShot: 2
+  maxBloom: 3
+  recoilPitch: 4
+  recoilYaw: 0.6
+  aimRecoilScale: 0.6
+  aimFov: 22
+  aimTime: 0.3
+  raiseTime: 0.7
+  modelLength: 1.5
+  accent: {r: 0.15, g: 0.2, b: 0.18, a: 1}

@@ -23,6 +23,9 @@ namespace ZombiesFPS.Player
         float _shake;
         Quaternion _cameraBaseRotation = Quaternion.identity;
 
+        /// <summary>A left click on the game view locks the cursor again. The pause menu turns this off while the mouse is over it.</summary>
+        public static bool ClickToResume = true;
+
         public bool InputLocked { get; set; }
         public bool CursorLocked => Cursor.lockState == CursorLockMode.Locked;
         /// <summary>True on the frame the click that locked the cursor happened, so that click doesn't also fire.</summary>
@@ -60,6 +63,7 @@ namespace ZombiesFPS.Player
 
         public void AddShake(float amount)
         {
+            if (GameSettings.ReduceShake) amount *= 0.2f;
             _shake = Mathf.Min(_shake + amount, 1.5f);
         }
 
@@ -67,7 +71,7 @@ namespace ZombiesFPS.Player
         {
             LockedThisFrame = false;
             if (GameInput.PausePressed) SetCursorLocked(false);
-            else if (!CursorLocked && !InputLocked && GameInput.FirePressed)
+            else if (!CursorLocked && !InputLocked && ClickToResume && GameInput.KeyDown(KeyCode.Mouse0))
             {
                 SetCursorLocked(true);
                 LockedThisFrame = true;

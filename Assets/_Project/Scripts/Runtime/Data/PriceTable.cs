@@ -30,6 +30,11 @@ namespace ZombiesFPS.Data
         [Tooltip("Guns on the walls, in the map's wall-buy order (see ZoneMap.WallBuys). A gun can appear twice.")]
         public List<WallGun> wallGuns = new List<WallGun>();
 
+        [Tooltip("Guns that aren't on any wall, only given as rewards (the Ion Lance from missions).")]
+        public List<GunData> rareGuns = new List<GunData>();
+
+        public GunData RareGun(int index) => rareGuns != null && index >= 0 && index < rareGuns.Count ? rareGuns[index] : null;
+
         public long DoorCost(int door)
         {
             if (doorCosts == null || doorCosts.Length == 0) return 1000;
@@ -59,6 +64,9 @@ namespace ZombiesFPS.Data
             if (wallGuns != null)
                 foreach (var entry in wallGuns)
                     if (entry != null && entry.gun != null && !list.Contains(entry.gun)) list.Add(entry.gun);
+            if (rareGuns != null)
+                foreach (var gun in rareGuns)
+                    if (gun != null && !list.Contains(gun)) list.Add(gun);
             return list.ToArray();
         }
 
@@ -74,8 +82,37 @@ namespace ZombiesFPS.Data
                 new WallGun { gun = MakeGun("Brennan DMR", 120, 2.5f, false, 300f, 15, 75, 105, 2.4f, 3.0f, 0.06f, 1.2f, 0.5f, 1.25f, new Color(0.3f, 0.33f, 0.24f)), price = 1500, ammoPrice = 750 },
                 new WallGun { gun = starter, price = 500, ammoPrice = 250 },
                 new WallGun { gun = MakeGun("Talon LMG", 55, 2f, true, 600f, 100, 300, 400, 4.5f, 5.5f, 0.3f, 0.7f, 0.25f, 1.35f, new Color(0.2f, 0.2f, 0.2f)), price = 2500, ammoPrice = 1250 },
+                new WallGun { gun = Shotgun(MakeGun("Mauler 12 Shotgun", 55, 1.6f, false, 80f, 6, 36, 54, 3.0f, 3.4f, 0.8f, 3.4f, 0.9f, 1.05f, new Color(0.45f, 0.3f, 0.18f))), price = 1250, ammoPrice = 600 },
+                new WallGun { gun = MakeGun("Kestrel AR", 70, 2.3f, true, 720f, 30, 210, 300, 2.1f, 2.6f, 0.1f, 0.75f, 0.3f, 1.1f, new Color(0.55f, 0.5f, 0.35f)), price = 2000, ammoPrice = 1000 },
+                new WallGun { gun = Sniper(MakeGun("Vanta .50 Sniper", 650, 4f, false, 45f, 5, 30, 45, 3.2f, 3.8f, 0f, 4f, 0.6f, 1.5f, new Color(0.15f, 0.2f, 0.18f))), price = 2250, ammoPrice = 1100 },
             };
+            var lance = MakeGun("Ion Lance", 260, 2f, true, 480f, 40, 200, 320, 2.4f, 2.8f, 0.15f, 0.5f, 0.2f, 1.25f, new Color(0.3f, 0.9f, 1f));
+            lance.pierce = 2;
+            lance.explosiveRounds = true;
+            table.rareGuns = new List<GunData> { lance };
             return table;
+        }
+
+        static GunData Shotgun(GunData gun)
+        {
+            gun.pellets = 8;
+            gun.pelletSpread = 4.5f;
+            gun.range = 40f;
+            gun.hipSpread = 1.2f;
+            gun.aimFov = 60f;
+            return gun;
+        }
+
+        static GunData Sniper(GunData gun)
+        {
+            gun.pierce = 3;
+            gun.range = 200f;
+            gun.hipSpread = 4f;
+            gun.movingSpread = 3f;
+            gun.bloomPerShot = 2f;
+            gun.aimFov = 22f;
+            gun.aimTime = 0.3f;
+            return gun;
         }
 
         static GunData MakeGun(string name, long damage, float headshot, bool automatic, float rpm, int magazine, int startingReserve,
