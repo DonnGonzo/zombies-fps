@@ -9,8 +9,8 @@ namespace ZombiesFPS.Weapons
 {
     /// <summary>
     /// Hitscan gun driven by GunData: fire rate, magazine + reserve, reload, aim down sights,
-    /// spread/bloom, recoil and hit feedback. In Phase 1 the raycast moves to the host and the
-    /// client keeps the effects (predict, then confirm).
+    /// spread/bloom and recoil. The local raycast only drives effects; the shot itself goes to
+    /// the host through <see cref="Fired"/>, and the host's verdict comes back via <see cref="ConfirmHit"/>.
     /// </summary>
     public class HitscanGun : MonoBehaviour
     {
@@ -20,7 +20,7 @@ namespace ZombiesFPS.Weapons
         Camera _camera;
         PlayerLook _look;
         PlayerMotor _motor;
-        PlayerHealth _health;
+        Func<bool> _canShoot;
         AudioSource _audio;
         AudioSource _uiAudio;
         WeaponView _view;
@@ -41,16 +41,19 @@ namespace ZombiesFPS.Weapons
         public float CurrentSpread { get; private set; }
         public float LastShotTime { get; private set; } = -100f;
 
-        /// <summary>Raised when a shot hits something damageable: (result, headshot).</summary>
-        public event Action<DamageResult, bool> Hit;
+        /// <summary>Raised when the host confirms a hit: (killed, headshot).</summary>
+        public event Action<bool, bool> Hit;
 
-        public void Init(GunData data, Camera cam, PlayerLook look, PlayerMotor motor, PlayerHealth health, AudioSource gunAudio, AudioSource uiAudio, WeaponView view)
+        /// <summary>Raised on every shot with (origin, direction) so the host can resolve it.</summary>
+        public event Action<Vector3, Vector3> Fired;
+
+        public void Init(GunData data, Camera cam, PlayerLook look, PlayerMotor motor, Func<bool> canShoot, AudioSource gunAudio, AudioSource uiAudio, WeaponView view)
         {
             _data = data;
             _camera = cam;
             _look = look;
             _motor = motor;
-            _health = health;
+            _canShoot = canShoot;
             _audio = gunAudio;
             _uiAudio = uiAudio;
             _view = view;
@@ -63,7 +66,7 @@ namespace ZombiesFPS.Weapons
         {
             if (_data == null) return;
             float dt = Time.deltaTime;
-            bool canAct = _health.IsAlive && _look.CursorLocked && !_look.LockedThisFrame;
+            bool canAct = _canShoot() && _look.CursorLocked && !_look.LockedThisFrame;
 
             UpdateReload();
 
@@ -115,25 +118,16 @@ namespace ZombiesFPS.Weapons
             Vector3 dir = Quaternion.AngleAxis(offset.x, cam.up) * Quaternion.AngleAxis(offset.y, cam.right) * cam.forward;
 
             Vector3 end = cam.position + dir * _data.range;
+            // Local raycast is for effects only; damage is decided by the host.
             if (Physics.Raycast(cam.position, dir, out var hit, _data.range, ~0, QueryTriggerInteraction.Ignore))
             {
                 end = hit.point;
                 var hitbox = hit.collider.GetComponent<Hitbox>();
-                if (hitbox != null && hitbox.Owner != null && hitbox.Owner.IsAlive)
-                {
-                    float mult = hitbox.isHead ? _data.headshotMultiplier : hitbox.multiplier;
-                    long dmg = Math.Max(1L, (long)Math.Round(_data.damage * (double)mult));
-                    var result = hitbox.Owner.TakeDamage(new DamageInfo(dmg, hit.point, dir, hitbox.isHead));
-                    FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
-                    if (result.Killed) _uiAudio.PlayOneShot(hitbox.isHead ? ProceduralAudio.HeadshotTick : ProceduralAudio.KillTick, 0.9f);
-                    else _uiAudio.PlayOneShot(hitbox.isHead ? ProceduralAudio.HeadshotTick : ProceduralAudio.HitTick, 0.6f);
-                    Hit?.Invoke(result, hitbox.isHead);
-                }
-                else
-                {
-                    FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, 4, 2.5f, 0.05f);
-                }
+                bool flesh = hitbox != null && hitbox.Owner != null && hitbox.Owner.IsAlive;
+                if (flesh) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
+                else FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, 4, 2.5f, 0.05f);
             }
+            Fired?.Invoke(cam.position, dir);
 
             if (_view != null)
             {
@@ -176,6 +170,22 @@ namespace ZombiesFPS.Weapons
             Reserve -= take;
             IsReloading = false;
             _uiAudio.PlayOneShot(ProceduralAudio.MagIn, 0.8f);
+        }
+
+        /// <summary>Called when the host reports this player's shot hit a zombie.</summary>
+        public void ConfirmHit(bool killed, bool headshot)
+        {
+            if (killed) _uiAudio.PlayOneShot(headshot ? ProceduralAudio.HeadshotTick : ProceduralAudio.KillTick, 0.9f);
+            else _uiAudio.PlayOneShot(headshot ? ProceduralAudio.HeadshotTick : ProceduralAudio.HitTick, 0.6f);
+            Hit?.Invoke(killed, headshot);
+        }
+
+        /// <summary>Back to a full magazine and starting reserve (used on restart).</summary>
+        public void ResetAmmo()
+        {
+            Magazine = _data.magazineSize;
+            Reserve = _data.startingReserve;
+            IsReloading = false;
         }
 
         /// <summary>Wall-buy ammo refill hook for Phase 3.</summary>

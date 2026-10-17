@@ -65,6 +65,7 @@ namespace ZombiesFPS.Core
         public static bool AimHeld => (M != null && M.rightButton.isPressed) || (G != null && G.leftTrigger.isPressed);
         public static bool ReloadPressed => (K != null && K.rKey.wasPressedThisFrame) || (G != null && G.buttonWest.wasPressedThisFrame);
         public static bool PausePressed => (K != null && K.escapeKey.wasPressedThisFrame) || (G != null && G.startButton.wasPressedThisFrame);
+        public static bool InteractHeld => (K != null && K.eKey.isPressed) || (G != null && G.buttonNorth.isPressed);
 
         public static bool DebugPressed(DebugKey key)
         {
@@ -95,6 +96,7 @@ namespace ZombiesFPS.Core
         public static bool AimHeld => Input.GetMouseButton(1);
         public static bool ReloadPressed => Input.GetKeyDown(KeyCode.R);
         public static bool PausePressed => Input.GetKeyDown(KeyCode.Escape);
+        public static bool InteractHeld => Input.GetKey(KeyCode.E);
 
         public static bool DebugPressed(DebugKey key)
         {

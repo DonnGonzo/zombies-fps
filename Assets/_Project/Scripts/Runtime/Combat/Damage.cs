@@ -9,9 +9,12 @@ namespace ZombiesFPS.Combat
         public readonly Vector3 Point;
         public readonly Vector3 Direction;
         public readonly bool IsHeadshot;
+        /// <summary>Network client id of the player who dealt the damage.</summary>
+        public readonly ulong AttackerId;
 
-        public DamageInfo(long amount, Vector3 point, Vector3 direction, bool isHeadshot)
+        public DamageInfo(long amount, Vector3 point, Vector3 direction, bool isHeadshot, ulong attackerId = 0)
         {
+            AttackerId = attackerId;
             Amount = amount;
             Point = point;
             Direction = direction;

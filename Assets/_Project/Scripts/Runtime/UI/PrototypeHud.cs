@@ -1,35 +1,29 @@
 using UnityEngine;
-using ZombiesFPS.Combat;
 using ZombiesFPS.Core;
-using ZombiesFPS.Player;
+using ZombiesFPS.Net;
 using ZombiesFPS.Weapons;
-using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.UI
 {
     /// <summary>
-    /// Throwaway immediate-mode HUD for the prototype: crosshair, hitmarkers, ammo, health,
-    /// damage vignette, stats and debug help. The real HUD is built in UI Toolkit in Phase 7.
+    /// Throwaway immediate-mode HUD for the prototype: crosshair, hitmarkers, ammo, health, squad list,
+    /// name tags, revive prompts, downed/game-over screens and debug help. The real HUD is UI Toolkit later.
     /// </summary>
     public class PrototypeHud : MonoBehaviour
     {
+        NetPlayer _player;
         HitscanGun _gun;
-        PlayerHealth _health;
-        ZombieSpawner _spawner;
-        PlayerLook _look;
 
         Texture2D _white;
-        GUIStyle _label, _big, _small;
+        GUIStyle _label, _big, _small, _center, _button;
         float _hitTime = -100f;
         bool _hitKilled, _hitHead;
         bool _showHelp = true;
 
-        public void Init(HitscanGun gun, PlayerHealth health, ZombieSpawner spawner, PlayerLook look)
+        public void Init(NetPlayer player)
         {
-            _gun = gun;
-            _health = health;
-            _spawner = spawner;
-            _look = look;
+            _player = player;
+            _gun = player.Gun;
             _gun.Hit += OnHit;
         }
 
@@ -38,15 +32,20 @@ namespace ZombiesFPS.UI
             if (_gun != null) _gun.Hit -= OnHit;
         }
 
-        void OnHit(DamageResult result, bool headshot)
+        void OnHit(bool killed, bool headshot)
         {
             _hitTime = Time.time;
-            _hitKilled = result.Killed;
+            _hitKilled = killed;
             _hitHead = headshot;
         }
 
         void Update()
         {
+            if (_player == null)
+            {
+                Destroy(gameObject);
+                return;
+            }
             if (GameInput.DebugPressed(DebugKey.ToggleHelp)) _showHelp = !_showHelp;
         }
 
@@ -60,13 +59,13 @@ namespace ZombiesFPS.UI
             }
             float scale = Screen.height / 1080f;
             int size = Mathf.Max(12, Mathf.RoundToInt(24 * scale));
-            if (_label == null || _label.fontSize != size)
-            {
-                _label = new GUIStyle(GUI.skin.label) { fontSize = size, fontStyle = FontStyle.Bold };
-                _label.normal.textColor = Color.white;
-                _big = new GUIStyle(_label) { fontSize = Mathf.RoundToInt(size * 2.4f), alignment = TextAnchor.MiddleCenter };
-                _small = new GUIStyle(_label) { fontSize = Mathf.RoundToInt(size * 0.75f), fontStyle = FontStyle.Normal };
-            }
+            if (_label != null && _label.fontSize == size) return;
+            _label = new GUIStyle(GUI.skin.label) { fontSize = size, fontStyle = FontStyle.Bold };
+            _label.normal.textColor = Color.white;
+            _big = new GUIStyle(_label) { fontSize = Mathf.RoundToInt(size * 2.4f), alignment = TextAnchor.MiddleCenter };
+            _small = new GUIStyle(_label) { fontSize = Mathf.RoundToInt(size * 0.75f), fontStyle = FontStyle.Normal };
+            _center = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
+            _button = new GUIStyle(GUI.skin.button) { fontSize = size, fixedHeight = 48 * scale };
         }
 
         void Fill(float x, float y, float w, float h, Color c)
@@ -88,81 +87,177 @@ namespace ZombiesFPS.UI
 
         void OnGUI()
         {
-            if (_gun == null || _health == null) return;
+            if (_player == null || _gun == null) return;
             EnsureStyles();
             float w = Screen.width, h = Screen.height, u = h / 1080f;
+            var director = GameDirector.Instance;
+            var state = _player.State.Value;
 
+            DrawNameTags(u);
             DrawDamageVignette(w, h);
 
-            if (!_health.IsAlive)
+            if (director != null && director.GameOver.Value)
             {
-                Fill(0, 0, w, h, new Color(0.15f, 0f, 0f, 0.55f));
-                Shadowed(new Rect(0, h * 0.35f, w, 120 * u), "YOU DIED", _big);
-                var center = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
-                Shadowed(new Rect(0, h * 0.35f + 120 * u, w, 40 * u),
-                    $"Kills {_spawner.Kills}   Headshots {_spawner.Headshots}   Points {_spawner.Points:N0}", center);
-                Shadowed(new Rect(0, h * 0.35f + 170 * u, w, 40 * u), "Press Enter to restart", center);
+                DrawGameOver(w, h, u);
+                DrawLeaveButton(w, h, u, alwaysShow: true);
                 return;
             }
 
-            DrawCrosshair(w, h, u);
-            DrawHitmarker(w, h, u);
-
-            // Ammo, bottom right.
-            var right = new GUIStyle(_label) { alignment = TextAnchor.LowerRight };
-            var bigRight = new GUIStyle(_big) { alignment = TextAnchor.LowerRight };
-            Color ammoColor = _gun.Magazine == 0 ? new Color(1f, 0.3f, 0.25f) : _gun.Magazine <= _gun.Data.magazineSize / 4 ? new Color(1f, 0.8f, 0.3f) : Color.white;
-            var oldAmmoColor = bigRight.normal.textColor;
-            bigRight.normal.textColor = ammoColor;
-            Shadowed(new Rect(w - 420 * u, h - 140 * u, 260 * u, 90 * u), _gun.Magazine.ToString(), bigRight);
-            bigRight.normal.textColor = oldAmmoColor;
-            Shadowed(new Rect(w - 160 * u, h - 112 * u, 120 * u, 50 * u), "/ " + _gun.Reserve, right);
-            Shadowed(new Rect(w - 520 * u, h - 52 * u, 480 * u, 40 * u), _gun.Data.displayName, right);
-            if (_gun.IsReloading)
+            if (state == LifeState.Alive)
             {
-                float bw = 160 * u;
-                Fill(w / 2 - bw / 2, h * 0.58f, bw, 6 * u, new Color(0f, 0f, 0f, 0.5f));
-                Fill(w / 2 - bw / 2, h * 0.58f, bw * _gun.ReloadProgress, 6 * u, Color.white);
-                var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
-                Shadowed(new Rect(0, h * 0.58f + 8 * u, w, 30 * u), "RELOADING", c);
+                DrawCrosshair(w, h, u);
+                DrawHitmarker(w, h, u);
+                DrawAmmo(w, h, u);
+                DrawRevivePrompt(w, h, u);
             }
-            else if (_gun.Magazine == 0 && _gun.Reserve == 0)
+            else if (state == LifeState.Downed)
             {
-                var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
-                Shadowed(new Rect(0, h * 0.58f, w, 30 * u), "NO AMMO", c);
+                Fill(0, 0, w, h, new Color(0.25f, 0f, 0f, 0.35f));
+                Shadowed(new Rect(0, h * 0.3f, w, 100 * u), "DOWNED", _big);
+                Shadowed(new Rect(0, h * 0.3f + 100 * u, w, 40 * u),
+                    $"Bleeding out in {Mathf.CeilToInt(_player.BleedOutRemaining.Value)}s. A teammate can revive you.", _center);
+                DrawProgress(w, h * 0.3f + 150 * u, u, _player.ReviveProgress.Value, "BEING REVIVED");
             }
-            else if (_gun.Magazine <= _gun.Data.magazineSize / 4)
+            else
             {
-                var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
-                Shadowed(new Rect(0, h * 0.58f, w, 30 * u), "R  RELOAD", c);
+                Fill(0, 0, w, h, new Color(0f, 0f, 0f, 0.4f));
+                Shadowed(new Rect(0, h * 0.3f, w, 100 * u), "BLED OUT", _big);
+                Shadowed(new Rect(0, h * 0.3f + 100 * u, w, 40 * u), "You're out until the next game. Your squad fights on.", _center);
             }
 
-            // Health, bottom left.
-            float hbw = 320 * u, hbh = 14 * u, hx = 40 * u, hy = h - 60 * u;
-            Fill(hx - 2, hy - 2, hbw + 4, hbh + 4, new Color(0f, 0f, 0f, 0.5f));
-            Color hc = Color.Lerp(new Color(0.9f, 0.15f, 0.1f), new Color(0.85f, 0.85f, 0.85f), _health.Normalized);
-            Fill(hx, hy, hbw * _health.Normalized, hbh, hc);
-            Shadowed(new Rect(hx, hy - 40 * u, hbw, 36 * u), Mathf.CeilToInt(_health.Health).ToString(), _label);
-
-            // Stats, top left.
-            Shadowed(new Rect(40 * u, 30 * u, 600 * u, 40 * u), $"{_spawner.Points:N0} pts", _label);
-            Shadowed(new Rect(40 * u, 66 * u, 600 * u, 30 * u), $"Kills {_spawner.Kills}   Headshots {_spawner.Headshots}", _small);
-            Shadowed(new Rect(40 * u, 94 * u, 900 * u, 30 * u),
-                $"Test round {_spawner.TestRound}  ·  zombie HP {_spawner.CurrentZombieHealth:N0}  ·  {_spawner.CurrentSpeedTier}  ·  alive {_spawner.Alive}/{_spawner.TargetAlive}",
-                _small);
+            DrawHealth(h, u);
+            DrawStats(u, director);
+            DrawSquad(w, u);
 
             if (_showHelp)
             {
                 var r = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
+                string host = director != null && director.IsServer ? "\n[ / ]  fewer / more zombies\n- / =  test round down / up" : "";
                 Shadowed(new Rect(w - 640 * u, 30 * u, 600 * u, 260 * u),
-                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload\n[ / ]  fewer / more zombies\n- / =  test round down / up\nEsc free mouse · H hide help",
+                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · hold E revive" + host + "\nEsc menu · H hide help",
                     r);
             }
 
-            if (!_look.CursorLocked)
+            if (!_player.Look.CursorLocked)
             {
                 Fill(0, 0, w, h, new Color(0f, 0f, 0f, 0.45f));
-                Shadowed(new Rect(0, h * 0.42f, w, 80 * u), "CLICK TO PLAY", _big);
+                Shadowed(new Rect(0, h * 0.38f, w, 80 * u), "CLICK TO PLAY", _big);
+                DrawLeaveButton(w, h, u, alwaysShow: false);
+            }
+        }
+
+        void DrawLeaveButton(float w, float h, float u, bool alwaysShow)
+        {
+            if (!alwaysShow && _player.Look.CursorLocked) return;
+            bool hosting = GameDirector.Instance != null && GameDirector.Instance.IsServer;
+            float bw = 320 * u;
+            if (GUI.Button(new Rect((w - bw) / 2f, h * 0.62f, bw, 48 * u), hosting ? "End game for everyone" : "Leave game", _button))
+                PrototypeBootstrap.ReturnToMenu(hosting ? "You ended the game." : "You left the game.");
+        }
+
+        void DrawGameOver(float w, float h, float u)
+        {
+            Fill(0, 0, w, h, new Color(0.15f, 0f, 0f, 0.6f));
+            Shadowed(new Rect(0, h * 0.25f, w, 120 * u), "GAME OVER", _big);
+            float y = h * 0.25f + 130 * u;
+            foreach (var p in NetPlayer.All)
+            {
+                Shadowed(new Rect(0, y, w, 36 * u), $"{p.DisplayName}   ·   {p.Points.Value:N0} pts   ·   {p.Kills.Value} kills   ·   {p.Headshots.Value} headshots", _center);
+                y += 38 * u;
+            }
+            bool hosting = GameDirector.Instance != null && GameDirector.Instance.IsServer;
+            Shadowed(new Rect(0, y + 20 * u, w, 40 * u), hosting ? "Press Enter to restart" : "Waiting for the host to restart", _center);
+            PlayerLookUnlock();
+        }
+
+        static void PlayerLookUnlock()
+        {
+            if (Cursor.lockState != CursorLockMode.None) ZombiesFPS.Player.PlayerLook.SetCursorLocked(false);
+        }
+
+        void DrawAmmo(float w, float h, float u)
+        {
+            var right = new GUIStyle(_label) { alignment = TextAnchor.LowerRight };
+            var bigRight = new GUIStyle(_big) { alignment = TextAnchor.LowerRight };
+            int quarter = _gun.Data.magazineSize / 4;
+            bigRight.normal.textColor = _gun.Magazine == 0 ? new Color(1f, 0.3f, 0.25f) : _gun.Magazine <= quarter ? new Color(1f, 0.8f, 0.3f) : Color.white;
+            Shadowed(new Rect(w - 420 * u, h - 140 * u, 260 * u, 90 * u), _gun.Magazine.ToString(), bigRight);
+            Shadowed(new Rect(w - 160 * u, h - 112 * u, 120 * u, 50 * u), "/ " + _gun.Reserve, right);
+            Shadowed(new Rect(w - 520 * u, h - 52 * u, 480 * u, 40 * u), _gun.Data.displayName, right);
+
+            var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
+            if (_gun.IsReloading) DrawProgress(w, h * 0.58f, u, _gun.ReloadProgress, "RELOADING");
+            else if (_gun.Magazine == 0 && _gun.Reserve == 0) Shadowed(new Rect(0, h * 0.58f, w, 30 * u), "NO AMMO", c);
+            else if (_gun.Magazine <= quarter) Shadowed(new Rect(0, h * 0.58f, w, 30 * u), "R  RELOAD", c);
+        }
+
+        void DrawProgress(float w, float y, float u, float progress, string label)
+        {
+            float bw = 220 * u;
+            Fill(w / 2 - bw / 2, y, bw, 6 * u, new Color(0f, 0f, 0f, 0.5f));
+            Fill(w / 2 - bw / 2, y, bw * Mathf.Clamp01(progress), 6 * u, Color.white);
+            var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
+            Shadowed(new Rect(0, y + 8 * u, w, 30 * u), label, c);
+        }
+
+        void DrawRevivePrompt(float w, float h, float u)
+        {
+            var target = _player.FindReviveTarget(_player.transform.position);
+            if (target == null) return;
+            var c = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
+            Shadowed(new Rect(0, h * 0.64f, w, 36 * u), $"Hold E to revive {target.DisplayName}", c);
+            if (target.ReviveProgress.Value > 0f) DrawProgress(w, h * 0.64f + 40 * u, u, target.ReviveProgress.Value, "REVIVING");
+        }
+
+        void DrawHealth(float h, float u)
+        {
+            float hbw = 320 * u, hbh = 14 * u, hx = 40 * u, hy = h - 60 * u;
+            float n = _player.Health.Value / NetPlayer.MaxHealth;
+            Fill(hx - 2, hy - 2, hbw + 4, hbh + 4, new Color(0f, 0f, 0f, 0.5f));
+            Fill(hx, hy, hbw * n, hbh, Color.Lerp(new Color(0.9f, 0.15f, 0.1f), new Color(0.85f, 0.85f, 0.85f), n));
+            Shadowed(new Rect(hx, hy - 40 * u, hbw, 36 * u), Mathf.CeilToInt(_player.Health.Value).ToString(), _label);
+        }
+
+        void DrawStats(float u, GameDirector director)
+        {
+            Shadowed(new Rect(40 * u, 30 * u, 600 * u, 40 * u), $"{_player.Points.Value:N0} pts", _label);
+            Shadowed(new Rect(40 * u, 66 * u, 600 * u, 30 * u), $"Kills {_player.Kills.Value}   Headshots {_player.Headshots.Value}", _small);
+            if (director != null)
+                Shadowed(new Rect(40 * u, 94 * u, 900 * u, 30 * u),
+                    $"Test round {director.TestRound.Value}  ·  zombie HP {director.CurrentZombieHealth:N0}  ·  {director.CurrentSpeedTier}  ·  alive {director.AliveZombies.Value}/{director.TargetAlive.Value}",
+                    _small);
+        }
+
+        void DrawSquad(float w, float u)
+        {
+            float y = 140 * u;
+            foreach (var p in NetPlayer.All)
+            {
+                if (p == _player) continue;
+                string status = p.State.Value == LifeState.Alive ? $"{Mathf.CeilToInt(p.Health.Value)} hp"
+                    : p.State.Value == LifeState.Downed ? $"DOWN {Mathf.CeilToInt(p.BleedOutRemaining.Value)}s" : "OUT";
+                var style = new GUIStyle(_small);
+                style.normal.textColor = p.State.Value == LifeState.Alive ? Color.white : new Color(1f, 0.4f, 0.3f);
+                Fill(40 * u, y + 6 * u, 10 * u, 10 * u, p.SuitColor);
+                Shadowed(new Rect(58 * u, y, 600 * u, 26 * u), $"{p.DisplayName}  ·  {status}  ·  {p.Points.Value:N0} pts", style);
+                y += 26 * u;
+            }
+        }
+
+        void DrawNameTags(float u)
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            foreach (var p in NetPlayer.All)
+            {
+                if (p == _player || p.State.Value == LifeState.Dead) continue;
+                Vector3 world = p.transform.position + Vector3.up * (p.State.Value == LifeState.Downed ? 0.9f : 2.1f);
+                Vector3 screen = cam.WorldToScreenPoint(world);
+                if (screen.z <= 0f) continue;
+                var style = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
+                style.normal.textColor = p.State.Value == LifeState.Downed ? new Color(1f, 0.4f, 0.3f) : Color.white;
+                string text = p.State.Value == LifeState.Downed ? $"{p.DisplayName} (DOWN)" : p.DisplayName;
+                Shadowed(new Rect(screen.x - 150 * u, Screen.height - screen.y - 14 * u, 300 * u, 28 * u), text, style);
             }
         }
 
@@ -174,8 +269,7 @@ namespace ZombiesFPS.UI
             // Gap tracks real spread: degrees to pixels at the current FOV.
             var cam = Camera.main;
             float fov = cam != null ? cam.fieldOfView : 75f;
-            float pxPerDeg = h / fov;
-            float gap = Mathf.Max(4f * u, _gun.CurrentSpread * pxPerDeg);
+            float gap = Mathf.Max(4f * u, _gun.CurrentSpread * (h / fov));
             float len = 10f * u, thick = Mathf.Max(2f, 2f * u);
             float cx = w / 2f, cy = h / 2f;
             var c = new Color(1f, 1f, 1f, 0.9f * alpha);
@@ -212,8 +306,8 @@ namespace ZombiesFPS.UI
 
         void DrawDamageVignette(float w, float h)
         {
-            float recent = Mathf.Clamp01(1f - (Time.time - _health.LastDamageTime) / 0.6f);
-            float low = Mathf.Clamp01(1f - _health.Normalized / 0.5f);
+            float recent = Mathf.Clamp01(1f - (Time.time - _player.LocalLastDamageTime) / 0.6f);
+            float low = _player.IsAlive ? Mathf.Clamp01(1f - _player.Health.Value / NetPlayer.MaxHealth / 0.5f) : 0f;
             float a = Mathf.Max(recent * 0.35f, low * 0.3f * (0.8f + 0.2f * Mathf.Sin(Time.time * 6f)));
             if (a <= 0.001f) return;
             float edge = h * 0.12f;
