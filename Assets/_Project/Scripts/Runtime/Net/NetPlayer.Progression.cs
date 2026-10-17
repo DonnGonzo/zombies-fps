@@ -27,10 +27,14 @@ namespace ZombiesFPS.Net
         public NetworkVariable<int> PowerOffer = new NetworkVariable<int>(-1);
         /// <summary>The machine window this player last upgraded in (-1 = never).</summary>
         public NetworkVariable<int> MachineWindowUsed = new NetworkVariable<int>(-1);
+        /// <summary>Offers waiting behind the pending one (several milestones can land at once when skipping rounds).</summary>
+        public NetworkVariable<int> QueuedOffers = new NetworkVariable<int>(0);
 
         readonly Collider[] _overlap = new Collider[64];
         readonly HashSet<NetZombie> _splashed = new HashSet<NetZombie>();
         readonly List<int> _draw = new List<int>();
+        /// <summary>Server only: whether each queued offer is empowered, oldest first.</summary>
+        readonly List<bool> _offerQueue = new List<bool>();
 
         /// <summary>Owner only: the power-up picked last and when, for the HUD banner.</summary>
         public string LastPickText { get; private set; }
@@ -167,12 +171,21 @@ namespace ZombiesFPS.Net
 
         // ---------------------------------------------------------------- server
 
-        /// <summary>Host only. Deals this player three power-ups to pick from. An unpicked earlier offer takes its first card.</summary>
+        /// <summary>Host only. Deals this player three power-ups to pick from, or queues the offer behind an unpicked one.</summary>
         public void ServerOfferPowerUps(bool empowered)
         {
             if (!IsServer || Upgrades == null || Upgrades.PowerUpCount == 0) return;
-            if (HasPowerUpOffer) ServerPick(0);
+            if (HasPowerUpOffer)
+            {
+                _offerQueue.Add(empowered);
+                QueuedOffers.Value = _offerQueue.Count;
+                return;
+            }
+            DealOffer(empowered);
+        }
 
+        void DealOffer(bool empowered)
+        {
             // Empowered offers come from what the player already owns, topped up with the rest.
             _draw.Clear();
             if (empowered)
@@ -210,7 +223,20 @@ namespace ZombiesFPS.Net
             if (id == NoPowerUp) id = OfferedPowerUp(0);
             int levels = OfferLevels;
             PowerOffer.Value = -1;
-            if (id == NoPowerUp || Upgrades.PowerUpAt(id) == null) return;
+            if (id != NoPowerUp && Upgrades.PowerUpAt(id) != null) ApplyPick(id, levels);
+
+            // The next queued offer comes straight up.
+            if (_offerQueue.Count > 0)
+            {
+                bool empowered = _offerQueue[0];
+                _offerQueue.RemoveAt(0);
+                QueuedOffers.Value = _offerQueue.Count;
+                DealOffer(empowered);
+            }
+        }
+
+        void ApplyPick(int id, int levels)
+        {
 
             float oldMax = MaxHealthNow;
             PowerLevels.Value = UpgradeData.WithLevel(PowerLevels.Value, id, PowerLevel(id) + levels);
@@ -239,6 +265,8 @@ namespace ZombiesFPS.Net
             PowerLevels.Value = 0;
             PowerOffer.Value = -1;
             MachineWindowUsed.Value = -1;
+            _offerQueue.Clear();
+            QueuedOffers.Value = 0;
         }
 
         /// <summary>Chain rounds: the hit jumps to the nearest other zombie in range.</summary>

@@ -196,9 +196,17 @@ namespace ZombiesFPS.Net
             }
         }
 
-        /// <summary>Test mode: clears the board and starts a later round straight away (no round bonus).</summary>
+        /// <summary>
+        /// Test mode: clears the board and starts a later round straight away (no round bonus). Power-ups from
+        /// the rounds skipped over still arrive, one offer per milestone, so jumping ahead plays like getting there.
+        /// </summary>
         void SkipToRound(int round)
         {
+            var upgrades = GameConfig.Upgrades;
+            int firstSkipped = Phase.Value == GamePhase.Intermission ? Round.Value + 1 : Round.Value;
+            if (upgrades != null)
+                for (int r = Mathf.Max(1, firstSkipped); r < round; r++)
+                    if (upgrades.IsPowerUpRound(r)) OfferPowerUps(upgrades.IsEmpoweredRound(r));
             ClearZombies();
             RespawnBledOutPlayers();
             StartRound(Mathf.Max(1, round));

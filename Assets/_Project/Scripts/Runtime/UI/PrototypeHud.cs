@@ -461,7 +461,8 @@ namespace ZombiesFPS.UI
 
             var head = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
             head.normal.textColor = empowered ? new Color(1f, 0.8f, 0.3f) : new Color(0.85f, 0.75f, 1f);
-            Shadowed(new Rect(0, y - 40 * u, w, 36 * u), empowered ? $"EMPOWERED: PICK A POWER-UP (+{levels} levels)" : "PICK A POWER-UP", head);
+            string more = _player.QueuedOffers.Value > 0 ? $"   ({_player.QueuedOffers.Value} more waiting)" : "";
+            Shadowed(new Rect(0, y - 40 * u, w, 36 * u), (empowered ? $"EMPOWERED: PICK A POWER-UP (+{levels} levels)" : "PICK A POWER-UP") + more, head);
 
             var title = new GUIStyle(_label) { alignment = TextAnchor.UpperCenter };
             var body = new GUIStyle(_small) { alignment = TextAnchor.UpperCenter, wordWrap = true };

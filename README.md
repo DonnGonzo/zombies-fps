@@ -15,7 +15,7 @@ A first-person greybox co-op zombie game for up to 4 players: Netcode for GameOb
 - Every 10th round a Warden boss joins the horde: 20x zombie health (+50% per extra player), armoured body, and a glowing weak point on its back that takes triple damage. Round 50 brings 2, round 100 brings 3, up to 4. Its health bar shows at the top of the screen, and killing it pays every player 500
 
 **Power-ups and the upgrade machine (Phase 4, part A)**
-- After every 5th round up to round 50 each player picks 1 of 3 power-ups with 1 / 2 / 3 (d-pad left / up / right). They stack: picking one again levels it up, with diminishing returns so stacking never runs away. An offer left unpicked takes its first card when the next one arrives
+- After every 5th round up to round 50 each player picks 1 of 3 power-ups with 1 / 2 / 3 (d-pad left / up / right). They stack: picking one again levels it up, with diminishing returns so stacking never runs away. Offers that pile up (left unpicked, or skipped over with the test keys) wait in a queue and come up one after another
   - Hollow Point (damage, up to +300%), Quick Hands (reload speed), Thick Skin (max health), Light Feet (move speed), Deadeye (headshot damage), Deep Pockets (magazine and reserve), Medic (revive speed), Bounty (kill points)
 - Every 25th round the offer is empowered: it is drawn from power-ups you already own and adds 2 levels
 - The upgrade machine (purple glow, in the Chapel) upgrades the gun in your hands: Mk II 5,000 (x2 damage, x1.5 ammo), Mk III 10,000 (x2.6, chain hits jump to a nearby zombie), Mk IV 15,000 (x3.3, chain plus explosive rounds). Each player can use it once every 5 rounds. An upgraded gun comes out full
