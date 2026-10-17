@@ -168,7 +168,12 @@ namespace ZombiesFPS.Net
         void CompleteRound()
         {
             long bonus = GameConfig.Round.RoundBonus(Round.Value);
-            foreach (var p in NetPlayer.All) p.Points.Value += bonus;
+            long xp = GameConfig.Shop != null ? GameConfig.Shop.XpForRound(Round.Value) : 0;
+            foreach (var p in NetPlayer.All)
+            {
+                p.Points.Value += bonus;
+                p.ServerAddXp(xp);
+            }
             RespawnBledOutPlayers();
             if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnRoundCompleted();
             var upgrades = GameConfig.Upgrades;

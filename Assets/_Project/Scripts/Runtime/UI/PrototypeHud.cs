@@ -33,6 +33,7 @@ namespace ZombiesFPS.UI
         long _pointsGain;
         float _pointsGainTime = -100f;
         float _lastPickTime = -100f;
+        float _lastLevelUpTime = -100f;
 
         public void Init(NetPlayer player)
         {
@@ -95,6 +96,12 @@ namespace ZombiesFPS.UI
 
         void WatchPowerUps()
         {
+            if (_player.LevelUpTime > _lastLevelUpTime)
+            {
+                _lastLevelUpTime = _player.LevelUpTime;
+                ShowBanner($"LEVEL {_player.LevelUpLevel}", UnlockLine(_player.LevelUpLevel));
+                if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundStart, 0.7f);
+            }
             if (_player.LastPickTime <= _lastPickTime) return;
             _lastPickTime = _player.LastPickTime;
             ShowBanner("POWER-UP", _player.LastPickText);
@@ -139,6 +146,16 @@ namespace ZombiesFPS.UI
                         _ => $"{type.displayName}s are coming.",
                     };
             return null;
+        }
+
+        static string UnlockLine(int level)
+        {
+            var shop = GameConfig.Shop;
+            if (shop == null) return null;
+            var names = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < shop.Count; i++)
+                if (shop.At(i).unlockLevel == level) names.Add(shop.At(i).name);
+            return names.Count > 0 ? "Unlocked in the spawn shop: " + string.Join(", ", names) : null;
         }
 
         void ShowBanner(string title, string sub)
@@ -343,6 +360,12 @@ namespace ZombiesFPS.UI
         {
             var b = _player.FocusedBuyable;
             if (b == null) return;
+            if (b.Kind == ZombiesFPS.World.BuyableKind.Shop)
+            {
+                if (_player.ShopOpen) DrawShop(w, h, u);
+                else Shadowed(new Rect(0, h * 0.64f, w, 36 * u), "Press E to browse the shop", new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter });
+                return;
+            }
             long price = _player.PriceFor(b, out string what);
             if (price < 0)
             {
@@ -384,7 +407,10 @@ namespace ZombiesFPS.UI
                 Shadowed(new Rect(40 * u + _label.CalcSize(new GUIContent($"{_player.Points.Value:N0} pts")).x + 16 * u, 30 * u - gainAge * 12 * u, 300 * u, 40 * u),
                     $"+{_pointsGain:N0}", gain);
             }
-            Shadowed(new Rect(40 * u, 66 * u, 600 * u, 30 * u), $"Kills {_player.Kills.Value}   Headshots {_player.Headshots.Value}", _small);
+            var shopData = GameConfig.Shop;
+            int level = _player.Level;
+            string xp = shopData != null && level < shopData.maxLevel ? $" ({shopData.XpIntoLevel(_player.TotalXp):N0}/{shopData.XpToNext(level):N0} XP)" : "";
+            Shadowed(new Rect(40 * u, 66 * u, 900 * u, 30 * u), $"Level {level}{xp}   Kills {_player.Kills.Value}   Headshots {_player.Headshots.Value}", _small);
             if (rounds != null && rounds.IsServer)
                 Shadowed(new Rect(40 * u, 94 * u, 900 * u, 30 * u),
                     $"Host: zombie HP {rounds.CurrentZombieHealth:N0}  ·  {rounds.CurrentSpeedTier}  ·  alive {rounds.AliveZombies.Value}/{rounds.LiveCap}" + (rounds.GodMode.Value ? "  ·  GOD MODE" : ""),
@@ -432,6 +458,39 @@ namespace ZombiesFPS.UI
             var sub = new GUIStyle(_center);
             sub.normal.textColor = new Color(1f, 1f, 1f, a);
             Shadowed(new Rect(0, h * 0.2f + 110 * u, w, 40 * u), _bannerSub, sub);
+        }
+
+        /// <summary>The spawn shop menu: attachments for the gun in hand, unlocked by level, bought with points.</summary>
+        void DrawShop(float w, float h, float u)
+        {
+            var shop = GameConfig.Shop;
+            if (shop == null) return;
+            float pw = 980 * u, rowH = 30 * u, ph = 96 * u + rowH * shop.Count;
+            float x = (w - pw) / 2f, y = h * 0.5f - ph / 2f + 40 * u;
+            Fill(x, y, pw, ph, new Color(0.04f, 0.06f, 0.08f, 0.88f));
+            Fill(x, y, pw, 4 * u, new Color(0.95f, 0.8f, 0.35f));
+            var title = new GUIStyle(_label) { alignment = TextAnchor.UpperLeft };
+            Shadowed(new Rect(x + 20 * u, y + 12 * u, pw, 34 * u), $"SPAWN SHOP  ·  {_player.GunName(_player.ActiveSlot.Value)}", title);
+            var sub = new GUIStyle(_small) { alignment = TextAnchor.UpperLeft };
+            sub.normal.textColor = new Color(1f, 1f, 1f, 0.7f);
+            Shadowed(new Rect(x + 20 * u, y + 46 * u, pw, 26 * u), $"Level {_player.Level}  ·  number key to buy  ·  Q switch gun  ·  E close", sub);
+            float ry = y + 80 * u;
+            var row = new GUIStyle(_small) { alignment = TextAnchor.UpperLeft };
+            var right = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
+            for (int i = 0; i < shop.Count; i++)
+            {
+                var a = shop.At(i);
+                var status = _player.StatusOf(i);
+                Color c = status == AttachmentStatus.Locked ? new Color(1f, 1f, 1f, 0.35f)
+                    : status == AttachmentStatus.Owned ? new Color(0.5f, 1f, 0.55f)
+                    : _player.Points.Value >= a.price ? Color.white : new Color(1f, 0.55f, 0.45f);
+                row.normal.textColor = c;
+                right.normal.textColor = c;
+                Shadowed(new Rect(x + 20 * u, ry, pw - 220 * u, rowH), $"{i + 1}  {a.name}  ({a.slot})  ·  {a.description}", row);
+                string state = status == AttachmentStatus.Locked ? $"Level {a.unlockLevel}" : status == AttachmentStatus.Owned ? "Fitted" : $"{a.price:N0}";
+                Shadowed(new Rect(x + pw - 220 * u, ry, 200 * u, rowH), state, right);
+                ry += rowH;
+            }
         }
 
         /// <summary>The current mission set, top right under the help text.</summary>
@@ -555,7 +614,7 @@ namespace ZombiesFPS.UI
                 var style = new GUIStyle(_small);
                 style.normal.textColor = p.State.Value == LifeState.Alive ? Color.white : new Color(1f, 0.4f, 0.3f);
                 Fill(40 * u, y + 6 * u, 10 * u, 10 * u, p.SuitColor);
-                Shadowed(new Rect(58 * u, y, 600 * u, 26 * u), $"{p.DisplayName}  ·  {status}  ·  {p.Points.Value:N0} pts", style);
+                Shadowed(new Rect(58 * u, y, 600 * u, 26 * u), $"{p.DisplayName} (Lv {p.Level})  ·  {status}  ·  {p.Points.Value:N0} pts", style);
                 y += 26 * u;
             }
         }

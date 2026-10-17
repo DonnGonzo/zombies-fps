@@ -214,6 +214,7 @@ namespace ZombiesFPS.Net
             foreach (var p in NetPlayer.All)
             {
                 p.Points.Value += points;
+                if (GameConfig.Shop != null) p.ServerAddXp(GameConfig.Shop.xpPerMission);
                 if (def.bonus == MissionBonus.MaxAmmo) p.ServerRefillAllAmmo();
                 else if (def.bonus == MissionBonus.PowerUpReroll) p.PowerRerolls.Value++;
             }

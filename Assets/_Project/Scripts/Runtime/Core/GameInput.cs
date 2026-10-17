@@ -78,6 +78,25 @@ namespace ZombiesFPS.Core
         /// <summary>The weapon slot picked with the number keys this frame (0 or 1), or -1.</summary>
         public static int SlotPressed => K == null ? -1 : K.digit1Key.wasPressedThisFrame ? 0 : K.digit2Key.wasPressedThisFrame ? 1 : -1;
 
+        /// <summary>A number key 1-9 pressed this frame as 0-8 (shop items), else -1.</summary>
+        public static int NumberPressed
+        {
+            get
+            {
+                if (K == null) return -1;
+                if (K.digit1Key.wasPressedThisFrame) return 0;
+                if (K.digit2Key.wasPressedThisFrame) return 1;
+                if (K.digit3Key.wasPressedThisFrame) return 2;
+                if (K.digit4Key.wasPressedThisFrame) return 3;
+                if (K.digit5Key.wasPressedThisFrame) return 4;
+                if (K.digit6Key.wasPressedThisFrame) return 5;
+                if (K.digit7Key.wasPressedThisFrame) return 6;
+                if (K.digit8Key.wasPressedThisFrame) return 7;
+                if (K.digit9Key.wasPressedThisFrame) return 8;
+                return -1;
+            }
+        }
+
         /// <summary>Redraw the power-up cards with a reroll: 4 or d-pad down.</summary>
         public static bool RerollPressed => (K != null && K.digit4Key.wasPressedThisFrame) || (G != null && G.dpad.down.wasPressedThisFrame);
 
@@ -139,6 +158,16 @@ namespace ZombiesFPS.Core
         public static int SlotPressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : -1;
 
         public static bool RerollPressed => Input.GetKeyDown(KeyCode.Alpha4);
+
+        public static int NumberPressed
+        {
+            get
+            {
+                for (int i = 0; i < 9; i++)
+                    if (Input.GetKeyDown(KeyCode.Alpha1 + i)) return i;
+                return -1;
+            }
+        }
 
         public static int ChoicePressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : Input.GetKeyDown(KeyCode.Alpha3) ? 2 : -1;
 

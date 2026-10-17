@@ -1,0 +1,169 @@
+using Unity.Netcode;
+using UnityEngine;
+using ZombiesFPS.Core;
+using ZombiesFPS.Data;
+using ZombiesFPS.World;
+
+namespace ZombiesFPS.Net
+{
+    public enum AttachmentStatus
+    {
+        Locked,
+        ForSale,
+        Owned,
+    }
+
+    /// <summary>
+    /// XP, levels and the spawn shop for one player. The host awards XP during the run (RunXp); each player
+    /// saves their own total on their PC and publishes what they brought in (ProfileXp). Attachments are
+    /// bought per gun slot with in-run points and last until the gun is replaced or the run ends.
+    /// </summary>
+    public partial class NetPlayer
+    {
+        /// <summary>XP earned this run. Only the host changes it.</summary>
+        public NetworkVariable<long> RunXp = new NetworkVariable<long>(0);
+        /// <summary>XP the player brought from earlier runs, published by the owner from their save.</summary>
+        public NetworkVariable<long> ProfileXp = new NetworkVariable<long>(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        /// <summary>Attachments on the gun in each slot, a bit per ShopData attachment.</summary>
+        public NetworkVariable<int> Att0 = new NetworkVariable<int>(0);
+        public NetworkVariable<int> Att1 = new NetworkVariable<int>(0);
+
+        long _savedXp;
+        int _lastLevel = -1;
+
+        /// <summary>Owner only: the shop menu is open (number keys buy).</summary>
+        public bool ShopOpen { get; private set; }
+        /// <summary>Owner only: the level reached last and when, for the HUD banner.</summary>
+        public int LevelUpLevel { get; private set; }
+        public float LevelUpTime { get; private set; } = -100f;
+
+        static ShopData Shop => GameConfig.Shop;
+
+        public long TotalXp => ProfileXp.Value + RunXp.Value;
+        public int Level => Shop != null ? Shop.LevelFor(TotalXp) : 1;
+
+        public int AttachmentsInSlot(int slot) => slot == 0 ? Att0.Value : slot == 1 ? Att1.Value : 0;
+        NetworkVariable<int> AttVariable(int slot) => slot == 0 ? Att0 : Att1;
+
+        /// <summary>The gun in a slot with its attachments applied (null for an empty slot).</summary>
+        public GunData EffectiveGun(int slot)
+        {
+            var gun = GameConfig.GunById(GunInSlot(slot));
+            return Shop != null ? Shop.Apply(gun, AttachmentsInSlot(slot)) : gun;
+        }
+
+        /// <summary>Whether this player could buy an attachment for the gun in their hands right now.</summary>
+        public AttachmentStatus StatusOf(int id)
+        {
+            var a = Shop != null ? Shop.At(id) : null;
+            if (a == null || Level < a.unlockLevel) return AttachmentStatus.Locked;
+            return ShopData.Has(AttachmentsInSlot(ActiveSlot.Value), id) ? AttachmentStatus.Owned : AttachmentStatus.ForSale;
+        }
+
+        // ---------------------------------------------------------------- owner
+
+        void SubscribeShop()
+        {
+            RunXp.OnValueChanged += OnRunXpChanged;
+            Att0.OnValueChanged += OnAtt0Changed;
+            Att1.OnValueChanged += OnAtt1Changed;
+            _savedXp = Shop != null && Shop.saveBetweenRuns ? ProfileSave.LoadXp() : 0;
+            ProfileXp.Value = _savedXp;
+            _lastLevel = Level;
+        }
+
+        void UnsubscribeShop()
+        {
+            RunXp.OnValueChanged -= OnRunXpChanged;
+            Att0.OnValueChanged -= OnAtt0Changed;
+            Att1.OnValueChanged -= OnAtt1Changed;
+        }
+
+        void OnRunXpChanged(long previous, long current)
+        {
+            bool persist = Shop != null && Shop.saveBetweenRuns;
+            if (current < previous)
+            {
+                // A restart zeroes the run: bank what was earned (if levels carry over) and start counting again.
+                if (persist) _savedXp += previous;
+                ProfileXp.Value = _savedXp;
+                _lastLevel = Level;
+                return;
+            }
+            if (persist) ProfileSave.SaveXp(_savedXp + current);
+            int level = Level;
+            if (_lastLevel >= 0 && level > _lastLevel)
+            {
+                LevelUpLevel = level;
+                LevelUpTime = Time.time;
+            }
+            _lastLevel = level;
+        }
+
+        void OnAtt0Changed(int previous, int current) => OnAttachmentsChanged(0);
+        void OnAtt1Changed(int previous, int current) => OnAttachmentsChanged(1);
+
+        /// <summary>New attachments: put the gun back in hand with its new stats, keeping its ammo.</summary>
+        void OnAttachmentsChanged(int slot)
+        {
+            if (slot == ActiveSlot.Value && GunInSlot(slot) >= 0) EquipSlot(slot, saveCurrent: true);
+        }
+
+        /// <summary>Owner, every frame: opening and closing the shop, and buying from it with the number keys.</summary>
+        void OwnerShopTick(bool canAct, bool picking)
+        {
+            bool atShop = FocusedBuyable != null && FocusedBuyable.Kind == BuyableKind.Shop;
+            if (!canAct || !atShop)
+            {
+                ShopOpen = false;
+                return;
+            }
+            if (GameInput.InteractPressed) ShopOpen = !ShopOpen;
+            if (!ShopOpen || picking) return;
+            int choice = GameInput.NumberPressed;
+            if (choice >= 0 && Shop != null && choice < Shop.Count) BuyAttachmentRpc(choice);
+        }
+
+        // ---------------------------------------------------------------- server
+
+        /// <summary>Host only. XP for this run.</summary>
+        public void ServerAddXp(long xp)
+        {
+            if (IsServer && xp > 0) RunXp.Value += xp;
+        }
+
+        [Rpc(SendTo.Server)]
+        void BuyAttachmentRpc(int id)
+        {
+            var rounds = RoundManager.Instance;
+            var a = Shop != null ? Shop.At(id) : null;
+            if (a == null || State.Value != LifeState.Alive || (rounds != null && rounds.IsGameOver)) return;
+            if (!NearShop()) return;
+            int slot = ActiveSlot.Value;
+            if (GunInSlot(slot) < 0 || StatusOf(id) != AttachmentStatus.ForSale) return;
+            if (Points.Value < a.price)
+            {
+                PurchaseResultRpc(false);
+                return;
+            }
+            Points.Value -= a.price;
+            AttVariable(slot).Value = Shop.WithAttachment(AttachmentsInSlot(slot), id);
+            PurchaseResultRpc(true);
+        }
+
+        bool NearShop()
+        {
+            var map = GameConfig.Map;
+            if (map == null) return false;
+            foreach (var b in map.Buyables)
+            {
+                if (b.Kind != BuyableKind.Shop) continue;
+                Vector3 d = b.Position - transform.position;
+                d.y = 0f;
+                if (d.magnitude <= b.Range + 1f) return true;
+            }
+            return false;
+        }
+    }
+}

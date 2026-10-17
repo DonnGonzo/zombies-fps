@@ -156,7 +156,7 @@ namespace ZombiesFPS.Net
         /// <summary>A slot's saved ammo to a full magazine and full reserve at its current capacity.</summary>
         void FillSlot(int slot)
         {
-            var data = GameConfig.GunById(GunInSlot(slot));
+            var data = EffectiveGun(slot);
             if (data == null) return;
             float scale = CapacityScale(slot);
             _slotMagazine[slot] = HitscanGun.ScaledMagazine(data, scale);
@@ -279,6 +279,7 @@ namespace ZombiesFPS.Net
             _offerQueue.Clear();
             QueuedOffers.Value = 0;
             PowerRerolls.Value = 0;
+            RunXp.Value = 0;
         }
 
         /// <summary>Chain rounds: the hit jumps to the nearest other zombie in range.</summary>

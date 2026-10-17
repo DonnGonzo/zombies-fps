@@ -11,6 +11,7 @@ namespace ZombiesFPS.World
         Door,
         WallGun,
         UpgradeMachine,
+        Shop,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -59,6 +60,9 @@ namespace ZombiesFPS.World
         const float MachineRange = 2.2f;
         /// <summary>The upgrade machine stands at the far end of the Chapel, the zone furthest from the start.</summary>
         static readonly Vector3 MachinePosition = new Vector3(0f, 0f, 33.4f);
+        /// <summary>The spawn shop's counter in the Gate Yard, served from the east side.</summary>
+        static readonly Vector3 ShopPosition = new Vector3(8.6f, 0f, 3f);
+        const float ShopRange = 2.2f;
 
         public static readonly string[] ZoneNames = { "Gate Yard", "Depot", "Garage", "Chapel", "Barracks", "Courtyard" };
 
@@ -174,6 +178,7 @@ namespace ZombiesFPS.World
             BuildDressing();
             BuildLamps();
             BuildGenerators();
+            BuildShop();
 
             var surface = Root.gameObject.AddComponent<NavMeshSurface>();
             surface.collectObjects = CollectObjects.Children;
@@ -185,6 +190,7 @@ namespace ZombiesFPS.World
             BuildDoors(buyables);
             BuildWallBuys(prices, buyables);
             BuildUpgradeMachine(buyables);
+            buyables.Add(new Buyable { Kind = BuyableKind.Shop, Index = 0, Position = ShopPosition + new Vector3(-1.5f, 1f, 0f), Range = ShopRange });
             Buyables = buyables.ToArray();
 
             PlayerStart = new Vector3(0f, 0.05f, -4f);
@@ -392,6 +398,24 @@ namespace ZombiesFPS.World
                 Generators[i] = go.AddComponent<Generator>();
                 Generators[i].Init();
             }
+        }
+
+        /// <summary>A market stall: counter, posts and an awning. Built before the bake so zombies walk round it.</summary>
+        void BuildShop()
+        {
+            var shop = Greybox.Empty("Spawn Shop", Root, ShopPosition);
+            var awning = new Color(0.2f, 0.45f, 0.55f);
+            Greybox.Box("Counter", shop, new Vector3(0f, 0.55f, 0f), new Vector3(1f, 1.1f, 3f), new Color(0.38f, 0.28f, 0.18f));
+            Greybox.Box("CounterTop", shop, new Vector3(-0.05f, 1.13f, 0f), new Vector3(1.2f, 0.06f, 3.2f), new Color(0.5f, 0.4f, 0.28f), collider: false);
+            foreach (float z in new[] { -1.5f, 1.5f })
+                Greybox.Box("Post", shop, new Vector3(0.4f, 1.4f, z), new Vector3(0.12f, 2.8f, 0.12f), new Color(0.3f, 0.22f, 0.15f));
+            var roof = Greybox.Box("Awning", shop, new Vector3(-0.2f, 2.85f, 0f), new Vector3(1.8f, 0.08f, 3.4f), awning, collider: false);
+            roof.transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
+            Greybox.Prim(PrimitiveType.Cube, "Sign", shop, new Vector3(-0.56f, 2.35f, 0f), new Vector3(0.02f, 0.35f, 1.6f), new Color(0.95f, 0.8f, 0.35f), collider: false, unlit: true);
+            // A few greybox "attachments" on the counter.
+            Greybox.Box("Scope", shop, new Vector3(-0.1f, 1.22f, -0.8f), new Vector3(0.12f, 0.12f, 0.4f), new Color(0.15f, 0.15f, 0.15f), collider: false);
+            Greybox.Box("Mag", shop, new Vector3(-0.1f, 1.25f, 0f), new Vector3(0.1f, 0.2f, 0.12f), new Color(0.2f, 0.2f, 0.22f), collider: false);
+            Greybox.Box("Grip", shop, new Vector3(-0.1f, 1.22f, 0.7f), new Vector3(0.1f, 0.14f, 0.1f), new Color(0.25f, 0.2f, 0.15f), collider: false);
         }
 
         void BuildUpgradeMachine(List<Buyable> buyables)

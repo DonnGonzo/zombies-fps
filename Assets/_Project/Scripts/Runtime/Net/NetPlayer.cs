@@ -122,6 +122,7 @@ namespace ZombiesFPS.Net
                 Gun0.OnValueChanged += OnGun0Changed;
                 Gun1.OnValueChanged += OnGun1Changed;
                 SubscribeProgression();
+                SubscribeShop();
                 BuildLocalRig();
                 ApplyOwnerBonuses();
             }
@@ -139,6 +140,7 @@ namespace ZombiesFPS.Net
             Gun0.OnValueChanged -= OnGun0Changed;
             Gun1.OnValueChanged -= OnGun1Changed;
             UnsubscribeProgression();
+            if (IsOwner) UnsubscribeShop();
             if (Local == this) Local = null;
         }
 
@@ -270,14 +272,16 @@ namespace ZombiesFPS.Net
             }
             if (canAct)
             {
-                int want = picking ? -1 : GameInput.SlotPressed;
+                int want = picking || ShopOpen ? -1 : GameInput.SlotPressed;
                 if (GameInput.SwitchWeaponPressed) want = 1 - ActiveSlot.Value;
                 if (want >= 0 && want != ActiveSlot.Value && GunInSlot(want) >= 0) EquipSlot(want, saveCurrent: true);
             }
 
             bool nearDowned = FindReviveTarget(transform.position) != null;
             FocusedBuyable = canAct && !nearDowned ? FindBuyable() : null;
-            if (FocusedBuyable != null && GameInput.InteractPressed) BuyRpc(System.Array.IndexOf(GameConfig.Map.Buyables, FocusedBuyable));
+            OwnerShopTick(canAct, picking);
+            if (FocusedBuyable != null && FocusedBuyable.Kind != BuyableKind.Shop && GameInput.InteractPressed)
+                BuyRpc(System.Array.IndexOf(GameConfig.Map.Buyables, FocusedBuyable));
 
             bool reviveHeld = IsAlive && GameInput.InteractHeld && _look.CursorLocked;
             if (reviveHeld != _sentReviveHeld)
@@ -328,7 +332,7 @@ namespace ZombiesFPS.Net
                 _slotMagazine[ActiveSlot.Value] = _gun.Magazine;
                 _slotReserve[ActiveSlot.Value] = _gun.Reserve;
             }
-            var data = GameConfig.GunById(GunInSlot(slot));
+            var data = EffectiveGun(slot);
             if (data == null) return;
             ActiveSlot.Value = slot;
             var tier = GameConfig.Upgrades.Tier(TierInSlot(slot));
@@ -360,7 +364,7 @@ namespace ZombiesFPS.Net
         {
             for (int i = 0; i < SlotCount; i++)
             {
-                var data = GameConfig.GunById(GunInSlot(i));
+                var data = EffectiveGun(i);
                 float scale = CapacityScale(i);
                 _slotMagazine[i] = data != null ? HitscanGun.ScaledMagazine(data, scale) : 0;
                 _slotReserve[i] = data != null ? HitscanGun.ScaledReserve(data.startingReserve, scale) : 0;
@@ -407,6 +411,11 @@ namespace ZombiesFPS.Net
                 return GameConfig.Prices.DoorCost(b.Index);
             }
             if (b.Kind == BuyableKind.UpgradeMachine) return MachinePrice(out what);
+            if (b.Kind == BuyableKind.Shop)
+            {
+                what = "browse the shop";
+                return 0;
+            }
             var entry = GameConfig.Prices.WallGunAt(b.Index);
             if (entry == null || entry.gun == null) return -1;
             bool owned = SlotOf(GameConfig.GunId(entry.gun)) >= 0;
@@ -487,6 +496,8 @@ namespace ZombiesFPS.Net
             Gun1.Value = -1;
             Tier0.Value = 0;
             Tier1.Value = 0;
+            Att0.Value = 0;
+            Att1.Value = 0;
         }
 
         /// <summary>Host only. Brings a bled-out player back at the end of a round, keeping their points.</summary>
@@ -524,7 +535,7 @@ namespace ZombiesFPS.Net
         void ShootRpc(Vector3 origin, Vector3 direction)
         {
             if (State.Value != LifeState.Alive) return;
-            var gun = GameConfig.GunById(GunInSlot(ActiveSlot.Value)) ?? GameConfig.Gun;
+            var gun = EffectiveGun(ActiveSlot.Value) ?? GameConfig.Gun;
             // Co-op trust model: accept the client's aim, but keep the origin near the player.
             Vector3 eye = transform.position + Vector3.up * EyeHeight;
             if ((origin - eye).sqrMagnitude > 2f * 2f) origin = eye;
@@ -583,6 +594,7 @@ namespace ZombiesFPS.Net
             }
             long reward = headshot ? data.pointsPerHeadshotKill : data.pointsPerKill;
             Points.Value += (long)System.Math.Round(reward * (1.0 + Bonus(PowerStat.KillPoints)));
+            if (Shop != null) ServerAddXp(data.IsBoss ? Shop.xpPerBossKill : headshot ? Shop.xpPerHeadshotKill : Shop.xpPerKill);
             Kills.Value++;
             if (headshot) Headshots.Value++;
         }
@@ -651,6 +663,7 @@ namespace ZombiesFPS.Net
                 {
                     int slot = Gun1.Value < 0 ? 1 : Mathf.Clamp(ActiveSlot.Value, 0, SlotCount - 1);
                     TierVariable(slot).Value = 0;
+                    AttVariable(slot).Value = 0;
                     SlotVariable(slot).Value = gunId;
                 }
             }

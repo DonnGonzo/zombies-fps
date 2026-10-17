@@ -33,6 +33,7 @@ namespace ZombiesFPS.Editor
             boot.priceTable = AssetDatabase.LoadAssetAtPath<PriceTable>($"{DataFolder}/PriceTable.asset");
             boot.upgradeData = LoadOrCreate<UpgradeData>("UpgradeData");
             boot.missionData = LoadOrCreate<MissionData>("MissionData");
+            boot.shopData = LoadOrCreate<ShopData>("ShopData");
             var types = new System.Collections.Generic.List<ZombieData>();
             foreach (var name in new[] { "Zombie_Runner", "Zombie_Crawler", "Zombie_Brute", "Zombie_Spitter", "Zombie_Boss" })
             {
