@@ -19,9 +19,15 @@ namespace ZombiesFPS.Core
             if (s_Lit.TryGetValue(color, out var cached) && cached != null) return cached;
             if (s_DefaultLit == null)
             {
-                var probe = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                s_DefaultLit = probe.GetComponent<Renderer>().sharedMaterial;
-                Object.DestroyImmediate(probe);
+                // A real material asset in Resources makes builds include the Standard shader. Primitives'
+                // built-in default material alone doesn't, which renders everything magenta in a build.
+                s_DefaultLit = Resources.Load<Material>("Materials/GreyboxLit");
+                if (s_DefaultLit == null)
+                {
+                    var probe = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    s_DefaultLit = probe.GetComponent<Renderer>().sharedMaterial;
+                    Object.DestroyImmediate(probe);
+                }
             }
             var mat = new Material(s_DefaultLit) { name = "Greybox " + ColorUtility.ToHtmlStringRGB(color), color = color };
             s_Lit[color] = mat;
