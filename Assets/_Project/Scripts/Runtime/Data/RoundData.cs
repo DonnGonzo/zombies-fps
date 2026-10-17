@@ -48,10 +48,10 @@ namespace ZombiesFPS.Data
         public long healthPerRoundEarly = 100;
         public int linearUntilRound = 9;
         [Tooltip("Steep multiplicative growth per round until softCapRound.")]
-        public float steepGrowth = 1.1f;
+        public float steepGrowth = 1.05f;
         public int softCapRound = 30;
         [Tooltip("Linear growth (fraction of the round-30 value) per round until lateGameRound.")]
-        public float softGrowthPerRound = 0.03f;
+        public float softGrowthPerRound = 0.02f;
         public int lateGameRound = 100;
         [Tooltip("Late-game multiplicative growth per round after lateGameRound.")]
         public float lateGrowth = 1.01f;
