@@ -138,6 +138,7 @@ namespace ZombiesFPS.Net
                 SubscribeProgression();
                 SubscribeShop();
                 SubscribePerks();
+                SubscribeVoice();
                 BuildLocalRig();
                 ApplyOwnerBonuses();
             }
@@ -158,6 +159,7 @@ namespace ZombiesFPS.Net
             if (IsOwner)
             {
                 UnsubscribeShop();
+                UnsubscribeVoice();
                 UnsubscribePerks();
             }
             if (Local == this) Local = null;
@@ -267,8 +269,13 @@ namespace ZombiesFPS.Net
         void Update()
         {
             if (IsServer) ServerTick(Time.deltaTime);
-            if (IsOwner) OwnerTick();
+            if (IsOwner)
+            {
+                OwnerTick();
+                OwnerVoiceTick();
+            }
             else UpdateRemoteGun();
+            VoiceTick();
         }
 
         /// <summary>Teammates see your camo on the gun in your hands.</summary>
@@ -711,21 +718,28 @@ namespace ZombiesFPS.Net
             if (b.Kind == BuyableKind.Door)
             {
                 MapState.Instance.ServerOpenDoor(b.Index);
+                ServerSay(VoiceEvent.BuyDoor);
             }
             else if (b.Kind == BuyableKind.UpgradeMachine)
             {
                 ServerUpgradeGunInHand();
+                ServerSay(VoiceEvent.Upgrade);
             }
             else if (b.Kind == BuyableKind.Perk || b.Kind == BuyableKind.Armor || b.Kind == BuyableKind.Reroll)
             {
                 ServerBuyFromStation(b);
+                if (b.Kind == BuyableKind.Perk) ServerSay(VoiceEvent.BuyPerk);
             }
             else
             {
                 int gunId = GameConfig.GunId(GameConfig.Prices.WallGunAt(b.Index).gun);
                 int owned = SlotOf(gunId);
                 if (owned >= 0) AmmoBoughtRpc(owned);
-                else ServerGiveGun(gunId);
+                else
+                {
+                    ServerGiveGun(gunId);
+                    ServerSay(VoiceEvent.BuyGun);
+                }
             }
             PurchaseResultRpc(true);
         }

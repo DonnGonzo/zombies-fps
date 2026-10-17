@@ -140,6 +140,43 @@ namespace ZombiesFPS.Net
             if (GameInput.DebugPressed(DebugKey.JumpTenRounds)) SkipToRound(Round.Value + 10);
         }
 
+        // ---------------------------------------------------------------- test console (host only)
+
+        /// <summary>Host only: jump straight to a round, as the ] key does.</summary>
+        public void DebugSkipToRound(int round)
+        {
+            if (IsServer && !IsGameOver) SkipToRound(Mathf.Clamp(round, 1, RoundData.MaxRound));
+        }
+
+        public void DebugToggleGod()
+        {
+            if (IsServer) GodMode.Value = !GodMode.Value;
+        }
+
+        public void DebugOfferPowerUps(bool empowered)
+        {
+            if (IsServer && !IsGameOver) OfferPowerUps(empowered);
+        }
+
+        /// <summary>Host only: spawns extra zombies of a type right now (bosses included), on top of the round.</summary>
+        public int DebugSpawn(ZombieKind kind, int count)
+        {
+            if (!IsServer || IsGameOver || Phase.Value != GamePhase.RoundActive) return 0;
+            int spawned = 0;
+            for (int i = 0; i < Mathf.Clamp(count, 1, 50); i++)
+                if (TrySpawn(kind)) spawned++;
+            UpdateZombiesLeft();
+            return spawned;
+        }
+
+        /// <summary>Host only: removes every zombie, which ends the round once the spawn queue is empty too.</summary>
+        public void DebugClearZombies()
+        {
+            if (!IsServer || IsGameOver) return;
+            ClearZombies();
+            UpdateZombiesLeft();
+        }
+
         static bool AnyPlayerStanding()
         {
             foreach (var p in NetPlayer.All)

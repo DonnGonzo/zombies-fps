@@ -100,6 +100,8 @@ namespace ZombiesFPS.Data
             new MissionDef("Acid Test", "Kill {0} spitters", MissionObjective.KillType, 5, 0.08f, 30, 700, 50, MissionBonus.PowerUpReroll, 30, ZombieKind.Spitter),
             new MissionDef("Safe Passage", "Keep the survivor alive for {0} seconds", MissionObjective.ProtectSurvivor, 40, 0.3f, 90, 700, 50, MissionBonus.MaxAmmo, 5),
             new MissionDef("The Prototype", "Protect the engineer for {0} seconds. She's carrying a prototype weapon", MissionObjective.ProtectSurvivor, 60, 0.3f, 120, 1000, 60, MissionBonus.RareWeapon, 25),
+            new MissionDef("Cut the Feed", "Overload the Lantern relay: hold it for {0} seconds", MissionObjective.HoldGenerator, 60, 0.3f, 120, 1200, 50, MissionBonus.PowerUpReroll, 101),
+            new MissionDef("The Defector", "Keep the defecting scientist alive for {0} seconds", MissionObjective.ProtectSurvivor, 70, 0.2f, 120, 1400, 60, MissionBonus.MaxAmmo, 110),
         };
 
         [Tooltip("A fresh set of missions every Nth round (and on round 1).")]

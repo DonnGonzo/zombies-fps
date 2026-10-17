@@ -182,6 +182,18 @@ namespace ZombiesFPS.Net
             return true;
         }
 
+        /// <summary>Host only, test console: every perk and full armour.</summary>
+        public void DebugGiveAllPerks()
+        {
+            if (!IsServer || PerkTable == null) return;
+            int mask = 0;
+            for (int i = 0; i < PerkTable.Count; i++) mask |= 1 << i;
+            float oldMax = MaxHealthNow;
+            Perks.Value = mask;
+            if (MaxHealthNow > oldMax) Health.Value = Mathf.Min(MaxHealthNow, Health.Value + (MaxHealthNow - oldMax));
+            Armor.Value = MaxArmor;
+        }
+
         void ServerResetPerks()
         {
             Perks.Value = 0;

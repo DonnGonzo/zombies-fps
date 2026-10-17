@@ -519,6 +519,25 @@ namespace ZombiesFPS.World
             Greybox.Box("Scope", shop, new Vector3(-0.1f, 1.22f, -0.8f), new Vector3(0.12f, 0.12f, 0.4f), new Color(0.15f, 0.15f, 0.15f), collider: false);
             Greybox.Box("Mag", shop, new Vector3(-0.1f, 1.25f, 0f), new Vector3(0.1f, 0.2f, 0.12f), new Color(0.2f, 0.2f, 0.22f), collider: false);
             Greybox.Box("Grip", shop, new Vector3(-0.1f, 1.22f, 0.7f), new Vector3(0.1f, 0.14f, 0.1f), new Color(0.25f, 0.2f, 0.15f), collider: false);
+
+            // The Trader: a hooded scavenger behind the counter, with a lantern.
+            var trader = Greybox.Empty("Trader", shop, new Vector3(0.95f, 0f, 0.4f));
+            trader.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            var coat = new Color(0.28f, 0.24f, 0.2f);
+            Greybox.Prim(PrimitiveType.Capsule, "Body", trader, new Vector3(0f, 0.9f, 0f), new Vector3(0.55f, 0.9f, 0.45f), coat, collider: false);
+            Greybox.Prim(PrimitiveType.Sphere, "Head", trader, new Vector3(0f, 1.72f, 0.02f), Vector3.one * 0.3f, new Color(0.7f, 0.56f, 0.45f), collider: false);
+            Greybox.Prim(PrimitiveType.Sphere, "Hood", trader, new Vector3(0f, 1.78f, -0.04f), new Vector3(0.38f, 0.36f, 0.4f), new Color(0.2f, 0.17f, 0.14f), collider: false);
+            Greybox.Prim(PrimitiveType.Cylinder, "Lantern", trader, new Vector3(0.32f, 1.25f, 0.1f), new Vector3(0.1f, 0.1f, 0.1f), new Color(1f, 0.75f, 0.35f), collider: false, unlit: true);
+            var lamp = new GameObject("Trader Lamp").AddComponent<Light>();
+            lamp.transform.SetParent(trader, false);
+            lamp.transform.localPosition = new Vector3(0.32f, 1.4f, 0.1f);
+            lamp.type = LightType.Point;
+            lamp.color = new Color(1f, 0.7f, 0.35f);
+            lamp.range = 4.5f;
+            lamp.intensity = 1.3f;
+            lamp.shadows = LightShadows.None;
+            // Read from the customer side of the counter (-x).
+            Greybox.Label("Trader Sign", shop, new Vector3(-0.58f, 2.35f, 0f), "TRADER", new Color(0.15f, 0.1f, 0.05f), 0.3f).transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
         }
 
         void BuildUpgradeMachine(List<Buyable> buyables)

@@ -187,13 +187,18 @@ namespace ZombiesFPS.UI
             style.onHover.textColor = Color.white;
         }
 
+        static readonly System.Collections.Generic.Dictionary<(Texture2D, Color), Texture2D> s_Tinted = new System.Collections.Generic.Dictionary<(Texture2D, Color), Texture2D>();
+
+        /// <summary>A tinted copy of a texture, made once per colour (styles rebuild when the scale changes).</summary>
         static Texture2D TintTex(Texture2D src, Color c)
         {
+            if (s_Tinted.TryGetValue((src, c), out var cached) && cached != null) return cached;
             var t = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, wrapMode = TextureWrapMode.Clamp };
             var px = src.GetPixels();
             for (int i = 0; i < px.Length; i++) px[i] = new Color(c.r, c.g, c.b, c.a * px[i].a);
             t.SetPixels(px);
             t.Apply();
+            s_Tinted[(src, c)] = t;
             return t;
         }
 

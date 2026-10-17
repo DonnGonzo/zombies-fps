@@ -226,16 +226,21 @@ namespace ZombiesFPS.Net
             }
 
             int openMask = MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0;
+            int next = 0;
+            bool haveSurvivor = false;
             for (int i = 0; i < MissionData.SlotCount; i++)
             {
                 _holdTime[i] = 0f;
-                if (i >= _pool.Count)
+                // Only one survivor at a time: skip a second protect mission in the same set.
+                while (next < _pool.Count && haveSurvivor && Data.At(_pool[next]).objective == MissionObjective.ProtectSurvivor) next++;
+                if (next >= _pool.Count)
                 {
                     SlotVariable(i).Value = MissionData.Empty;
                     continue;
                 }
-                int id = _pool[i];
+                int id = _pool[next++];
                 var def = Data.At(id);
+                haveSurvivor |= def.objective == MissionObjective.ProtectSurvivor;
                 bool placed = def.objective == MissionObjective.HoldGenerator || def.objective == MissionObjective.ProtectSurvivor;
                 int zone = placed ? PickGeneratorZone(openMask) : 0;
                 if (def.objective == MissionObjective.ProtectSurvivor) SurvivorHealth.Value = Data.survivorHealth;
