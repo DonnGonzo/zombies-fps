@@ -69,5 +69,34 @@ namespace ZombiesFPS.Tests
             Assert.AreEqual(ZombieSpeedTier.Jog, _data.SpeedTierForRound(_data.jogFromRound));
             Assert.AreEqual(ZombieSpeedTier.Sprint, _data.SpeedTierForRound(_data.sprintFromRound));
         }
+
+        [Test]
+        public void LiveCap_GrowsWithPlayers_UpToMax()
+        {
+            Assert.AreEqual(_data.liveCap, _data.LiveCapFor(1));
+            Assert.Greater(_data.LiveCapFor(4), _data.LiveCapFor(1));
+            Assert.LessOrEqual(_data.LiveCapFor(4), _data.liveCapMax);
+            Assert.LessOrEqual(_data.LiveCapFor(64), _data.liveCapMax);
+        }
+
+        [Test]
+        public void SpawnInterval_ShrinksWithRounds_AndStaysAboveMin()
+        {
+            Assert.AreEqual(_data.spawnIntervalStart, _data.SpawnIntervalForRound(1), 0.0001f);
+            for (int r = 2; r <= RoundData.MaxRound; r++)
+            {
+                Assert.LessOrEqual(_data.SpawnIntervalForRound(r), _data.SpawnIntervalForRound(r - 1), $"round {r}");
+                Assert.GreaterOrEqual(_data.SpawnIntervalForRound(r, 4), _data.spawnIntervalMin, $"round {r}");
+            }
+            Assert.Less(_data.SpawnIntervalForRound(1, 4), _data.SpawnIntervalForRound(1, 1));
+        }
+
+        [Test]
+        public void RoundBonus_GrowsEachRound()
+        {
+            Assert.AreEqual(_data.roundBonusBase, _data.RoundBonus(1));
+            for (int r = 2; r <= RoundData.MaxRound; r++)
+                Assert.Greater(_data.RoundBonus(r), _data.RoundBonus(r - 1), $"round {r}");
+        }
     }
 }

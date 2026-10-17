@@ -7,10 +7,9 @@ namespace ZombiesFPS.Core
 {
     public enum DebugKey
     {
-        ZombiesUp,
-        ZombiesDown,
-        RoundUp,
-        RoundDown,
+        NextRound,
+        JumpTenRounds,
+        GodMode,
         Restart,
         ToggleHelp,
     }
@@ -72,10 +71,9 @@ namespace ZombiesFPS.Core
             if (K == null) return false;
             switch (key)
             {
-                case DebugKey.ZombiesUp: return K.rightBracketKey.wasPressedThisFrame;
-                case DebugKey.ZombiesDown: return K.leftBracketKey.wasPressedThisFrame;
-                case DebugKey.RoundUp: return K.equalsKey.wasPressedThisFrame;
-                case DebugKey.RoundDown: return K.minusKey.wasPressedThisFrame;
+                case DebugKey.NextRound: return K.equalsKey.wasPressedThisFrame;
+                case DebugKey.JumpTenRounds: return K.rightBracketKey.wasPressedThisFrame;
+                case DebugKey.GodMode: return K.gKey.wasPressedThisFrame;
                 case DebugKey.Restart: return K.enterKey.wasPressedThisFrame || (G != null && G.startButton.wasPressedThisFrame);
                 case DebugKey.ToggleHelp: return K.hKey.wasPressedThisFrame;
                 default: return false;
@@ -102,10 +100,9 @@ namespace ZombiesFPS.Core
         {
             switch (key)
             {
-                case DebugKey.ZombiesUp: return Input.GetKeyDown(KeyCode.RightBracket);
-                case DebugKey.ZombiesDown: return Input.GetKeyDown(KeyCode.LeftBracket);
-                case DebugKey.RoundUp: return Input.GetKeyDown(KeyCode.Equals);
-                case DebugKey.RoundDown: return Input.GetKeyDown(KeyCode.Minus);
+                case DebugKey.NextRound: return Input.GetKeyDown(KeyCode.Equals);
+                case DebugKey.JumpTenRounds: return Input.GetKeyDown(KeyCode.RightBracket);
+                case DebugKey.GodMode: return Input.GetKeyDown(KeyCode.G);
                 case DebugKey.Restart: return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
                 case DebugKey.ToggleHelp: return Input.GetKeyDown(KeyCode.H);
                 default: return false;

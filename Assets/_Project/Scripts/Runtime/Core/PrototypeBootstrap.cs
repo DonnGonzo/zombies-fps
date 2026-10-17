@@ -8,13 +8,14 @@ using ZombiesFPS.Data;
 using ZombiesFPS.Net;
 using ZombiesFPS.Player;
 using ZombiesFPS.Weapons;
+using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.Core
 {
     /// <summary>
     /// Entry point. Builds the world every machine shares (lighting, greybox arena + NavMesh, effects),
     /// shows the host/join menu, and owns the NetworkManager. Everything that changes during play lives
-    /// on network objects: NetPlayer, NetZombie and GameDirector.
+    /// on network objects: NetPlayer, NetZombie and RoundManager.
     /// </summary>
     public class PrototypeBootstrap : MonoBehaviour
     {
@@ -25,6 +26,7 @@ namespace ZombiesFPS.Core
 
         const string NameKey = "ZombiesFPS.PlayerName";
         const string AddressKey = "ZombiesFPS.JoinAddress";
+        const int ZombiePoolSize = 64;
         static readonly Color FogColor = new Color(0.05f, 0.06f, 0.08f);
 
         /// <summary>Why the last session ended, shown on the menu after a scene reload.</summary>
@@ -120,6 +122,9 @@ namespace ZombiesFPS.Core
             foreach (var prefab in new[] { GameConfig.PlayerPrefab, GameConfig.ZombiePrefab, GameConfig.DirectorPrefab })
                 _network.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = prefab });
             go.SetActive(true);
+
+            // Every machine pools zombies; enough for a full live cap plus the corpses still falling.
+            _network.PrefabHandler.AddHandler(GameConfig.ZombiePrefab, new ZombiePool(GameConfig.ZombiePrefab, ZombiePoolSize));
 
             _network.ConnectionApprovalCallback = ApproveConnection;
             _network.OnClientDisconnectCallback += OnClientDisconnect;

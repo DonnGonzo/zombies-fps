@@ -11,6 +11,7 @@ namespace ZombiesFPS.Core
         const int Rate = 44100;
 
         static AudioClip s_Gunshot, s_DryFire, s_MagOut, s_MagIn, s_HitTick, s_HeadshotTick, s_KillTick, s_PlayerHurt, s_ZombieSwipe;
+        static AudioClip s_RoundStart, s_RoundEnd;
         static AudioClip[] s_Groans;
 
         public static AudioClip Gunshot => s_Gunshot ? s_Gunshot : (s_Gunshot = MakeGunshot());
@@ -22,6 +23,11 @@ namespace ZombiesFPS.Core
         public static AudioClip KillTick => s_KillTick ? s_KillTick : (s_KillTick = MakeTone("KillTick", 0.16f, 1200f, 600f, 0.4f));
         public static AudioClip PlayerHurt => s_PlayerHurt ? s_PlayerHurt : (s_PlayerHurt = MakeThud());
         public static AudioClip ZombieSwipe => s_ZombieSwipe ? s_ZombieSwipe : (s_ZombieSwipe = MakeSwipe());
+        // Low, ominous chord as a round begins; a rising three-note figure when it is cleared.
+        public static AudioClip RoundStart => s_RoundStart ? s_RoundStart : (s_RoundStart = MakeChime("RoundStart", 3f, 1.2f, 0.5f,
+            new[] { 55f, 82.4f, 110f, 130.8f }, new[] { 0f, 0f, 0.05f, 0.1f }));
+        public static AudioClip RoundEnd => s_RoundEnd ? s_RoundEnd : (s_RoundEnd = MakeChime("RoundEnd", 2.2f, 2.2f, 0.4f,
+            new[] { 220f, 261.6f, 329.6f }, new[] { 0f, 0.22f, 0.44f }));
 
         public static AudioClip RandomGroan()
         {
@@ -87,6 +93,28 @@ namespace ZombiesFPS.Core
                 float s = Mathf.Sin(2f * Mathf.PI * f1 * t);
                 if (f2 > 0f) s = s * 0.6f + Mathf.Sin(2f * Mathf.PI * f2 * t) * 0.4f;
                 d[i] = s * env * gain;
+            }
+            return Build(name, d);
+        }
+
+        /// <summary>Struck-bell notes: each a fundamental plus a quieter octave, decaying from its start time.</summary>
+        static AudioClip MakeChime(string name, float length, float decay, float gain, float[] freqs, float[] starts)
+        {
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float sum = 0f;
+                for (int k = 0; k < freqs.Length; k++)
+                {
+                    float local = t - starts[k];
+                    if (local < 0f) continue;
+                    float env = Mathf.Exp(-local * decay) * Mathf.Clamp01(local * 200f);
+                    float f = freqs[k];
+                    sum += (Mathf.Sin(2f * Mathf.PI * f * local) + 0.3f * Mathf.Sin(2f * Mathf.PI * f * 2.01f * local)) * env;
+                }
+                d[i] = Mathf.Clamp(sum * gain / Mathf.Sqrt(freqs.Length), -1f, 1f);
             }
             return Build(name, d);
         }

@@ -88,6 +88,7 @@ namespace ZombiesFPS.Net
         {
             s_All.Add(this);
             State.OnValueChanged += OnStateChanged;
+            if (IsServer) Points.Value = GameConfig.Round.startingPoints;
             if (IsOwner)
             {
                 Local = this;
@@ -223,6 +224,9 @@ namespace ZombiesFPS.Net
             p.y = Mathf.Lerp(p.y, targetHeight, 1f - Mathf.Exp(-8f * Time.deltaTime));
             _pivot.localPosition = p;
 
+            var rounds = RoundManager.Instance;
+            if (rounds != null && rounds.GodMode.Value && _gun.Reserve < _gun.Data.maxReserve) _gun.RefillAmmo();
+
             bool reviveHeld = IsAlive && GameInput.InteractHeld && _look.CursorLocked;
             if (reviveHeld != _sentReviveHeld)
             {
@@ -233,8 +237,8 @@ namespace ZombiesFPS.Net
 
         void ServerTick(float dt)
         {
-            var director = GameDirector.Instance;
-            if (director != null && director.GameOver.Value) return;
+            var rounds = RoundManager.Instance;
+            if (rounds != null && rounds.IsGameOver) return;
 
             switch (State.Value)
             {
@@ -298,6 +302,8 @@ namespace ZombiesFPS.Net
         public void ServerApplyDamage(float amount, Vector3 from)
         {
             if (!IsServer || State.Value != LifeState.Alive || amount <= 0f) return;
+            var rounds = RoundManager.Instance;
+            if (rounds != null && rounds.GodMode.Value) return;
             _lastDamageTime = Time.time;
             Health.Value = Mathf.Max(0f, Health.Value - amount);
             if (Health.Value <= 0f)
@@ -308,17 +314,24 @@ namespace ZombiesFPS.Net
             }
         }
 
-        /// <summary>Host only. Fresh start after a game over.</summary>
-        public void ServerResetForRestart(Vector3 spawn)
+        /// <summary>Host only. Brings a bled-out player back at the end of a round, keeping their points.</summary>
+        public void ServerRespawn(Vector3 spawn)
         {
             State.Value = LifeState.Alive;
             Health.Value = MaxHealth;
             BleedOutRemaining.Value = 0f;
             ReviveProgress.Value = 0f;
-            Points.Value = 0;
+            _lastDamageTime = Time.time;
+            RespawnRpc(spawn);
+        }
+
+        /// <summary>Host only. Fresh start after a game over.</summary>
+        public void ServerResetForRestart(Vector3 spawn)
+        {
+            Points.Value = GameConfig.Round.startingPoints;
             Kills.Value = 0;
             Headshots.Value = 0;
-            RespawnRpc(spawn);
+            ServerRespawn(spawn);
         }
 
         // ---------------------------------------------------------------- RPCs

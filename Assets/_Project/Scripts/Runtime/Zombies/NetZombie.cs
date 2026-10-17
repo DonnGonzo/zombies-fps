@@ -28,6 +28,10 @@ namespace ZombiesFPS.Zombies
         const float DeathFallTime = 0.45f;
         const float CorpseTime = 2.2f;
         const float SinkTime = 1.0f;
+        // A chasing zombie that makes no progress this long while far from its target is recycled.
+        const float StuckTime = 15f;
+        const float StuckMoveDistance = 0.5f;
+        const float StuckMinTargetDistance = 8f;
 
         static readonly Color[] SkinTones =
         {
@@ -71,24 +75,34 @@ namespace ZombiesFPS.Zombies
         float _despawnAt;
         long _pendingHealth;
         ZombieSpeedTier _pendingTier;
+        Vector3 _stuckAnchor;
+        float _stuckSince;
+        float _offMeshSince;
 
         public bool IsAlive => _mode.Value != ZombieMode.Dead;
         public long Health => _health;
 
-        /// <summary>Raised on the host when this zombie dies (for the director's counters).</summary>
+        /// <summary>Raised on the host when this zombie dies (for the round manager's counters).</summary>
         public event Action<NetZombie, DamageInfo> Died;
+        /// <summary>Raised on the host when a stuck zombie is removed without dying, so it can be spawned again.</summary>
+        public event Action<NetZombie> Recycled;
 
-        /// <summary>Host: call before Spawn().</summary>
+        /// <summary>Builds the body ahead of time, so the pool can do it before the round starts.</summary>
+        public void Prebuild() => Build(SkinTones[UnityEngine.Random.Range(0, SkinTones.Length)]);
+
+        /// <summary>Host: call before Spawn(). Pooled zombies come back here for every new life.</summary>
         public void ServerSetup(long health, ZombieSpeedTier tier)
         {
             _pendingHealth = health;
             _pendingTier = tier;
+            _mode.Value = ZombieMode.Chasing;
         }
 
         public override void OnNetworkSpawn()
         {
             _data = GameConfig.Zombie;
-            Build(SkinTones[(int)(NetworkObjectId % (ulong)SkinTones.Length)]);
+            Prebuild();
+            ResetVisuals();
             _lastPosition = transform.position;
             _nextGroan = Time.time + UnityEngine.Random.Range(0.5f, 3f);
             _walkPhase = UnityEngine.Random.Range(0f, 10f);
@@ -99,22 +113,54 @@ namespace ZombiesFPS.Zombies
             {
                 _health = Math.Max(1L, (long)Math.Round(_pendingHealth * (double)_data.healthMultiplier));
                 _moveSpeed = _data.SpeedFor(_pendingTier) * UnityEngine.Random.Range(0.9f, 1.1f);
-                _agent = gameObject.AddComponent<NavMeshAgent>();
-                _agent.height = 1.8f;
-                _agent.radius = 0.32f;
-                _agent.acceleration = 14f;
-                _agent.angularSpeed = 540f;
-                _agent.stoppingDistance = 1.1f;
-                _agent.autoBraking = true;
-                _agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+                if (_agent == null)
+                {
+                    _agent = gameObject.AddComponent<NavMeshAgent>();
+                    _agent.height = 1.8f;
+                    _agent.radius = 0.32f;
+                    _agent.acceleration = 14f;
+                    _agent.angularSpeed = 540f;
+                    _agent.stoppingDistance = 1.1f;
+                    _agent.autoBraking = true;
+                    _agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+                }
+                _agent.enabled = true;
                 _agent.speed = _moveSpeed;
                 _agent.Warp(transform.position);
+
+                _target = null;
+                _repathTimer = 0f;
+                _attackTimer = 0f;
+                _attackLanded = false;
+                _staggerUntil = 0f;
+                _despawnAt = float.MaxValue;
+                _stuckAnchor = transform.position;
+                _stuckSince = Time.time;
+                _offMeshSince = -1f;
             }
         }
 
         public override void OnNetworkDespawn()
         {
             _mode.OnValueChanged -= OnModeChanged;
+            Died = null;
+            Recycled = null;
+        }
+
+        /// <summary>Puts the body back to a fresh, standing zombie (pooled objects keep last life's pose).</summary>
+        void ResetVisuals()
+        {
+            _deathTime = 0f;
+            _deadSeenAt = -1f;
+            _flashUntil = 0f;
+            _flinch = 0f;
+            _swingStart = -100f;
+            _speedEstimate = 0f;
+            SetFlash(false);
+            foreach (var c in _colliders) c.enabled = true;
+            _head.gameObject.SetActive(true);
+            _visual.localPosition = Vector3.zero;
+            _visual.localRotation = Quaternion.identity;
         }
 
         void Build(Color skin)
@@ -238,7 +284,7 @@ namespace ZombiesFPS.Zombies
 
         void Update()
         {
-            if (!_built) return;
+            if (!_built || !IsSpawned) return;
             if (IsServer) ServerUpdate();
             UpdateVisuals();
         }
@@ -250,11 +296,17 @@ namespace ZombiesFPS.Zombies
                 if (Time.time >= _despawnAt) NetworkObject.Despawn(true);
                 return;
             }
-            if (!_agent.isOnNavMesh) return;
+            if (!_agent.isOnNavMesh)
+            {
+                if (_offMeshSince < 0f) _offMeshSince = Time.time;
+                else if (Time.time - _offMeshSince > 2f) ServerRecycle();
+                return;
+            }
+            _offMeshSince = -1f;
 
             float dt = Time.deltaTime;
-            var director = GameDirector.Instance;
-            bool gameOver = director != null && director.GameOver.Value;
+            var rounds = RoundManager.Instance;
+            bool gameOver = rounds != null && rounds.IsGameOver;
             _agent.speed = Time.time < _staggerUntil ? _moveSpeed * _data.staggerSpeedScale : _moveSpeed;
 
             if (_target == null || !_target.IsSpawned || !_target.IsAlive) _target = FindTarget();
@@ -268,6 +320,25 @@ namespace ZombiesFPS.Zombies
             Vector3 toTarget = _target.transform.position - transform.position;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
+
+            if (_mode.Value == ZombieMode.Chasing && distance > StuckMinTargetDistance)
+            {
+                if ((transform.position - _stuckAnchor).sqrMagnitude > StuckMoveDistance * StuckMoveDistance)
+                {
+                    _stuckAnchor = transform.position;
+                    _stuckSince = Time.time;
+                }
+                else if (Time.time - _stuckSince > StuckTime)
+                {
+                    ServerRecycle();
+                    return;
+                }
+            }
+            else
+            {
+                _stuckAnchor = transform.position;
+                _stuckSince = Time.time;
+            }
 
             if (_mode.Value == ZombieMode.Chasing)
             {
@@ -304,6 +375,20 @@ namespace ZombiesFPS.Zombies
                 }
                 if (_attackTimer >= _data.attackWindup + _data.attackRecovery) _mode.Value = ZombieMode.Chasing;
             }
+        }
+
+        /// <summary>Host: removes a zombie that can't reach anyone, without a kill. The round manager respawns it.</summary>
+        void ServerRecycle()
+        {
+            if (!IsSpawned) return;
+            Recycled?.Invoke(this);
+            NetworkObject.Despawn(true);
+        }
+
+        /// <summary>Host: removes the zombie straight away (restart or skipping rounds in test mode).</summary>
+        public void ServerRemove()
+        {
+            if (IsSpawned) NetworkObject.Despawn(true);
         }
 
         NetPlayer FindTarget()

@@ -20,6 +20,27 @@ namespace ZombiesFPS.Data
         public float countPerExtraPlayer = 0.5f;
         [Tooltip("Never more than this many alive at once. Remaining zombies spawn as others die.")]
         public int liveCap = 24;
+        [Tooltip("Live cap added for each player beyond the first.")]
+        public int liveCapPerExtraPlayer = 4;
+        public int liveCapMax = 40;
+
+        [Header("Spawn pacing: start * decay^(round-1), never below min")]
+        [Tooltip("Seconds between spawns on round 1 with one player.")]
+        public float spawnIntervalStart = 2f;
+        public float spawnIntervalDecay = 0.95f;
+        public float spawnIntervalMin = 0.3f;
+        [Tooltip("Spawns speed up by this fraction for each player beyond the first.")]
+        public float spawnSpeedupPerExtraPlayer = 0.3f;
+
+        [Header("Round flow (seconds)")]
+        public float firstRoundDelay = 8f;
+        public float intermissionTime = 10f;
+
+        [Header("Economy (points)")]
+        public long startingPoints = 500;
+        [Tooltip("Paid to every player when a round is cleared: base + perRound * (round - 1).")]
+        public long roundBonusBase = 100;
+        public long roundBonusPerRound = 10;
 
         [Header("Health")]
         public long healthBase = 150;
@@ -46,6 +67,27 @@ namespace ZombiesFPS.Data
             double solo = countBase + countPerRound * Math.Pow(round, countExponent);
             double scaled = solo * (1.0 + countPerExtraPlayer * (players - 1));
             return (int)Math.Round(scaled);
+        }
+
+        public int LiveCapFor(int players)
+        {
+            players = Mathf.Max(1, players);
+            return Mathf.Min(liveCapMax, liveCap + liveCapPerExtraPlayer * (players - 1));
+        }
+
+        public float SpawnIntervalForRound(int round, int players = 1)
+        {
+            round = Mathf.Clamp(round, 1, MaxRound);
+            players = Mathf.Max(1, players);
+            double interval = spawnIntervalStart * Math.Pow(spawnIntervalDecay, round - 1);
+            interval /= 1.0 + spawnSpeedupPerExtraPlayer * (players - 1);
+            return Mathf.Max(spawnIntervalMin, (float)interval);
+        }
+
+        public long RoundBonus(int round)
+        {
+            round = Mathf.Clamp(round, 1, MaxRound);
+            return roundBonusBase + roundBonusPerRound * (round - 1);
         }
 
         public long HealthForRound(int round)

@@ -6,8 +6,9 @@ using ZombiesFPS.Weapons;
 namespace ZombiesFPS.UI
 {
     /// <summary>
-    /// Throwaway immediate-mode HUD for the prototype: crosshair, hitmarkers, ammo, health, squad list,
-    /// name tags, revive prompts, downed/game-over screens and debug help. The real HUD is UI Toolkit later.
+    /// Throwaway immediate-mode HUD for the prototype: round counter and banners, points, crosshair,
+    /// hitmarkers, ammo, health, squad list, name tags, revive prompts, downed/game-over screens and
+    /// debug help. The real HUD is UI Toolkit later.
     /// </summary>
     public class PrototypeHud : MonoBehaviour
     {
@@ -19,12 +20,24 @@ namespace ZombiesFPS.UI
         float _hitTime = -100f;
         bool _hitKilled, _hitHead;
         bool _showHelp = true;
+        AudioSource _audio;
+
+        // Round banners and the points pop-up, driven by watching the round manager's state.
+        GamePhase _lastPhase = GamePhase.Intermission;
+        int _lastRound;
+        string _banner, _bannerSub;
+        float _bannerTime = -100f;
+        long _lastPoints = -1;
+        long _pointsGain;
+        float _pointsGainTime = -100f;
 
         public void Init(NetPlayer player)
         {
             _player = player;
             _gun = player.Gun;
             _gun.Hit += OnHit;
+            _audio = gameObject.AddComponent<AudioSource>();
+            _audio.playOnAwake = false;
         }
 
         void OnDestroy()
@@ -47,6 +60,48 @@ namespace ZombiesFPS.UI
                 return;
             }
             if (GameInput.DebugPressed(DebugKey.ToggleHelp)) _showHelp = !_showHelp;
+            WatchRounds();
+            WatchPoints();
+        }
+
+        void WatchRounds()
+        {
+            var rounds = RoundManager.Instance;
+            if (rounds == null) return;
+            var phase = rounds.Phase.Value;
+            int round = rounds.Round.Value;
+            if (phase == GamePhase.RoundActive && (round != _lastRound || _lastPhase != GamePhase.RoundActive))
+            {
+                ShowBanner($"ROUND {round}", round == 1 ? "Here they come." : null);
+                _audio.PlayOneShot(ProceduralAudio.RoundStart, 0.9f);
+            }
+            else if (phase == GamePhase.Intermission && _lastPhase == GamePhase.RoundActive)
+            {
+                ShowBanner($"ROUND {round} CLEARED", $"+{GameConfig.Round.RoundBonus(round):N0} pts for everyone");
+                _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.8f);
+            }
+            _lastPhase = phase;
+            _lastRound = round;
+        }
+
+        void ShowBanner(string title, string sub)
+        {
+            _banner = title;
+            _bannerSub = sub;
+            _bannerTime = Time.time;
+        }
+
+        void WatchPoints()
+        {
+            long points = _player.Points.Value;
+            if (_lastPoints >= 0 && points > _lastPoints)
+            {
+                // Gains close together add up into one pop-up.
+                if (Time.time - _pointsGainTime > 0.8f) _pointsGain = 0;
+                _pointsGain += points - _lastPoints;
+                _pointsGainTime = Time.time;
+            }
+            _lastPoints = points;
         }
 
         void EnsureStyles()
@@ -79,7 +134,7 @@ namespace ZombiesFPS.UI
         void Shadowed(Rect r, string text, GUIStyle style)
         {
             var old = style.normal.textColor;
-            style.normal.textColor = new Color(0f, 0f, 0f, 0.8f);
+            style.normal.textColor = new Color(0f, 0f, 0f, 0.8f * old.a);
             GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), text, style);
             style.normal.textColor = old;
             GUI.Label(r, text, style);
@@ -90,15 +145,15 @@ namespace ZombiesFPS.UI
             if (_player == null || _gun == null) return;
             EnsureStyles();
             float w = Screen.width, h = Screen.height, u = h / 1080f;
-            var director = GameDirector.Instance;
+            var rounds = RoundManager.Instance;
             var state = _player.State.Value;
 
             DrawNameTags(u);
             DrawDamageVignette(w, h);
 
-            if (director != null && director.GameOver.Value)
+            if (rounds != null && rounds.IsGameOver)
             {
-                DrawGameOver(w, h, u);
+                DrawGameOver(w, h, u, rounds);
                 DrawLeaveButton(w, h, u, alwaysShow: true);
                 return;
             }
@@ -122,17 +177,19 @@ namespace ZombiesFPS.UI
             {
                 Fill(0, 0, w, h, new Color(0f, 0f, 0f, 0.4f));
                 Shadowed(new Rect(0, h * 0.3f, w, 100 * u), "BLED OUT", _big);
-                Shadowed(new Rect(0, h * 0.3f + 100 * u, w, 40 * u), "You're out until the next game. Your squad fights on.", _center);
+                Shadowed(new Rect(0, h * 0.3f + 100 * u, w, 40 * u), "You're back when your squad clears this round.", _center);
             }
 
+            DrawRound(w, h, u, rounds);
+            DrawBanner(w, h, u);
             DrawHealth(h, u);
-            DrawStats(u, director);
+            DrawStats(u, rounds);
             DrawSquad(w, u);
 
             if (_showHelp)
             {
                 var r = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
-                string host = director != null && director.IsServer ? "\n[ / ]  fewer / more zombies\n- / =  test round down / up" : "";
+                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode" : "";
                 Shadowed(new Rect(w - 640 * u, 30 * u, 600 * u, 260 * u),
                     "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · hold E revive" + host + "\nEsc menu · H hide help",
                     r);
@@ -149,23 +206,27 @@ namespace ZombiesFPS.UI
         void DrawLeaveButton(float w, float h, float u, bool alwaysShow)
         {
             if (!alwaysShow && _player.Look.CursorLocked) return;
-            bool hosting = GameDirector.Instance != null && GameDirector.Instance.IsServer;
+            bool hosting = RoundManager.Instance != null && RoundManager.Instance.IsServer;
             float bw = 320 * u;
             if (GUI.Button(new Rect((w - bw) / 2f, h * 0.62f, bw, 48 * u), hosting ? "End game for everyone" : "Leave game", _button))
                 PrototypeBootstrap.ReturnToMenu(hosting ? "You ended the game." : "You left the game.");
         }
 
-        void DrawGameOver(float w, float h, float u)
+        void DrawGameOver(float w, float h, float u, RoundManager rounds)
         {
             Fill(0, 0, w, h, new Color(0.15f, 0f, 0f, 0.6f));
-            Shadowed(new Rect(0, h * 0.25f, w, 120 * u), "GAME OVER", _big);
-            float y = h * 0.25f + 130 * u;
+            Shadowed(new Rect(0, h * 0.2f, w, 120 * u), rounds.Won.Value ? "YOU MADE IT" : "GAME OVER", _big);
+            int round = rounds.DisplayRound;
+            string survived = rounds.Won.Value ? $"You survived all {round} rounds."
+                : round == 1 ? "You were overrun on round 1." : $"You were overrun on round {round}.";
+            Shadowed(new Rect(0, h * 0.2f + 120 * u, w, 40 * u), survived, _center);
+            float y = h * 0.2f + 190 * u;
             foreach (var p in NetPlayer.All)
             {
                 Shadowed(new Rect(0, y, w, 36 * u), $"{p.DisplayName}   ·   {p.Points.Value:N0} pts   ·   {p.Kills.Value} kills   ·   {p.Headshots.Value} headshots", _center);
                 y += 38 * u;
             }
-            bool hosting = GameDirector.Instance != null && GameDirector.Instance.IsServer;
+            bool hosting = rounds.IsServer;
             Shadowed(new Rect(0, y + 20 * u, w, 40 * u), hosting ? "Press Enter to restart" : "Waiting for the host to restart", _center);
             PlayerLookUnlock();
         }
@@ -218,14 +279,63 @@ namespace ZombiesFPS.UI
             Shadowed(new Rect(hx, hy - 40 * u, hbw, 36 * u), Mathf.CeilToInt(_player.Health.Value).ToString(), _label);
         }
 
-        void DrawStats(float u, GameDirector director)
+        void DrawStats(float u, RoundManager rounds)
         {
             Shadowed(new Rect(40 * u, 30 * u, 600 * u, 40 * u), $"{_player.Points.Value:N0} pts", _label);
+            float gainAge = Time.time - _pointsGainTime;
+            if (gainAge < 1.2f)
+            {
+                var gain = new GUIStyle(_label);
+                gain.normal.textColor = new Color(1f, 0.85f, 0.3f, 1f - Mathf.Clamp01((gainAge - 0.6f) / 0.6f));
+                Shadowed(new Rect(40 * u + _label.CalcSize(new GUIContent($"{_player.Points.Value:N0} pts")).x + 16 * u, 30 * u - gainAge * 12 * u, 300 * u, 40 * u),
+                    $"+{_pointsGain:N0}", gain);
+            }
             Shadowed(new Rect(40 * u, 66 * u, 600 * u, 30 * u), $"Kills {_player.Kills.Value}   Headshots {_player.Headshots.Value}", _small);
-            if (director != null)
+            if (rounds != null && rounds.IsServer)
                 Shadowed(new Rect(40 * u, 94 * u, 900 * u, 30 * u),
-                    $"Test round {director.TestRound.Value}  ·  zombie HP {director.CurrentZombieHealth:N0}  ·  {director.CurrentSpeedTier}  ·  alive {director.AliveZombies.Value}/{director.TargetAlive.Value}",
+                    $"Host: zombie HP {rounds.CurrentZombieHealth:N0}  ·  {rounds.CurrentSpeedTier}  ·  alive {rounds.AliveZombies.Value}/{rounds.LiveCap}" + (rounds.GodMode.Value ? "  ·  GOD MODE" : ""),
                     _small);
+        }
+
+        void DrawRound(float w, float h, float u, RoundManager rounds)
+        {
+            if (rounds == null) return;
+            var top = new GUIStyle(_label) { alignment = TextAnchor.UpperCenter };
+            if (rounds.Phase.Value == GamePhase.Intermission)
+            {
+                int next = rounds.Round.Value + 1;
+                Shadowed(new Rect(0, 30 * u, w, 40 * u), $"Round {next} starts in {Mathf.CeilToInt(rounds.PhaseTimeLeft)}", top);
+            }
+            else
+            {
+                Shadowed(new Rect(0, 30 * u, w, 40 * u), rounds.ZombiesLeft.Value == 1 ? "1 zombie left" : $"{rounds.ZombiesLeft.Value} zombies left", top);
+            }
+            if (rounds.GodMode.Value)
+            {
+                var god = new GUIStyle(_small) { alignment = TextAnchor.UpperCenter };
+                god.normal.textColor = new Color(1f, 0.85f, 0.3f);
+                Shadowed(new Rect(0, 68 * u, w, 30 * u), "GOD MODE (test)", god);
+            }
+
+            if (rounds.Round.Value <= 0) return;
+            var big = new GUIStyle(_big) { alignment = TextAnchor.LowerLeft, fontSize = Mathf.RoundToInt(_big.fontSize * 1.3f) };
+            big.normal.textColor = new Color(0.75f, 0.08f, 0.05f);
+            Shadowed(new Rect(36 * u, h - 230 * u, 400 * u, 130 * u), rounds.Round.Value.ToString(), big);
+        }
+
+        void DrawBanner(float w, float h, float u)
+        {
+            const float Duration = 3.2f;
+            float t = Time.time - _bannerTime;
+            if (t > Duration || string.IsNullOrEmpty(_banner)) return;
+            float a = Mathf.Clamp01(t / 0.25f) * Mathf.Clamp01((Duration - t) / 0.6f);
+            var title = new GUIStyle(_big);
+            title.normal.textColor = new Color(0.85f, 0.12f, 0.08f, a);
+            Shadowed(new Rect(0, h * 0.2f, w, 110 * u), _banner, title);
+            if (string.IsNullOrEmpty(_bannerSub)) return;
+            var sub = new GUIStyle(_center);
+            sub.normal.textColor = new Color(1f, 1f, 1f, a);
+            Shadowed(new Rect(0, h * 0.2f + 110 * u, w, 40 * u), _bannerSub, sub);
         }
 
         void DrawSquad(float w, float u)

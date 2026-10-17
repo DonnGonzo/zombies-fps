@@ -2,9 +2,19 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
-## Current state: Phase 1 (co-op networking), on top of the Phase 0 prototype
+## Current state: Phase 2 (round loop), on top of Phases 0 and 1
 
-A first-person greybox slice you can now play with up to 4 friends, using Netcode for GameObjects with a host-authoritative model.
+A first-person greybox slice you can play with up to 4 friends, using Netcode for GameObjects with a host-authoritative model, and now a real round-based game loop.
+
+**Round loop (Phase 2)**
+- One host-owned `RoundManager` runs the game: intermission, round active, game over
+- Each round spawns a budget of zombies (`6 + 2.2·round^0.85`, more with more players). Never more than the live cap alive at once (24 solo, +4 per extra player, 40 max). The rest spawn as others die, faster each round
+- Zombie health and speed follow the round curves in `RoundData`, up to round 500
+- 8 seconds before round 1, 10 seconds between rounds. Round start and round cleared banners and sounds
+- Points: everyone starts with 500. Hits, kills and headshot kills pay, and clearing a round pays everyone a bonus (100 + 10 per round). Nothing to spend them on until Phase 3 (doors, wall guns, ammo)
+- Players who bled out come back when the round is cleared. Game over when nobody is left standing, showing the round you reached
+- Zombies come from a network object pool (no Instantiate mid-round). A zombie that gets stuck far from everyone is recycled and spawns again
+- Test mode on the host: `=` next round, `]` jump 10 rounds, `G` god mode (no damage, endless ammo) for checking round 50 and beyond
 
 **Co-op (Phase 1)**
 - Host/Join menu: one player hosts, the others join by IP address and port (default 7777)
@@ -12,7 +22,7 @@ A first-person greybox slice you can now play with up to 4 friends, using Netcod
 - The host owns every zombie (NavMesh AI, health, attacks). Clients see them through NetworkTransform plus hit, swing and death events
 - Shots are predicted locally (tracer, muzzle flash, impact) and resolved on the host. Hitmarkers come back from the host
 - The host owns health, regen, downs, 30 s bleed-out, revives (hold E for 3 s near a downed teammate), points, kills and headshots
-- Game over when nobody is left standing. The host presses Enter to restart for everyone
+- The host presses Enter after a game over to restart for everyone
 
 **Gameplay slice (Phase 0)**
 - Walled greybox yard with cover, a raised platform, boarded spawn windows and a NavMesh baked at runtime
@@ -47,8 +57,7 @@ If the scene is ever missing or broken, **Zombies FPS → Rebuild Prototype Scen
 | Move / sprint / jump | WASD / Shift / Space |
 | Fire / aim / reload | Left mouse / right mouse / R |
 | Revive a downed teammate | Hold E |
-| Fewer / more zombies alive (host) | `[` / `]` |
-| Test round down / up: zombie health and speed (host) | `-` / `=` |
+| Test mode (host): next round / jump 10 rounds / god mode | `=` / `]` / `G` |
 | Free the mouse (shows Leave) / toggle help | Esc / H |
 | Restart after game over (host) | Enter |
 
@@ -60,16 +69,16 @@ Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even dur
 
 - `Gun_Rook9`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom
 - `Zombie_Walker`: speeds per tier, attack damage/range/wind-up, stagger, points
-- `RoundData`: zombie count `base + a·round^0.85`, live cap, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
+- `RoundData`: zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests from **Window → General → Test Runner → EditMode**.
+Run the tests (round formulas, live cap, spawn pacing, round bonus) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 
 ```
 Assets/_Project/
   Data/            ScriptableObject balance assets
-  Resources/Net/   Network prefabs (player, zombie, game director). Bodies are built in code on spawn
+  Resources/Net/   Network prefabs (player, zombie, round manager). Bodies are built in code on spawn
   Scenes/          Prototype.unity
   Scripts/Runtime/ Core (bootstrap + menu, arena, input, audio), Net (players, director), Player, Weapons, Zombies, Combat, UI, Data
   Scripts/Editor/  Menu helpers
@@ -89,5 +98,5 @@ The prototype builds its scene from code (`PrototypeBootstrap`) so there are no 
 ## Next
 
 - Unity Relay + Lobby join codes, so friends can join without port forwarding. This needs the project linked to a Unity Cloud project (Edit → Project Settings → Services).
-- Pooled zombie network objects (a prefab handler) before round counts get high.
-- Then Phase 2: the RoundManager with spawn budget, live cap, intermissions, money and game over by round.
+- An autoplay bot for overnight balance runs to rounds 100, 250 and 500 (planned for Phase 2 in the design doc).
+- Phase 3: a real map blockout with 5-6 zones, doors, wall guns and ammo purchases to spend points on.
