@@ -1,6 +1,8 @@
 using UnityEngine;
 using ZombiesFPS.Core;
+using ZombiesFPS.Data;
 using ZombiesFPS.Net;
+using ZombiesFPS.Zombies;
 using ZombiesFPS.Weapons;
 
 namespace ZombiesFPS.UI
@@ -39,11 +41,19 @@ namespace ZombiesFPS.UI
             _gun.Hit += OnHit;
             _audio = gameObject.AddComponent<AudioSource>();
             _audio.playOnAwake = false;
+            RoundManager.BossDefeated += OnBossDefeated;
         }
 
         void OnDestroy()
         {
             if (_gun != null) _gun.Hit -= OnHit;
+            RoundManager.BossDefeated -= OnBossDefeated;
+        }
+
+        void OnBossDefeated(long bonus)
+        {
+            ShowBanner($"{GameConfig.ZombieType(ZombieKind.Boss).displayName.ToUpperInvariant()} DOWN", $"+{bonus:N0} pts for everyone");
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
         }
 
         void OnHit(bool killed, bool headshot)
@@ -81,7 +91,11 @@ namespace ZombiesFPS.UI
             int round = rounds.Round.Value;
             if (phase == GamePhase.RoundActive && (round != _lastRound || _lastPhase != GamePhase.RoundActive))
             {
-                ShowBanner($"ROUND {round}", round == 1 ? "Here they come." : null);
+                string boss = GameConfig.ZombieType(ZombieKind.Boss).displayName;
+                string sub = round == 1 ? "Here they come."
+                    : GameConfig.Round.IsBossRound(round) ? $"Boss round: shoot the glowing core on the {boss}'s back."
+                    : NewTypeLine(round);
+                ShowBanner($"ROUND {round}", sub);
                 _audio.PlayOneShot(ProceduralAudio.RoundStart, 0.9f);
             }
             else if (phase == GamePhase.Intermission && _lastPhase == GamePhase.RoundActive)
@@ -91,6 +105,23 @@ namespace ZombiesFPS.UI
             }
             _lastPhase = phase;
             _lastRound = round;
+        }
+
+        /// <summary>A heads-up on the round a zombie type first appears.</summary>
+        static string NewTypeLine(int round)
+        {
+            if (GameConfig.ZombieTypes == null) return null;
+            foreach (var type in GameConfig.ZombieTypes)
+                if (type != null && !type.IsBoss && type.kind != ZombieKind.Walker && type.firstRound == round)
+                    return type.kind switch
+                    {
+                        ZombieKind.Runner => "Runners: fast, but they go down easy.",
+                        ZombieKind.Crawler => "Crawlers: low to the ground, and they go for your legs.",
+                        ZombieKind.Brute => "Brutes: armoured bodies. Aim for the head.",
+                        ZombieKind.Spitter => "Spitters: they lob acid where you stand. Keep moving.",
+                        _ => $"{type.displayName}s are coming.",
+                    };
+            return null;
         }
 
         void ShowBanner(string title, string sub)
@@ -201,7 +232,7 @@ namespace ZombiesFPS.UI
             if (_showHelp)
             {
                 var r = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
-                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode · P +5,000 pts · O power-up" : "";
+                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode · P +5,000 pts · O power-up · B boss" : "";
                 Shadowed(new Rect(w - 800 * u, 30 * u, 760 * u, 260 * u),
                     "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · Q / wheel switch gun\nE buy · hold E revive · 1/2/3 pick power-up" + host + "\nEsc menu · H hide help",
                     r);
@@ -362,6 +393,8 @@ namespace ZombiesFPS.UI
                 Shadowed(new Rect(0, 68 * u, w, 30 * u), "GOD MODE (test)", god);
             }
 
+            DrawBossBars(w, u);
+
             if (rounds.Round.Value <= 0) return;
             var big = new GUIStyle(_big) { alignment = TextAnchor.LowerLeft, fontSize = Mathf.RoundToInt(_big.fontSize * 1.3f) };
             big.normal.textColor = new Color(0.75f, 0.08f, 0.05f);
@@ -383,6 +416,23 @@ namespace ZombiesFPS.UI
             Shadowed(new Rect(0, h * 0.2f + 110 * u, w, 40 * u), _bannerSub, sub);
         }
 
+        void DrawBossBars(float w, float u)
+        {
+            float bw = 600 * u, bh = 12 * u, y = 100 * u;
+            var label = new GUIStyle(_small) { alignment = TextAnchor.LowerCenter };
+            label.normal.textColor = new Color(1f, 0.6f, 0.3f);
+            foreach (var boss in NetZombie.Bosses)
+            {
+                if (boss == null || !boss.IsAlive) continue;
+                float n = Mathf.Clamp01(boss.HealthFraction.Value);
+                Shadowed(new Rect(0, y, w, 26 * u), boss.Data.displayName.ToUpperInvariant(), label);
+                y += 28 * u;
+                Fill((w - bw) / 2f - 2, y - 2, bw + 4, bh + 4, new Color(0f, 0f, 0f, 0.6f));
+                Fill((w - bw) / 2f, y, bw * n, bh, new Color(0.85f, 0.35f, 0.08f));
+                y += bh + 10 * u;
+            }
+        }
+
         /// <summary>Owned power-ups and their levels, above the health bar.</summary>
         void DrawPowerUps(float h, float u)
         {
@@ -396,7 +446,7 @@ namespace ZombiesFPS.UI
             }
             var style = new GUIStyle(_small) { wordWrap = true, alignment = TextAnchor.LowerLeft };
             style.normal.textColor = new Color(0.85f, 0.75f, 1f);
-            Shadowed(new Rect(40 * u, h - 170 * u, 700 * u, 60 * u), string.Join("  ·  ", parts), style);
+            Shadowed(new Rect(40 * u, h - 300 * u, 700 * u, 60 * u), string.Join("  ·  ", parts), style);
         }
 
         /// <summary>The three power-up cards to pick from after every few rounds.</summary>

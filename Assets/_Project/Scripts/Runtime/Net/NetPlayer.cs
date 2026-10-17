@@ -463,6 +463,21 @@ namespace ZombiesFPS.Net
             }
         }
 
+        /// <summary>Host only. Slows the player for a while (crawlers hit the legs).</summary>
+        public void ServerSlow(float scale, float duration)
+        {
+            if (!IsServer || State.Value != LifeState.Alive) return;
+            var rounds = RoundManager.Instance;
+            if (rounds != null && rounds.GodMode.Value) return;
+            SlowRpc(scale, duration);
+        }
+
+        [Rpc(SendTo.Owner)]
+        void SlowRpc(float scale, float duration)
+        {
+            if (_motor != null) _motor.Slow(scale, duration);
+        }
+
         /// <summary>Host only. Back to just the starter gun (a fresh game).</summary>
         public void ServerResetLoadout()
         {
@@ -545,7 +560,7 @@ namespace ZombiesFPS.Net
                     float mult = hitbox.isHead ? gun.headshotMultiplier * (1f + Bonus(PowerStat.HeadshotDamage)) : hitbox.multiplier;
                     long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * mult));
                     var result = zombie.TakeDamage(new DamageInfo(damage, hit.point, direction, hitbox.isHead, OwnerClientId));
-                    AwardPoints(result, hitbox.isHead);
+                    AwardPoints(zombie, result, hitbox.isHead);
                     HitConfirmRpc(result.Killed, hitbox.isHead);
                 }
             }
@@ -556,9 +571,9 @@ namespace ZombiesFPS.Net
             ShotFxRpc(end, normal, flesh, tier != null && tier.explosive);
         }
 
-        void AwardPoints(DamageResult result, bool headshot)
+        void AwardPoints(NetZombie zombie, DamageResult result, bool headshot)
         {
-            var data = GameConfig.Zombie;
+            var data = zombie.Data;
             if (!result.Killed)
             {
                 Points.Value += data.pointsPerHit;

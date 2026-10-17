@@ -16,6 +16,7 @@ namespace ZombiesFPS.Weapons
         public static readonly Color Dust = new Color(0.55f, 0.53f, 0.5f);
         public static readonly Color Blast = new Color(1f, 0.55f, 0.15f);
         public static readonly Color Spark = new Color(0.7f, 0.45f, 1f);
+        public static readonly Color Acid = new Color(0.45f, 0.9f, 0.15f);
 
         const int ChunkCount = 160;
         const int TracerCount = 24;

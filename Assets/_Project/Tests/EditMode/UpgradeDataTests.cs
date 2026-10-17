@@ -58,9 +58,13 @@ namespace ZombiesFPS.Tests
         {
             Assert.IsFalse(_data.IsPowerUpRound(4));
             Assert.IsTrue(_data.IsPowerUpRound(5));
-            Assert.IsTrue(_data.IsPowerUpRound(500));
+            Assert.IsTrue(_data.IsPowerUpRound(50));
+            Assert.IsFalse(_data.IsPowerUpRound(55), "offers stop after round 50");
+            Assert.IsFalse(_data.IsPowerUpRound(500));
             Assert.IsFalse(_data.IsEmpoweredRound(5));
             Assert.IsTrue(_data.IsEmpoweredRound(25));
+            Assert.IsTrue(_data.IsEmpoweredRound(50));
+            Assert.IsFalse(_data.IsEmpoweredRound(75));
         }
 
         [Test]

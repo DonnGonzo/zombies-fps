@@ -19,8 +19,8 @@ namespace ZombiesFPS.Net
     /// <summary>
     /// The one host-owned game state machine: intermission, round active and game over. Each round spawns a
     /// budget of zombies from RoundData, never more than the live cap at once, and pays a bonus when it is
-    /// cleared. Players who bled out come back at the end of the round. Everyone sees the state through
-    /// network variables.
+    /// cleared. The mix of zombie types widens with the rounds, and every 10th round adds a boss. Players who
+    /// bled out come back at the end of the round. Everyone sees the state through network variables.
     /// </summary>
     public class RoundManager : NetworkBehaviour
     {
@@ -31,6 +31,11 @@ namespace ZombiesFPS.Net
         /// <summary>Zombies come from one of this many open windows nearest the players, so they find them fast.</summary>
         const int NearestWindows = 4;
         const long DebugPoints = 5000;
+        const float FirstBossDelay = 6f;
+        const float BossSpacing = 10f;
+
+        /// <summary>Raised on every machine when a boss goes down, with the points everyone got.</summary>
+        public static event System.Action<long> BossDefeated;
 
         public NetworkVariable<GamePhase> Phase = new NetworkVariable<GamePhase>(GamePhase.Intermission);
         /// <summary>The current round, or the last one played during an intermission. 0 before round 1.</summary>
@@ -49,6 +54,10 @@ namespace ZombiesFPS.Net
         readonly List<Transform> _spawnPoints = new List<Transform>();
         int _toSpawn;
         float _nextSpawnTime;
+        int _bossesToSpawn;
+        float _nextBossTime;
+        readonly int[] _aliveByKind = new int[ZombieData.KindCount];
+        readonly float[] _weights = new float[ZombieData.KindCount];
 
         public bool IsGameOver => Phase.Value == GamePhase.GameOver;
         public int DisplayRound => Mathf.Max(1, Round.Value);
@@ -100,10 +109,13 @@ namespace ZombiesFPS.Net
                 case GamePhase.RoundActive:
                     if (_toSpawn > 0 && AliveZombies.Value < LiveCap && Time.time >= _nextSpawnTime)
                     {
-                        bool spawned = TrySpawn();
+                        bool spawned = TrySpawn(PickKind(Round.Value));
                         _nextSpawnTime = Time.time + (spawned ? GameConfig.Round.SpawnIntervalForRound(Round.Value, NetPlayer.All.Count) : RetrySpawnDelay);
                     }
-                    if (_toSpawn == 0 && AliveZombies.Value == 0) CompleteRound();
+                    // Bosses come on top of the horde and ignore the live cap.
+                    if (_bossesToSpawn > 0 && Time.time >= _nextBossTime)
+                        _nextBossTime = Time.time + (TrySpawn(ZombieKind.Boss) ? BossSpacing : RetrySpawnDelay);
+                    if (_toSpawn == 0 && _bossesToSpawn == 0 && AliveZombies.Value == 0) CompleteRound();
                     break;
             }
         }
@@ -115,6 +127,12 @@ namespace ZombiesFPS.Net
                 foreach (var p in NetPlayer.All) p.Points.Value += DebugPoints;
             if (IsGameOver) return;
             if (GameInput.DebugPressed(DebugKey.OfferPowerUp)) OfferPowerUps(false);
+            if (GameInput.DebugPressed(DebugKey.SpawnBoss) && Phase.Value == GamePhase.RoundActive)
+            {
+                _bossesToSpawn++;
+                _nextBossTime = Time.time;
+                UpdateZombiesLeft();
+            }
             if (GameInput.DebugPressed(DebugKey.NextRound)) SkipToRound(Round.Value + 1);
             if (GameInput.DebugPressed(DebugKey.JumpTenRounds)) SkipToRound(Round.Value + 10);
         }
@@ -131,6 +149,7 @@ namespace ZombiesFPS.Net
             Phase.Value = GamePhase.Intermission;
             PhaseEndsAt.Value = Now + seconds;
             _toSpawn = 0;
+            _bossesToSpawn = 0;
             UpdateZombiesLeft();
         }
 
@@ -139,6 +158,8 @@ namespace ZombiesFPS.Net
             Round.Value = Mathf.Clamp(round, 1, RoundData.MaxRound);
             _toSpawn = GameConfig.Round.ZombieCountForRound(Round.Value, NetPlayer.All.Count);
             _nextSpawnTime = Time.time + 1f;
+            _bossesToSpawn = GameConfig.Round.BossCountForRound(Round.Value);
+            _nextBossTime = Time.time + FirstBossDelay;
             Phase.Value = GamePhase.RoundActive;
             UpdateZombiesLeft();
         }
@@ -200,15 +221,48 @@ namespace ZombiesFPS.Net
                 if (z != null) z.ServerRemove();
             _zombies.Clear();
             _toSpawn = 0;
+            _bossesToSpawn = 0;
+            System.Array.Clear(_aliveByKind, 0, _aliveByKind.Length);
             AliveZombies.Value = 0;
             UpdateZombiesLeft();
         }
 
-        void UpdateZombiesLeft() => ZombiesLeft.Value = _toSpawn + AliveZombies.Value;
+        void UpdateZombiesLeft() => ZombiesLeft.Value = _toSpawn + _bossesToSpawn + AliveZombies.Value;
 
         // ---------------------------------------------------------------- spawning
 
-        bool TrySpawn()
+        /// <summary>A weighted pick among the types this round allows, skipping types at their alive limit. Walkers always qualify.</summary>
+        ZombieKind PickKind(int round)
+        {
+            float total = 0f;
+            for (int i = 0; i < ZombieData.KindCount; i++)
+            {
+                var data = GameConfig.ZombieType((ZombieKind)i);
+                float w = i == 0 ? 1f : data.kind == (ZombieKind)i ? data.WeightForRound(round) : 0f;
+                if (data.maxAlive > 0 && _aliveByKind[i] >= data.maxAlive) w = 0f;
+                _weights[i] = w;
+                total += w;
+            }
+            if (total <= 0f) return ZombieKind.Walker;
+            float roll = Random.value * total;
+            for (int i = 0; i < ZombieData.KindCount; i++)
+            {
+                roll -= _weights[i];
+                if (roll < 0f && _weights[i] > 0f) return (ZombieKind)i;
+            }
+            return ZombieKind.Walker;
+        }
+
+        long HealthFor(ZombieKind kind)
+        {
+            double health = CurrentZombieHealth;
+            var data = GameConfig.ZombieType(kind);
+            int extraPlayers = Mathf.Max(0, NetPlayer.All.Count - 1);
+            if (data.healthPerExtraPlayer > 0f) health *= 1.0 + data.healthPerExtraPlayer * extraPlayers;
+            return (long)System.Math.Round(health);
+        }
+
+        bool TrySpawn(ZombieKind kind)
         {
             // Windows in open zones, nearest the players first; pick at random among the closest few.
             GameConfig.Map.CollectSpawnPoints(MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0, _spawnPoints);
@@ -222,13 +276,15 @@ namespace ZombiesFPS.Net
                 if (!NavMesh.SamplePosition(point.position, out var hit, 2f, NavMesh.AllAreas)) continue;
 
                 var zombie = ZombiePool.Instance.Get(hit.position, point.rotation);
-                zombie.ServerSetup(CurrentZombieHealth, CurrentSpeedTier);
+                zombie.ServerSetup(kind, HealthFor(kind), CurrentSpeedTier);
                 zombie.Died += OnZombieDied;
                 zombie.Recycled += OnZombieRecycled;
                 zombie.NetworkObject.Spawn(true);
                 if (!_zombies.Contains(zombie)) _zombies.Add(zombie);
 
-                _toSpawn--;
+                if (kind == ZombieKind.Boss) _bossesToSpawn--;
+                else _toSpawn--;
+                _aliveByKind[(int)kind]++;
                 AliveZombies.Value++;
                 UpdateZombiesLeft();
                 return true;
@@ -253,15 +309,35 @@ namespace ZombiesFPS.Net
 
         void OnZombieDied(NetZombie zombie, DamageInfo info)
         {
-            AliveZombies.Value = Mathf.Max(0, AliveZombies.Value - 1);
-            UpdateZombiesLeft();
+            Forget(zombie);
+            if (zombie.Kind == ZombieKind.Boss)
+            {
+                long bonus = GameConfig.Round.bossBonus;
+                foreach (var p in NetPlayer.All) p.Points.Value += bonus;
+                BossDefeatedRpc(bonus);
+            }
         }
 
         void OnZombieRecycled(NetZombie zombie)
         {
-            AliveZombies.Value = Mathf.Max(0, AliveZombies.Value - 1);
-            if (Phase.Value == GamePhase.RoundActive) _toSpawn++;
+            Forget(zombie);
+            if (Phase.Value == GamePhase.RoundActive)
+            {
+                if (zombie.Kind == ZombieKind.Boss) _bossesToSpawn++;
+                else _toSpawn++;
+            }
             UpdateZombiesLeft();
         }
+
+        void Forget(NetZombie zombie)
+        {
+            int kind = (int)zombie.Kind;
+            if (kind < _aliveByKind.Length) _aliveByKind[kind] = Mathf.Max(0, _aliveByKind[kind] - 1);
+            AliveZombies.Value = Mathf.Max(0, AliveZombies.Value - 1);
+            UpdateZombiesLeft();
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        void BossDefeatedRpc(long bonus) => BossDefeated?.Invoke(bonus);
     }
 }

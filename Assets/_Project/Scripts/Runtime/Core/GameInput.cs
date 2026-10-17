@@ -14,6 +14,7 @@ namespace ZombiesFPS.Core
         Restart,
         ToggleHelp,
         OfferPowerUp,
+        SpawnBoss,
     }
 
     /// <summary>
@@ -110,6 +111,7 @@ namespace ZombiesFPS.Core
                 case DebugKey.Restart: return K.enterKey.wasPressedThisFrame || (G != null && G.startButton.wasPressedThisFrame);
                 case DebugKey.ToggleHelp: return K.hKey.wasPressedThisFrame;
                 case DebugKey.OfferPowerUp: return K.oKey.wasPressedThisFrame;
+                case DebugKey.SpawnBoss: return K.bKey.wasPressedThisFrame;
                 default: return false;
             }
         }
@@ -146,6 +148,7 @@ namespace ZombiesFPS.Core
                 case DebugKey.Restart: return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
                 case DebugKey.ToggleHelp: return Input.GetKeyDown(KeyCode.H);
                 case DebugKey.OfferPowerUp: return Input.GetKeyDown(KeyCode.O);
+                case DebugKey.SpawnBoss: return Input.GetKeyDown(KeyCode.B);
                 default: return false;
             }
         }

@@ -26,6 +26,8 @@ namespace ZombiesFPS.Core
         public RoundData roundData;
         public PriceTable priceTable;
         public UpgradeData upgradeData;
+        [Tooltip("Runner, crawler, brute, spitter and boss. Any type missing here uses built-in values.")]
+        public ZombieData[] zombieTypes;
 
         const string NameKey = "ZombiesFPS.PlayerName";
         const string AddressKey = "ZombiesFPS.JoinAddress";
@@ -49,6 +51,7 @@ namespace ZombiesFPS.Core
         {
             GameConfig.Gun = gunData != null ? gunData : ScriptableObject.CreateInstance<GunData>();
             GameConfig.Zombie = zombieData != null ? zombieData : ScriptableObject.CreateInstance<ZombieData>();
+            GameConfig.ZombieTypes = BuildZombieTypes(GameConfig.Zombie, zombieTypes);
             GameConfig.Round = roundData != null ? roundData : ScriptableObject.CreateInstance<RoundData>();
             GameConfig.Prices = priceTable != null ? priceTable : PriceTable.CreateDefault(GameConfig.Gun);
             GameConfig.Guns = GameConfig.Prices.BuildCatalog(GameConfig.Gun);
@@ -301,6 +304,19 @@ namespace ZombiesFPS.Core
                 // Keep the loopback fallback.
             }
             return s_LocalAddress;
+        }
+
+        /// <summary>One data asset per ZombieKind, walker first; kinds without an asset get the built-in values.</summary>
+        static ZombieData[] BuildZombieTypes(ZombieData walker, ZombieData[] assets)
+        {
+            var types = new ZombieData[ZombieData.KindCount];
+            types[0] = walker;
+            if (assets != null)
+                foreach (var asset in assets)
+                    if (asset != null && asset.kind != ZombieKind.Walker && types[(int)asset.kind] == null) types[(int)asset.kind] = asset;
+            for (int i = 1; i < types.Length; i++)
+                if (types[i] == null) types[i] = ZombieData.CreateDefault((ZombieKind)i);
+            return types;
         }
     }
 }

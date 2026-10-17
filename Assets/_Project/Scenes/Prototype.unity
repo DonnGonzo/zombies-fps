@@ -59,6 +59,12 @@ MonoBehaviour:
   roundData: {fileID: 11400000, guid: 2752b1b4979947c08e38d9e66e04f864, type: 2}
   priceTable: {fileID: 11400000, guid: 616f2bed3bd44273ac0e73aab8902f07, type: 2}
   upgradeData: {fileID: 11400000, guid: 6c54494a919c4d53ac92b29cb414dfb6, type: 2}
+  zombieTypes:
+  - {fileID: 11400000, guid: 2c46d044b7f1464780ab1af89b523e26, type: 2}
+  - {fileID: 11400000, guid: a71538a8d4dd49d08345469893bb10fb, type: 2}
+  - {fileID: 11400000, guid: 710ea87e1a774172b696629bd526b6a2, type: 2}
+  - {fileID: 11400000, guid: 933c9955554d45cc9b8f6d64f61c5538, type: 2}
+  - {fileID: 11400000, guid: b1dd26eb178b4d96a0c17dcafa99297e, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

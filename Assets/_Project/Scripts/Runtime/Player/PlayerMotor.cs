@@ -22,6 +22,17 @@ namespace ZombiesFPS.Player
         public bool InputLocked { get; set; }
         /// <summary>Scales walk, sprint and aim speed (the move speed power-up). Crawling is unaffected.</summary>
         public float SpeedMultiplier { get; set; } = 1f;
+        float _slowScale = 1f;
+        float _slowUntil;
+
+        /// <summary>Slows the player for a while (a crawler's leg hit). A new slow replaces the old one.</summary>
+        public void Slow(float scale, float duration)
+        {
+            _slowScale = Mathf.Clamp(scale, 0.1f, 1f);
+            _slowUntil = Time.time + duration;
+        }
+
+        public bool IsSlowed => Time.time < _slowUntil;
         /// <summary>Downed players crawl: slow, no sprint, no jump.</summary>
         public bool Downed { get; set; }
         public bool IsGrounded => _controller.isGrounded;
@@ -52,6 +63,7 @@ namespace ZombiesFPS.Player
 
             IsSprinting = !InputLocked && !Downed && GameInput.SprintHeld && input.y > 0.1f && !aiming && !firing;
             float targetSpeed = Downed ? downedSpeed : (IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed) * SpeedMultiplier;
+            if (IsSlowed) targetSpeed *= _slowScale;
 
             Vector3 wish = (transform.right * input.x + transform.forward * input.y) * targetSpeed;
             Vector3 planar = new Vector3(_velocity.x, 0f, _velocity.z);

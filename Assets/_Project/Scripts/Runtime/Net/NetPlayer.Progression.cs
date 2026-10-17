@@ -88,7 +88,7 @@ namespace ZombiesFPS.Net
             }
             if (Upgrades.machineOncePerWindow && MachineWindowUsed.Value == CurrentMachineWindow())
             {
-                what = "The machine recharges with the next power-up";
+                what = $"The machine recharges after round {(MachineWindowUsed.Value + 1) * Upgrades.powerUpEveryRounds}";
                 return -1;
             }
             what = $"upgrade the {GunName(slot)} to {Upgrades.Tier(tier + 1).suffix}";
@@ -261,9 +261,9 @@ namespace ZombiesFPS.Net
             if (best == null) return;
 
             Vector3 point = best.transform.position + Vector3.up * 1.2f;
-            long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * Upgrades.chainDamage));
+            long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * Upgrades.chainDamage * best.Data.bodyMultiplier));
             var result = best.TakeDamage(new DamageInfo(damage, point, (point - end).normalized, false, OwnerClientId));
-            AwardPoints(result, false);
+            AwardPoints(best, result, false);
             ChainFxRpc(end, point);
         }
 
@@ -272,13 +272,14 @@ namespace ZombiesFPS.Net
         {
             int count = Physics.OverlapSphereNonAlloc(end, Upgrades.explosiveRadius, _overlap, ~0, QueryTriggerInteraction.Ignore);
             _splashed.Clear();
-            long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * Upgrades.explosiveDamage));
+            double splash = baseDamage * Upgrades.explosiveDamage;
             for (int i = 0; i < count; i++)
             {
                 var z = _overlap[i].GetComponentInParent<NetZombie>();
                 if (z == null || z == primary || !z.IsAlive || !_splashed.Add(z)) continue;
+                long damage = System.Math.Max(1L, (long)System.Math.Round(splash * z.Data.bodyMultiplier));
                 var result = z.TakeDamage(new DamageInfo(damage, z.transform.position + Vector3.up, direction, false, OwnerClientId));
-                AwardPoints(result, false);
+                AwardPoints(z, result, false);
             }
         }
 

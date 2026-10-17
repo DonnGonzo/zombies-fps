@@ -15,7 +15,10 @@ namespace ZombiesFPS.Core
 
         /// <summary>The gun everyone starts with. Always gun id 0.</summary>
         public static GunData Gun;
+        /// <summary>The walker, also ZombieTypes[0].</summary>
         public static ZombieData Zombie;
+        /// <summary>Every zombie type, indexed by ZombieKind.</summary>
+        public static ZombieData[] ZombieTypes;
         public static RoundData Round;
         public static PriceTable Prices;
         public static UpgradeData Upgrades;
@@ -33,6 +36,12 @@ namespace ZombiesFPS.Core
         public static Vector3 PlayerSpawn(int slot) => PlayerStart + new Vector3((slot % MaxPlayers - 1.5f) * 1.6f, 0f, 0f);
 
         public static GunData GunById(int id) => Guns != null && id >= 0 && id < Guns.Length ? Guns[id] : null;
+
+        public static ZombieData ZombieType(ZombieKind kind)
+        {
+            int i = (int)kind;
+            return ZombieTypes != null && i < ZombieTypes.Length && ZombieTypes[i] != null ? ZombieTypes[i] : Zombie;
+        }
 
         public static int GunId(GunData gun) => Guns == null ? -1 : System.Array.IndexOf(Guns, gun);
     }

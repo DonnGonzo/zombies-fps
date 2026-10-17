@@ -100,6 +100,8 @@ namespace ZombiesFPS.Data
         };
         [Tooltip("Everyone picks a power-up after clearing every Nth round.")]
         public int powerUpEveryRounds = 5;
+        [Tooltip("No more offers after this round (0 = never stop).")]
+        public int lastPowerUpRound = 50;
         [Tooltip("On every Nth round the offer is drawn from power-ups you own, and picking one adds extra levels.")]
         public int empoweredEveryRounds = 25;
         public int empoweredLevels = 2;
@@ -147,10 +149,11 @@ namespace ZombiesFPS.Data
             return (packed & ~mask) | ((ulong)level << (index * 8));
         }
 
-        public bool IsPowerUpRound(int round) => powerUpEveryRounds > 0 && round > 0 && round % powerUpEveryRounds == 0;
-        public bool IsEmpoweredRound(int round) => empoweredEveryRounds > 0 && round > 0 && round % empoweredEveryRounds == 0;
+        public bool IsPowerUpRound(int round) => powerUpEveryRounds > 0 && round > 0 && round % powerUpEveryRounds == 0
+            && (lastPowerUpRound <= 0 || round <= lastPowerUpRound);
+        public bool IsEmpoweredRound(int round) => IsPowerUpRound(round) && empoweredEveryRounds > 0 && round % empoweredEveryRounds == 0;
 
-        /// <summary>Which machine window a round is in: the machine recharges when the next power-up arrives.</summary>
+        /// <summary>Which machine window a round is in: the machine recharges every powerUpEveryRounds rounds (also after the last power-up).</summary>
         public int WindowOf(int round) => powerUpEveryRounds > 0 ? Mathf.Max(0, round - 1) / powerUpEveryRounds : 0;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -19,8 +20,9 @@ namespace ZombiesFPS.Zombies
     }
 
     /// <summary>
-    /// A host-owned zombie. The host runs the NavMesh AI, health and attacks; clients get the position
-    /// from NetworkTransform and play the same animations from a handful of events (hit, swing, death).
+    /// A host-owned zombie of any type (walker, runner, crawler, brute, spitter or boss). The host runs the
+    /// NavMesh AI, health and attacks; clients get the position from NetworkTransform and play the same
+    /// animations from a handful of events (hit, swing, spit, death). Pooled objects change type per life.
     /// </summary>
     public class NetZombie : NetworkBehaviour, IDamageable
     {
@@ -40,14 +42,26 @@ namespace ZombiesFPS.Zombies
             new Color(0.38f, 0.44f, 0.4f),
         };
 
+        static readonly List<NetZombie> s_Bosses = new List<NetZombie>();
+        /// <summary>Bosses currently spawned, on every machine (for the HUD's health bars).</summary>
+        public static IReadOnlyList<NetZombie> Bosses => s_Bosses;
+
         NetworkVariable<ZombieMode> _mode = new NetworkVariable<ZombieMode>(ZombieMode.Chasing);
+        NetworkVariable<ZombieKind> _kind = new NetworkVariable<ZombieKind>(ZombieKind.Walker);
+        /// <summary>Health left as a share of full, kept up to date for bosses only.</summary>
+        public NetworkVariable<float> HealthFraction = new NetworkVariable<float>(1f);
 
         ZombieData _data;
         AudioSource _audio;
         Collider[] _colliders;
         Renderer[] _renderers;
         Material[] _baseMaterials;
-        Transform _visual, _head, _armL, _armR;
+        Transform _visual, _pose, _head, _armL, _armR;
+        GameObject _armor, _sac, _core;
+        CapsuleCollider _bodyCollider;
+        Hitbox _bodyHitbox, _coreHitbox;
+        Renderer[] _skinRenderers, _clothRenderers;
+        Color _skin;
         bool _built;
 
         // Visual state (every machine).
@@ -75,12 +89,18 @@ namespace ZombiesFPS.Zombies
         float _despawnAt;
         long _pendingHealth;
         ZombieSpeedTier _pendingTier;
+        long _maxHealth;
         Vector3 _stuckAnchor;
         float _stuckSince;
         float _offMeshSince;
+        float _nextSpitTime;
+        float _spitAt = -1f;
+        readonly RaycastHit[] _sightHits = new RaycastHit[8];
 
         public bool IsAlive => _mode.Value != ZombieMode.Dead;
         public long Health => _health;
+        public ZombieKind Kind => _kind.Value;
+        public ZombieData Data => _data != null ? _data : GameConfig.ZombieType(_kind.Value);
 
         /// <summary>Raised on the host when this zombie dies (for the round manager's counters).</summary>
         public event Action<NetZombie, DamageInfo> Died;
@@ -91,18 +111,22 @@ namespace ZombiesFPS.Zombies
         public void Prebuild() => Build(SkinTones[UnityEngine.Random.Range(0, SkinTones.Length)]);
 
         /// <summary>Host: call before Spawn(). Pooled zombies come back here for every new life.</summary>
-        public void ServerSetup(long health, ZombieSpeedTier tier)
+        public void ServerSetup(ZombieKind kind, long health, ZombieSpeedTier tier)
         {
             _pendingHealth = health;
             _pendingTier = tier;
+            _kind.Value = kind;
             _mode.Value = ZombieMode.Chasing;
+            HealthFraction.Value = 1f;
         }
 
         public override void OnNetworkSpawn()
         {
-            _data = GameConfig.Zombie;
+            _data = GameConfig.ZombieType(_kind.Value);
             Prebuild();
+            ApplyKind();
             ResetVisuals();
+            if (_data.IsBoss) s_Bosses.Add(this);
             _lastPosition = transform.position;
             _nextGroan = Time.time + UnityEngine.Random.Range(0.5f, 3f);
             _walkPhase = UnityEngine.Random.Range(0f, 10f);
@@ -112,18 +136,20 @@ namespace ZombiesFPS.Zombies
             if (IsServer)
             {
                 _health = Math.Max(1L, (long)Math.Round(_pendingHealth * (double)_data.healthMultiplier));
+                _maxHealth = _health;
                 _moveSpeed = _data.SpeedFor(_pendingTier) * UnityEngine.Random.Range(0.9f, 1.1f);
                 if (_agent == null)
                 {
                     _agent = gameObject.AddComponent<NavMeshAgent>();
-                    _agent.height = 1.8f;
-                    _agent.radius = 0.32f;
                     _agent.acceleration = 14f;
                     _agent.angularSpeed = 540f;
-                    _agent.stoppingDistance = 1.1f;
                     _agent.autoBraking = true;
                     _agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
                 }
+                _agent.height = 1.8f * _data.bodyScale.y;
+                _agent.radius = Mathf.Min(0.32f * Mathf.Max(_data.bodyScale.x, _data.bodyScale.z), 0.6f);
+                _agent.stoppingDistance = Mathf.Min(1.1f, _data.attackRange * 0.65f);
+                _agent.avoidancePriority = _data.IsBoss ? 10 : 50;
                 _agent.enabled = true;
                 _agent.speed = _moveSpeed;
                 _agent.Warp(transform.position);
@@ -137,11 +163,14 @@ namespace ZombiesFPS.Zombies
                 _stuckAnchor = transform.position;
                 _stuckSince = Time.time;
                 _offMeshSince = -1f;
+                _spitAt = -1f;
+                _nextSpitTime = Time.time + UnityEngine.Random.Range(1f, _data.spitCooldown);
             }
         }
 
         public override void OnNetworkDespawn()
         {
+            s_Bosses.Remove(this);
             _mode.OnValueChanged -= OnModeChanged;
             Died = null;
             Recycled = null;
@@ -168,11 +197,10 @@ namespace ZombiesFPS.Zombies
             if (_built) return;
             _built = true;
 
-            var body = gameObject.AddComponent<CapsuleCollider>();
-            body.center = new Vector3(0f, 0.75f, 0f);
-            body.height = 1.5f;
-            body.radius = 0.3f;
-            gameObject.AddComponent<Hitbox>().Init(this, head: false);
+            _skin = skin;
+            _bodyCollider = gameObject.AddComponent<CapsuleCollider>();
+            _bodyHitbox = gameObject.AddComponent<Hitbox>();
+            _bodyHitbox.Init(this, head: false);
             var rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
@@ -186,25 +214,81 @@ namespace ZombiesFPS.Zombies
 
             var cloth = new Color(0.22f, 0.2f, 0.18f);
             _visual = Greybox.Empty("Visual", transform, Vector3.zero);
-            Greybox.Prim(PrimitiveType.Capsule, "Torso", _visual, new Vector3(0f, 0.95f, 0f), new Vector3(0.55f, 0.5f, 0.38f), cloth, collider: false);
-            Greybox.Prim(PrimitiveType.Capsule, "LegL", _visual, new Vector3(-0.13f, 0.4f, 0f), new Vector3(0.2f, 0.4f, 0.2f), cloth, collider: false);
-            Greybox.Prim(PrimitiveType.Capsule, "LegR", _visual, new Vector3(0.13f, 0.4f, 0f), new Vector3(0.2f, 0.4f, 0.2f), cloth, collider: false);
+            // The pose sits under the animated visual so a type can crouch, crawl or grow without fighting the animation.
+            _pose = Greybox.Empty("Pose", _visual, Vector3.zero);
+            var torso = Greybox.Prim(PrimitiveType.Capsule, "Torso", _pose, new Vector3(0f, 0.95f, 0f), new Vector3(0.55f, 0.5f, 0.38f), cloth, collider: false);
+            var legL = Greybox.Prim(PrimitiveType.Capsule, "LegL", _pose, new Vector3(-0.13f, 0.4f, 0f), new Vector3(0.2f, 0.4f, 0.2f), cloth, collider: false);
+            var legR = Greybox.Prim(PrimitiveType.Capsule, "LegR", _pose, new Vector3(0.13f, 0.4f, 0f), new Vector3(0.2f, 0.4f, 0.2f), cloth, collider: false);
 
-            var headGo = Greybox.Prim(PrimitiveType.Sphere, "Head", _visual, new Vector3(0f, 1.62f, 0.04f), Vector3.one * 0.34f, skin);
+            var headGo = Greybox.Prim(PrimitiveType.Sphere, "Head", _pose, new Vector3(0f, 1.62f, 0.04f), Vector3.one * 0.34f, skin);
             headGo.AddComponent<Hitbox>().Init(this, head: true);
             _head = headGo.transform;
             var eye = new Color(1f, 0.85f, 0.2f);
             Greybox.Prim(PrimitiveType.Cube, "EyeL", _head, new Vector3(-0.17f, 0.08f, 0.44f), new Vector3(0.12f, 0.06f, 0.06f), eye, collider: false, unlit: true);
             Greybox.Prim(PrimitiveType.Cube, "EyeR", _head, new Vector3(0.17f, 0.08f, 0.44f), new Vector3(0.12f, 0.06f, 0.06f), eye, collider: false, unlit: true);
 
-            _armL = Greybox.Empty("ArmL", _visual, new Vector3(-0.32f, 1.32f, 0f));
-            _armR = Greybox.Empty("ArmR", _visual, new Vector3(0.32f, 1.32f, 0f));
-            Greybox.Box("ForearmL", _armL, new Vector3(0f, 0f, 0.3f), new Vector3(0.12f, 0.12f, 0.6f), skin, collider: false);
-            Greybox.Box("ForearmR", _armR, new Vector3(0f, 0f, 0.3f), new Vector3(0.12f, 0.12f, 0.6f), skin, collider: false);
+            _armL = Greybox.Empty("ArmL", _pose, new Vector3(-0.32f, 1.32f, 0f));
+            _armR = Greybox.Empty("ArmR", _pose, new Vector3(0.32f, 1.32f, 0f));
+            var foreL = Greybox.Box("ForearmL", _armL, new Vector3(0f, 0f, 0.3f), new Vector3(0.12f, 0.12f, 0.6f), skin, collider: false);
+            var foreR = Greybox.Box("ForearmR", _armR, new Vector3(0f, 0f, 0.3f), new Vector3(0.12f, 0.12f, 0.6f), skin, collider: false);
+            _skinRenderers = new[] { headGo.GetComponent<Renderer>(), foreL.GetComponent<Renderer>(), foreR.GetComponent<Renderer>() };
+            _clothRenderers = new[] { torso.GetComponent<Renderer>(), legL.GetComponent<Renderer>(), legR.GetComponent<Renderer>() };
+
+            // Optional parts, switched on per type.
+            var plate = new Color(0.32f, 0.33f, 0.36f);
+            _armor = Greybox.Empty("Armor", _pose, Vector3.zero).gameObject;
+            Greybox.Box("Chest", _armor.transform, new Vector3(0f, 1.05f, 0.2f), new Vector3(0.5f, 0.5f, 0.08f), plate, collider: false);
+            Greybox.Box("ShoulderL", _armor.transform, new Vector3(-0.33f, 1.38f, 0f), new Vector3(0.26f, 0.1f, 0.3f), plate, collider: false);
+            Greybox.Box("ShoulderR", _armor.transform, new Vector3(0.33f, 1.38f, 0f), new Vector3(0.26f, 0.1f, 0.3f), plate, collider: false);
+
+            _sac = Greybox.Prim(PrimitiveType.Sphere, "AcidSac", _pose, new Vector3(0f, 1.1f, -0.26f), new Vector3(0.42f, 0.5f, 0.32f), FxSystem.Acid, collider: false, unlit: true);
+
+            // Sticks out of the back past the body collider, so shots from behind reach it.
+            _core = Greybox.Prim(PrimitiveType.Sphere, "WeakPoint", _pose, new Vector3(0f, 1.1f, -0.36f), Vector3.one * 0.26f, new Color(1f, 0.55f, 0.1f), collider: true, unlit: true);
+            _coreHitbox = _core.AddComponent<Hitbox>();
+            _coreHitbox.Init(this, head: false);
 
             _colliders = GetComponentsInChildren<Collider>(true);
             _renderers = _visual.GetComponentsInChildren<Renderer>(true);
             _baseMaterials = new Material[_renderers.Length];
+        }
+
+        /// <summary>Shapes and colours the body for this life's type, and sets its hitbox multipliers.</summary>
+        void ApplyKind()
+        {
+            var d = _data;
+            SetFlash(false);
+            _visual.localScale = d.bodyScale;
+            _armor.SetActive(d.armored);
+            _sac.SetActive(d.spitRange > 0f);
+            _core.SetActive(d.weakPointMultiplier > 0f);
+            _bodyHitbox.multiplier = d.bodyMultiplier;
+            _coreHitbox.multiplier = d.weakPointMultiplier;
+
+            if (d.crawls)
+            {
+                // Pitched forward on all fours, centred over the agent.
+                _pose.localPosition = new Vector3(0f, 0.3f, -0.6f);
+                _pose.localRotation = Quaternion.Euler(80f, 0f, 0f);
+                _bodyCollider.direction = 2;
+                _bodyCollider.center = new Vector3(0f, 0.42f, 0.2f);
+                _bodyCollider.height = 1.5f;
+                _bodyCollider.radius = 0.28f;
+            }
+            else
+            {
+                _pose.localPosition = Vector3.zero;
+                _pose.localRotation = Quaternion.identity;
+                _bodyCollider.direction = 1;
+                _bodyCollider.center = new Vector3(0f, 0.75f * d.bodyScale.y, 0f);
+                _bodyCollider.height = 1.5f * d.bodyScale.y;
+                _bodyCollider.radius = 0.3f * Mathf.Max(d.bodyScale.x, d.bodyScale.z);
+            }
+
+            var skin = Greybox.Lit(_skin * d.skinTint);
+            var cloth = Greybox.Lit(d.clothColor);
+            foreach (var r in _skinRenderers) r.sharedMaterial = skin;
+            foreach (var r in _clothRenderers) r.sharedMaterial = cloth;
             for (int i = 0; i < _renderers.Length; i++) _baseMaterials[i] = _renderers[i].sharedMaterial;
         }
 
@@ -215,6 +299,7 @@ namespace ZombiesFPS.Zombies
             if (!IsServer || _mode.Value == ZombieMode.Dead) return default;
             long dealt = Math.Min(info.Amount, _health);
             _health -= dealt;
+            if (_data.IsBoss) HealthFraction.Value = _maxHealth > 0 ? Mathf.Clamp01((float)((double)_health / _maxHealth)) : 0f;
             _staggerUntil = Time.time + _data.staggerTime;
             bool killed = _health <= 0;
 
@@ -254,6 +339,14 @@ namespace ZombiesFPS.Zombies
         void DeathRpc(Vector3 direction, bool headshot)
         {
             EnterDeadVisual(direction, headshot);
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        void SpitRpc(Vector3 from, Vector3 to, float flightTime)
+        {
+            _swingStart = Time.time;
+            _audio.PlayOneShot(ProceduralAudio.ZombieSwipe, 0.5f);
+            AcidSpit.Launch(from, to, flightTime, _data, IsServer);
         }
 
         void OnModeChanged(ZombieMode previous, ZombieMode current)
@@ -340,6 +433,8 @@ namespace ZombiesFPS.Zombies
                 _stuckSince = Time.time;
             }
 
+            if (_mode.Value == ZombieMode.Chasing && UpdateSpit(distance, toTarget)) return;
+
             if (_mode.Value == ZombieMode.Chasing)
             {
                 _agent.isStopped = false;
@@ -371,10 +466,64 @@ namespace ZombiesFPS.Zombies
                 {
                     _attackLanded = true;
                     // Backing off during the wind-up dodges the hit.
-                    if (distance <= _data.attackRange + 0.5f) _target.ServerApplyDamage(_data.damage, transform.position);
+                    if (distance <= _data.attackRange + 0.5f)
+                    {
+                        _target.ServerApplyDamage(_data.damage, transform.position);
+                        // Crawlers go for the legs.
+                        if (_data.slowTime > 0f) _target.ServerSlow(_data.slowOnHit, _data.slowTime);
+                    }
                 }
                 if (_attackTimer >= _data.attackWindup + _data.attackRecovery) _mode.Value = ZombieMode.Chasing;
             }
+        }
+
+        /// <summary>
+        /// Host: spitters stop to lob acid at a player they can see. The acid lands where the player stood,
+        /// so standing still gets you burned. Returns true while the spit holds the zombie in place.
+        /// </summary>
+        bool UpdateSpit(float distance, Vector3 toTarget)
+        {
+            if (_data.spitRange <= 0f) return false;
+            if (_spitAt < 0f)
+            {
+                bool inRange = distance <= _data.spitRange && distance > _data.attackRange + 1f;
+                if (!inRange || Time.time < _nextSpitTime || !CanSee(_target)) return false;
+                _spitAt = Time.time + _data.spitWindup;
+                _nextSpitTime = Time.time + _data.spitCooldown;
+            }
+
+            _agent.isStopped = true;
+            if (distance > 0.01f)
+            {
+                var face = Quaternion.LookRotation(toTarget / distance, Vector3.up);
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, face, 540f * Time.deltaTime);
+            }
+            if (Time.time < _spitAt) return true;
+
+            _spitAt = -1f;
+            Vector3 from = _head.position;
+            Vector3 to = _target.transform.position;
+            float flight = Mathf.Clamp(Vector3.Distance(from, to) / Mathf.Max(1f, _data.spitSpeed), 0.35f, 1.4f);
+            SpitRpc(from, to, flight);
+            return false;
+        }
+
+        /// <summary>Nothing but zombies and players between this zombie's head and the player's chest.</summary>
+        bool CanSee(NetPlayer player)
+        {
+            Vector3 from = _head.position;
+            Vector3 to = player.transform.position + Vector3.up * 1.2f;
+            Vector3 dir = to - from;
+            float dist = dir.magnitude;
+            if (dist < 0.01f) return true;
+            int count = Physics.RaycastNonAlloc(from, dir / dist, _sightHits, dist, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var c = _sightHits[i].collider;
+                if (c.GetComponentInParent<NetZombie>() != null || c.GetComponentInParent<NetPlayer>() != null) continue;
+                return false;
+            }
+            return true;
         }
 
         /// <summary>Host: removes a zombie that can't reach anyone, without a kill. The round manager respawns it.</summary>

@@ -42,6 +42,15 @@ namespace ZombiesFPS.Data
         public long roundBonusBase = 100;
         public long roundBonusPerRound = 10;
 
+        [Header("Boss rounds")]
+        [Tooltip("A Warden boss joins every Nth round.")]
+        public int bossEveryRounds = 10;
+        [Tooltip("One more boss on a boss round every this many rounds (round 50 brings 2).")]
+        public int extraBossEveryRounds = 50;
+        public int maxBosses = 4;
+        [Tooltip("Points every player gets when a boss goes down.")]
+        public long bossBonus = 500;
+
         [Header("Health")]
         public long healthBase = 150;
         [Tooltip("Flat health added each round up to linearUntilRound.")]
@@ -88,6 +97,15 @@ namespace ZombiesFPS.Data
         {
             round = Mathf.Clamp(round, 1, MaxRound);
             return roundBonusBase + roundBonusPerRound * (round - 1);
+        }
+
+        public bool IsBossRound(int round) => bossEveryRounds > 0 && round > 0 && round % bossEveryRounds == 0;
+
+        public int BossCountForRound(int round)
+        {
+            if (!IsBossRound(round)) return 0;
+            int extra = extraBossEveryRounds > 0 ? round / extraBossEveryRounds : 0;
+            return Mathf.Clamp(1 + extra, 1, Mathf.Max(1, maxBosses));
         }
 
         public long HealthForRound(int round)

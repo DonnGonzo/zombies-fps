@@ -32,6 +32,14 @@ namespace ZombiesFPS.Editor
             // No fallback asset: without one the game uses the built-in prices and wall guns.
             boot.priceTable = AssetDatabase.LoadAssetAtPath<PriceTable>($"{DataFolder}/PriceTable.asset");
             boot.upgradeData = LoadOrCreate<UpgradeData>("UpgradeData");
+            var types = new System.Collections.Generic.List<ZombieData>();
+            foreach (var name in new[] { "Zombie_Runner", "Zombie_Crawler", "Zombie_Brute", "Zombie_Spitter", "Zombie_Boss" })
+            {
+                // No fallback assets: a missing type uses the built-in values.
+                var type = AssetDatabase.LoadAssetAtPath<ZombieData>($"{DataFolder}/{name}.asset");
+                if (type != null) types.Add(type);
+            }
+            boot.zombieTypes = types.ToArray();
             EditorSceneManager.SaveScene(scene, ScenePath);
 
             var scenes = EditorBuildSettings.scenes;
