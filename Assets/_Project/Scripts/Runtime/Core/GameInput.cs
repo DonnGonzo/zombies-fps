@@ -76,6 +76,7 @@ namespace ZombiesFPS.Core
         public static bool MeleePressed => Pressed(GameAction.Melee) || Pad(PadButton.RightStick, down: true);
         public static bool GrenadePressed => Pressed(GameAction.Grenade) || Pad(PadButton.RightShoulder, down: true);
         public static bool KnifePressed => Pressed(GameAction.ThrowingKnife) || Pad(PadButton.LeftShoulder, down: true);
+        public static bool MapPressed => Pressed(GameAction.Map);
         public static bool ConcussionPressed => Pressed(GameAction.Concussion) || Pad(PadButton.Select, down: true);
 
         /// <summary>Esc (or Start) is fixed so the menu can always be reached.</summary>

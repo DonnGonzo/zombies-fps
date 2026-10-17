@@ -6,6 +6,25 @@ Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design pla
 
 All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the map, power-ups, the upgrade machine, six zombie types and bosses, missions, XP and the spawn shop, perks, the story and voice lines. Art is still greybox and the voices are placeholder "blips" with subtitles. A plain-language feature list is in the project files as `feature-breakdown.pdf`.
 
+**Bigger map, climbing and buildables**
+- The map is four times bigger: twelve 34 m zones in a 4 x 3 grid, and every pair of neighbouring zones is joined by a door (17 doors, 750 near the start up to 2,250 at the far side), so there are lots of ways round:
+
+  | Greenhouse | Archives | Lantern Core | Crane Yard |
+  |---|---|---|---|
+  | **Barracks** | **Chapel** | **Garage** | **Pump Station** |
+  | **Courtyard** | **Gate Yard** (start) | **Depot** | **Loading Dock** |
+
+- Every zone has something to climb: stairs up to a watch platform, choir loft, mezzanine, pump house, loading dock and catwalk; parkour block runs in the Garage, Courtyard and Crane Yard; and ladders in the Depot, Barracks, Loading Dock (up the truck), Pump Station, Lantern Core, Archives and Greenhouse
+- Ladders: walk into one facing it to climb, S to go down, jump to let go. Zombies climb ladders and jump the parkour gaps too, so nowhere is safe for long
+- Six high spots can only be reached by climbing: Depot Loft, Garage Roof, Water Tower, Container Stack, Records Loft and Greenhouse Roof
+- New mission type, high ground: King of the Hill (round 6, full ammo) and Signal Boost (round 15, power-up reroll) light the signal beacon on one of the high spots; climb up and hold it
+- Build stations on the Garage Roof and the Greenhouse Roof build three things from parts hidden around the map. Each part can be in one of three places, picked fresh every game, many of them up on the high spots. Parts anyone finds count for the whole squad:
+  - Scrap Cannon (barrel, coil, grip): a slow, explosive cannon whose shots punch through four zombies. Once built, everyone can take one
+  - Scrap Shield (frame, plate, strap): carried on your arm, it takes 90% of hits from in front (not acid) until it has soaked 1,500 damage. When it breaks you can take a new one from the next round
+  - Buddy Bot (chassis, rotor, brain): a drone that follows whoever switched it on and shoots the nearest zombie it can see for two minutes, then breaks and stays offline for five rounds. Its kills count as yours
+- Map screen (M): every zone and its name, which are open, the doors and their prices, where you and your squad are and which way you face, the high spots, build stations, shop, upgrade machine and current missions, and which parts are still missing
+- Test console: `doors` opens every door, `parts` finds every part, `goto crane` or `goto high 2` teleports you
+
 **Story, NPCs and voice (Phase 6)**
 - The Dispatcher talks to the squad over the radio in four acts that follow the design doc: Setup (rounds 1-25), Rising stakes (26-100), the Twist (101-250, the Dispatcher turns out to be Director Vale and every generator you powered fed the Lantern) and the Endgame (251-500, up the lift shaft), with calls at rounds 1, 2, 3, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 100, 101, 110, 125, 150, 175, 200, 225, 250, 251, 275, 300, 350, 400, 450, 475, 499 and on winning. She also comments on new mission sets, finished missions, boss rounds, blackouts and game overs
 - The Trader stands behind the spawn shop counter and tells a bit of lore each time you open the shop, different for each act
@@ -61,23 +80,20 @@ All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the 
 - After every 5th round up to round 50 each player picks 1 of 3 power-ups with 1 / 2 / 3 (d-pad left / up / right). They stack: picking one again levels it up, with diminishing returns so stacking never runs away. Offers that pile up (left unpicked, or skipped over with the test keys) wait in a queue and come up one after another
   - Hollow Point (damage, up to +300%), Quick Hands (reload speed), Thick Skin (max health), Light Feet (move speed), Deadeye (headshot damage), Deep Pockets (magazine and reserve), Medic (revive speed), Bounty (kill points)
 - Every 25th round the offer is empowered: it is drawn from power-ups you already own and adds 2 levels
-- The upgrade machine (purple glow, in the Chapel) upgrades the gun in your hands: Mk II 5,000 (x2 damage, x1.5 ammo), Mk III 10,000 (x2.6, chain hits jump to a nearby zombie), Mk IV 15,000 (x3.3, chain plus explosive rounds). Each player can use it once every 5 rounds. An upgraded gun comes out full
+- The upgrade machine (purple glow, in the Lantern Core) upgrades the gun in your hands: Mk II 5,000 (x2 damage, x1.5 ammo), Mk III 10,000 (x2.6, chain hits jump to a nearby zombie), Mk IV 15,000 (x3.3, chain plus explosive rounds). Each player can use it once every 5 rounds. An upgraded gun comes out full
 - Owned power-ups show above the health bar; the health bar follows Thick Skin
 
 **Map, doors and wall guns (Phase 3)**
-- Six zones in a 3 x 2 grid, joined by six doors into one loop, so there is always a way round to retreat:
-
-  | Barracks | Chapel | Garage |
-  |---|---|---|
-  | **Courtyard** | **Gate Yard** (start) | **Depot** |
-
-- Doors cost 750 (next to the start), 1,000, then 1,250. Opening one opens the zone behind it and its zombie windows. Zombies come from the open windows nearest the players
+- Twelve zones joined by 17 doors (see "Bigger map" above). Opening a door opens the zone behind it and its zombie windows. Zombies come from the open windows nearest the players
 - Wall guns, drawn in chalk on the walls: buy a gun once, then buy ammo for it at about half price. Walk up and press E
   - Rook-9 Carbine ammo (Gate Yard, Barracks) 250
   - Hatchet .44 revolver (Depot) 750
   - Wren-7 SMG (Courtyard) 1,000
+  - Mauler 12 shotgun (Chapel) 1,250
   - Brennan DMR (Garage) 1,500
-  - Talon LMG (Chapel) 2,500
+  - Kestrel AR (Pump Station) 2,000
+  - Vanta .50 sniper (Crane Yard) 2,250
+  - Talon LMG (Lantern Core) 2,500
 - Two weapon slots. A third gun replaces the one in your hands. Switch with Q, the mouse wheel or 1 / 2
 - Every price is in one asset, `Data/PriceTable`. Each gun is its own `GunData` asset
 - Doors and buys are checked and paid for on the host; everyone sees doors open together
@@ -134,12 +150,14 @@ Every keyboard and mouse key can be changed in Settings, Controls. Defaults:
 |---|---|
 | Move / sprint / jump | WASD / Shift / Space |
 | Fire / aim / reload | Left mouse / right mouse / R |
-| Buy (doors, wall guns, ammo, perks, armour, upgrade) | E |
+| Buy (doors, wall guns, ammo, perks, armour, upgrade), pick up parts, use a build station | E |
 | Revive a downed teammate | Hold E |
 | Melee / grenade / throwing knife / concussion bang | V / G / T / C |
 | Switch weapon | Q / mouse wheel / 1, 2 |
 | Pick a power-up / redraw the cards (with a reroll) | 1 / 2 / 3 / 4 |
 | Open the spawn shop / buy an attachment | E at the stall / 1-9 |
+| Climb a ladder / climb down / let go | Walk into it / S / Space |
+| Map | M |
 | Pause menu (resume, settings, story, leave) / toggle help | Esc / H |
 | Test mode (host): next round / jump 10 rounds / god mode / +5,000 points / power-up offer / spawn a boss / console | `=` / `]` / `F1` / `P` / `O` / `B` / `` ` `` or F2 |
 | Restart after game over (host) | Enter |
@@ -151,7 +169,8 @@ A gamepad works too, with the Input System backend (sticks, triggers, south = ju
 Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even during Play mode:
 
 - `Gun_Rook9`, `Gun_Hatchet44`, `Gun_Wren7`, `Gun_BrennanDMR`, `Gun_TalonLMG`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom, and the model's length and colour
-- `PriceTable`: door costs, upgrade machine costs, and each wall gun's price and ammo price
+- `PriceTable`: door costs, upgrade machine costs, each wall gun's price and ammo price, and the reward guns (Ion Lance, Scrap Cannon)
+- `Gun_ScrapCannon`: the buildable cannon's stats
 - `ShopData`: attachments (unlock level, price, stat multipliers), camos and titles with their unlock levels, the XP curve and XP rewards, and whether levels are saved between runs
 - `MissionData`: each mission's objective, target and reward (base plus growth per round), how often sets refresh, generator radius
 - `UpgradeData`: each power-up's max bonus and half level, how often offers come, empowered levels, machine tiers, chain and explosive damage
@@ -160,7 +179,7 @@ Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even dur
 - `EquipmentData`: melee damage and range, each throwable's starting count, carry limit, refill, damage, radius, fuse and stun
 - `RoundData`: blackout rounds, boss rounds and boss bonus, zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests (story and voice tables, prestige, perks, explosions, blackout rounds, round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets, XP curve, attachment slots and stats, camo and title unlocks) from **Window → General → Test Runner → EditMode**.
+Run the tests (story and voice tables, prestige, perks, explosions, blackout rounds, round formulas, live cap, spawn pacing, round bonus, the door network, high spots, part spots, ladders, the map key, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets, XP curve, attachment slots and stats, camo and title unlocks) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 

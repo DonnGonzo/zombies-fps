@@ -19,6 +19,8 @@ namespace ZombiesFPS.Data
         NoDowns,
         /// <summary>A survivor holes up in an open zone: keep the zombies off them for a number of seconds.</summary>
         ProtectSurvivor,
+        /// <summary>Someone climbs to one of the map's high spots and holds its signal beacon for a number of seconds.</summary>
+        HoldHighGround,
     }
 
     /// <summary>What a finished mission gives every player, on top of its points.</summary>
@@ -101,6 +103,8 @@ namespace ZombiesFPS.Data
             new MissionDef("Safe Passage", "Keep the survivor alive for {0} seconds", MissionObjective.ProtectSurvivor, 40, 0.3f, 90, 700, 50, MissionBonus.MaxAmmo, 5),
             new MissionDef("The Prototype", "Protect the engineer for {0} seconds. She's carrying a prototype weapon", MissionObjective.ProtectSurvivor, 60, 0.3f, 120, 1000, 60, MissionBonus.RareWeapon, 25),
             new MissionDef("Cut the Feed", "Overload the Lantern relay: hold it for {0} seconds", MissionObjective.HoldGenerator, 60, 0.3f, 120, 1200, 50, MissionBonus.PowerUpReroll, 101),
+            new MissionDef("King of the Hill", "Climb up and hold the signal beacon for {0} seconds", MissionObjective.HoldHighGround, 30, 0.3f, 75, 900, 50, MissionBonus.MaxAmmo, 6),
+            new MissionDef("Signal Boost", "Boost the Dispatcher's signal: hold the high-ground beacon for {0} seconds", MissionObjective.HoldHighGround, 45, 0.3f, 100, 1200, 60, MissionBonus.PowerUpReroll, 15),
             new MissionDef("The Defector", "Keep the defecting scientist alive for {0} seconds", MissionObjective.ProtectSurvivor, 70, 0.2f, 120, 1400, 60, MissionBonus.MaxAmmo, 110),
         };
 
@@ -138,7 +142,11 @@ namespace ZombiesFPS.Data
             return true;
         }
 
-        // A slot packs into one ulong: mission id (8 bits), done flag (1), zone (6), failed flag (1), progress (24), target (24).
+        /// <summary>Missions that happen at a place on the map: the zone (or, for high ground, the high spot) is in the slot.</summary>
+        public static bool IsPlaced(MissionObjective o) =>
+            o == MissionObjective.HoldGenerator || o == MissionObjective.ProtectSurvivor || o == MissionObjective.HoldHighGround;
+
+        // A slot packs into one ulong: mission id (8 bits), done flag (1), zone or high spot (6), failed flag (1), progress (24), target (24).
         public const int NoMission = 0xFF;
 
         public static ulong Pack(int id, bool done, int zone, int progress, int target, bool failed = false) =>

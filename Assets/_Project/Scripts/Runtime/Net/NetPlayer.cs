@@ -276,6 +276,7 @@ namespace ZombiesFPS.Net
             }
             else UpdateRemoteGun();
             VoiceTick();
+            UpdateShieldView();
         }
 
         /// <summary>Teammates see your camo on the gun in your hands.</summary>
@@ -427,7 +428,10 @@ namespace ZombiesFPS.Net
             foreach (var b in map.Buyables)
             {
                 if (b.Kind == BuyableKind.Door && MapState.Instance != null && MapState.Instance.IsDoorOpen(b.Index)) continue;
+                if (b.Kind == BuyableKind.Part && (BuildManager.Instance == null || BuildManager.Instance.PartWaitingAt(b.Index) < 0)) continue;
                 Vector3 d = b.Position - here;
+                // Up on a ledge or down below doesn't count.
+                if (Mathf.Abs(d.y - 1f) > 1.6f) continue;
                 d.y = 0f;
                 float sqr = d.sqrMagnitude;
                 if (sqr <= b.Range * b.Range && sqr < bestSqr)
@@ -457,6 +461,18 @@ namespace ZombiesFPS.Net
             {
                 what = "browse the shop";
                 return 0;
+            }
+            if (b.Kind == BuyableKind.Part)
+            {
+                int part = BuildManager.Instance != null ? BuildManager.Instance.PartWaitingAt(b.Index) : -1;
+                if (part < 0) return -1;
+                what = "pick up the " + BuildManager.PartNames[part];
+                return 0;
+            }
+            if (b.Kind == BuyableKind.Workbench)
+            {
+                if (BuildManager.Instance == null) return -1;
+                return BuildManager.Instance.BenchPrice(this, b.Index % ZoneMap.BuildableCount, out what);
             }
             var entry = GameConfig.Prices.WallGunAt(b.Index);
             if (entry == null || entry.gun == null) return -1;
@@ -505,6 +521,7 @@ namespace ZombiesFPS.Net
             if (!IsServer || State.Value != LifeState.Alive || amount <= 0f) return;
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.GodMode.Value) return;
+            amount = ServerShieldBlock(amount, from, acid);
             amount = ServerAbsorb(amount, acid);
             _lastDamageTime = Time.time;
             if (amount <= 0f) return;
@@ -567,6 +584,7 @@ namespace ZombiesFPS.Net
             ServerResetProgression();
             ServerResetPerks();
             ServerResetEquipment();
+            ServerResetBuildables();
             ServerRespawn(spawn);
         }
 
@@ -703,6 +721,7 @@ namespace ZombiesFPS.Net
             if (State.Value != LifeState.Alive || (rounds != null && rounds.IsGameOver)) return;
             var b = map.Buyables[buyableIndex];
             Vector3 d = b.Position - transform.position;
+            if (Mathf.Abs(d.y - 1f) > 2.2f) return;
             d.y = 0f;
             if (d.magnitude > b.Range + 1f) return;
 
@@ -729,6 +748,14 @@ namespace ZombiesFPS.Net
             {
                 ServerBuyFromStation(b);
                 if (b.Kind == BuyableKind.Perk) ServerSay(VoiceEvent.BuyPerk);
+            }
+            else if (b.Kind == BuyableKind.Part)
+            {
+                BuildManager.Instance.ServerPickUp(this, b.Index);
+            }
+            else if (b.Kind == BuyableKind.Workbench)
+            {
+                BuildManager.Instance.ServerUseBench(this, b.Index % ZoneMap.BuildableCount);
             }
             else
             {

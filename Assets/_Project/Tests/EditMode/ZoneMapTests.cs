@@ -9,34 +9,63 @@ namespace ZombiesFPS.Tests
     public class ZoneMapTests
     {
         [Test]
-        public void Doors_LinkEveryZoneIntoOneLoop()
+        public void Doors_ConnectEveryZone_WithAWayRound()
         {
-            // Every zone has exactly two doors, and walking door to door visits all six before coming back.
+            // Every zone has at least two doors (so there's always a way round), and every zone can be reached.
             var degree = new int[ZoneMap.ZoneCount];
             foreach (var link in ZoneMap.DoorLinks)
             {
                 degree[link.x]++;
                 degree[link.y]++;
             }
-            for (int z = 0; z < ZoneMap.ZoneCount; z++) Assert.AreEqual(2, degree[z], ZoneMap.ZoneNames[z]);
+            for (int z = 0; z < ZoneMap.ZoneCount; z++) Assert.GreaterOrEqual(degree[z], 2, ZoneMap.ZoneNames[z]);
 
             var visited = new HashSet<int> { ZoneMap.StartZone };
-            int current = ZoneMap.StartZone, cameFrom = -1;
-            for (int step = 0; step < ZoneMap.ZoneCount; step++)
+            var queue = new Queue<int>();
+            queue.Enqueue(ZoneMap.StartZone);
+            while (queue.Count > 0)
             {
-                int next = -1;
+                int current = queue.Dequeue();
                 foreach (var link in ZoneMap.DoorLinks)
                 {
                     int other = link.x == current ? link.y : link.y == current ? link.x : -1;
-                    if (other >= 0 && other != cameFrom) { next = other; break; }
+                    if (other >= 0 && visited.Add(other)) queue.Enqueue(other);
                 }
-                Assert.GreaterOrEqual(next, 0);
-                cameFrom = current;
-                current = next;
-                visited.Add(current);
             }
-            Assert.AreEqual(ZoneMap.StartZone, current, "the loop should come back to the start");
             Assert.AreEqual(ZoneMap.ZoneCount, visited.Count);
+        }
+
+        [Test]
+        public void Doors_SitOnTheWallBetweenNeighbours()
+        {
+            for (int d = 0; d < ZoneMap.DoorLinks.Length; d++)
+            {
+                var a = ZoneMap.ZoneCenter(ZoneMap.DoorLinks[d].x);
+                var b = ZoneMap.ZoneCenter(ZoneMap.DoorLinks[d].y);
+                Assert.AreEqual(ZoneMap.ZoneHalfSize * 2f, Vector3.Distance(a, b), 0.01f, "door " + d + " joins zones that aren't neighbours");
+            }
+            Assert.Less(ZoneMap.DoorLinks.Length, 31, "open doors are a bitmask");
+        }
+
+        [Test]
+        public void HighSpots_PartsAndBenches_AreOnTheMap()
+        {
+            for (int i = 0; i < ZoneMap.HighSpotCount; i++)
+                Assert.AreEqual(ZoneMap.HighSpotZones[i], ZoneMap.ZoneOfPoint(ZoneMap.HighSpot(i)), ZoneMap.HighSpotNames[i]);
+            Assert.AreEqual(ZoneMap.PartCount * ZoneMap.SpotsPerPart, ZoneMap.PartSpotCount);
+            for (int part = 0; part < ZoneMap.PartCount; part++)
+            {
+                // A part's candidate spots are in different zones, so where it turns up really changes.
+                var zones = new HashSet<int>();
+                for (int k = 0; k < ZoneMap.SpotsPerPart; k++)
+                {
+                    int zone = ZoneMap.ZoneOfPoint(ZoneMap.PartSpot(part * ZoneMap.SpotsPerPart + k));
+                    Assert.GreaterOrEqual(zone, 0);
+                    zones.Add(zone);
+                }
+                Assert.AreEqual(ZoneMap.SpotsPerPart, zones.Count, "part " + part);
+            }
+            for (int b = 0; b < ZoneMap.BenchCount; b++) Assert.GreaterOrEqual(ZoneMap.ZoneOfPoint(ZoneMap.BenchPosition(b)), 0);
         }
 
         [Test]

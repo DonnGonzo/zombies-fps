@@ -269,6 +269,7 @@ namespace ZombiesFPS.Net
             foreach (var p in NetPlayer.All) p.ServerResetForRestart(GameConfig.PlayerSpawn(slot++));
             if (MapState.Instance != null) MapState.Instance.ServerReset();
             if (MissionBoard.Instance != null) MissionBoard.Instance.ServerReset();
+            if (BuildManager.Instance != null) BuildManager.Instance.ServerReset();
             Round.Value = 0;
             Won.Value = false;
             BeginIntermission(GameConfig.Round.firstRoundDelay);

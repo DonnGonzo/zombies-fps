@@ -5,6 +5,7 @@ using ZombiesFPS.Core;
 using ZombiesFPS.Data;
 using ZombiesFPS.Net;
 using ZombiesFPS.Player;
+using ZombiesFPS.World;
 
 namespace ZombiesFPS.UI
 {
@@ -40,6 +41,9 @@ namespace ZombiesFPS.UI
             "perks          every perk and full armour for everyone",
             "ammo           full ammo and throwables for everyone",
             "powerup [emp]  offer power-up cards (emp = empowered)",
+            "doors          open every door",
+            "parts          find every build part",
+            "goto ZONE      teleport yourself (try: goto crane, goto high 2)",
             "clearlog       empty this log",
         };
 
@@ -229,10 +233,52 @@ namespace ZombiesFPS.UI
                     rounds.DebugOfferPowerUps(arg.StartsWith("emp", StringComparison.OrdinalIgnoreCase));
                     Log("Power-up cards offered.");
                     break;
+                case "doors":
+                    if (MapState.Instance != null)
+                        for (int d = 0; d < ZoneMap.DoorLinks.Length; d++) MapState.Instance.ServerOpenDoor(d);
+                    Log("Every door is open.");
+                    break;
+                case "parts":
+                    if (BuildManager.Instance != null) BuildManager.Instance.DebugCollectAll();
+                    Log("Every part found. Build them at a build station.");
+                    break;
+                case "goto":
+                    var me = NetPlayer.Local;
+                    if (me == null || !TryFindPlace(arg, out Vector3 to, out string placeName))
+                    {
+                        Log("Usage: goto ZONE (part of a zone name) or goto high N (0-5, a high spot)");
+                        break;
+                    }
+                    me.DebugTeleport(to);
+                    Log($"Teleported to {placeName}.");
+                    break;
                 default:
                     Log($"Unknown command \"{cmd}\". Type help.");
                     break;
             }
+        }
+
+        static bool TryFindPlace(string arg, out Vector3 position, out string name)
+        {
+            position = Vector3.zero;
+            name = null;
+            if (string.IsNullOrWhiteSpace(arg)) return false;
+            var words = arg.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words[0].Equals("high", StringComparison.OrdinalIgnoreCase) && words.Length > 1 && int.TryParse(words[1], out int spot)
+                && spot >= 0 && spot < ZoneMap.HighSpotCount)
+            {
+                position = ZoneMap.HighSpot(spot) + new Vector3(-1.5f, 0.1f, 0f);
+                name = "the " + ZoneMap.HighSpotNames[spot];
+                return true;
+            }
+            for (int z = 0; z < ZoneMap.ZoneCount; z++)
+                if (ZoneMap.ZoneNames[z].IndexOf(arg, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    position = ZoneMap.ZoneCenter(z) + new Vector3(0f, 0.1f, -3f);
+                    name = "the " + ZoneMap.ZoneNames[z];
+                    return true;
+                }
+            return false;
         }
 
         static int FindGun(string arg)

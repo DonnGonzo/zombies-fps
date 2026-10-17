@@ -34,6 +34,11 @@ namespace ZombiesFPS.Zombies
         const float StuckTime = 15f;
         const float StuckMoveDistance = 0.5f;
         const float StuckMinTargetDistance = 8f;
+        // Ladders and jumps (the map's NavMesh links).
+        const float ClimbSpeed = 2.4f;
+        const float ClimbRise = 1.6f;
+        // A player more than this far above or below can't be hit (on a ledge over the zombie's head).
+        const float AttackHeight = 1.6f;
 
         static readonly Color[] SkinTones =
         {
@@ -96,6 +101,9 @@ namespace ZombiesFPS.Zombies
         float _offMeshSince;
         float _nextSpitTime;
         float _spitAt = -1f;
+        bool _onLink, _linkClimb;
+        Vector3 _linkStart, _linkEnd;
+        float _linkTime, _linkDuration;
         readonly RaycastHit[] _sightHits = new RaycastHit[8];
 
         public bool IsAlive => _mode.Value != ZombieMode.Dead;
@@ -146,6 +154,8 @@ namespace ZombiesFPS.Zombies
                     _agent.angularSpeed = 540f;
                     _agent.autoBraking = true;
                     _agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+                    // Ladders and jumps are moved by hand (TraverseLink) so they look like climbing and leaping.
+                    _agent.autoTraverseOffMeshLink = false;
                 }
                 _agent.height = 1.8f * _data.bodyScale.y;
                 _agent.radius = Mathf.Min(0.32f * Mathf.Max(_data.bodyScale.x, _data.bodyScale.z), 0.6f);
@@ -168,6 +178,7 @@ namespace ZombiesFPS.Zombies
                 _stuckSince = Time.time;
                 _offMeshSince = -1f;
                 _spitAt = -1f;
+                _onLink = false;
                 _nextSpitTime = Time.time + UnityEngine.Random.Range(1f, _data.spitCooldown);
             }
         }
@@ -427,6 +438,11 @@ namespace ZombiesFPS.Zombies
             _offMeshSince = -1f;
 
             float dt = Time.deltaTime;
+            if (_agent.isOnOffMeshLink)
+            {
+                TraverseLink(dt);
+                return;
+            }
             var rounds = RoundManager.Instance;
             bool gameOver = rounds != null && rounds.IsGameOver;
             float speed = Time.time < _staggerUntil ? _moveSpeed * _data.staggerSpeedScale : _moveSpeed;
@@ -451,6 +467,7 @@ namespace ZombiesFPS.Zombies
             }
 
             Vector3 toTarget = _target.transform.position - transform.position;
+            bool level = Mathf.Abs(toTarget.y) < AttackHeight;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
 
@@ -492,7 +509,7 @@ namespace ZombiesFPS.Zombies
                     _agent.SetDestination(dest);
                     _repathTimer = RepathInterval;
                 }
-                if (distance <= _data.attackRange)
+                if (distance <= _data.attackRange && level)
                 {
                     _mode.Value = ZombieMode.Attacking;
                     _attackTimer = 0f;
@@ -513,7 +530,7 @@ namespace ZombiesFPS.Zombies
                 {
                     _attackLanded = true;
                     // Backing off during the wind-up dodges the hit.
-                    if (distance <= _data.attackRange + 0.5f)
+                    if (distance <= _data.attackRange + 0.5f && level)
                     {
                         _target.ServerApplyDamage(_data.damage, transform.position);
                         // Crawlers go for the legs.
@@ -521,6 +538,63 @@ namespace ZombiesFPS.Zombies
                     }
                 }
                 if (_attackTimer >= _data.attackWindup + _data.attackRecovery) _mode.Value = ZombieMode.Chasing;
+            }
+        }
+
+        /// <summary>
+        /// Host: crosses one of the map's NavMesh links. Ladders (a big height change) are climbed hand over hand,
+        /// straight up at the foot and then over the top (or the other way down); anything else is a leap.
+        /// </summary>
+        void TraverseLink(float dt)
+        {
+            if (!_onLink)
+            {
+                var link = _agent.currentOffMeshLinkData;
+                _onLink = true;
+                _linkStart = transform.position;
+                _linkEnd = link.endPos;
+                Vector3 flat = _linkEnd - _linkStart;
+                float rise = flat.y;
+                flat.y = 0f;
+                float speed = Mathf.Max(1.5f, _agent.speed);
+                _linkClimb = Mathf.Abs(rise) > ClimbRise;
+                _linkDuration = _linkClimb ? Mathf.Abs(rise) / ClimbSpeed + flat.magnitude / speed : Mathf.Max(0.4f, flat.magnitude / speed + 0.2f);
+                _linkTime = 0f;
+                if (flat.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
+                if (_mode.Value == ZombieMode.Attacking) _mode.Value = ZombieMode.Chasing;
+            }
+
+            _linkTime += dt;
+            float t = Mathf.Clamp01(_linkTime / _linkDuration);
+            Vector3 p;
+            if (_linkClimb)
+            {
+                Vector3 flat = _linkEnd - _linkStart;
+                float rise = flat.y;
+                flat.y = 0f;
+                float climbShare = Mathf.Clamp01(Mathf.Abs(rise) / ClimbSpeed / _linkDuration);
+                bool up = rise > 0f;
+                // Up: climb at the foot, then step over onto the ledge. Down: step to the edge, then climb down.
+                float vertical = up ? Mathf.Clamp01(t / climbShare) : Mathf.Clamp01((t - (1f - climbShare)) / climbShare);
+                float across = up ? Mathf.Clamp01((t - climbShare) / Mathf.Max(0.01f, 1f - climbShare))
+                    : Mathf.Clamp01(t / Mathf.Max(0.01f, 1f - climbShare));
+                p = _linkStart + flat * across + Vector3.up * (rise * vertical);
+            }
+            else
+            {
+                float rise = _linkEnd.y - _linkStart.y;
+                float arc = 0.5f + 0.5f * Mathf.Abs(rise);
+                p = Vector3.Lerp(_linkStart, _linkEnd, t) + Vector3.up * (4f * arc * t * (1f - t));
+            }
+            transform.position = p;
+
+            if (t >= 1f)
+            {
+                _onLink = false;
+                _agent.CompleteOffMeshLink();
+                _stuckAnchor = transform.position;
+                _stuckSince = Time.time;
+                _repathTimer = 0f;
             }
         }
 

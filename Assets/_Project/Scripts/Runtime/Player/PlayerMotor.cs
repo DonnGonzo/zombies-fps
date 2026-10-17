@@ -1,9 +1,10 @@
 using UnityEngine;
 using ZombiesFPS.Core;
+using ZombiesFPS.World;
 
 namespace ZombiesFPS.Player
 {
-    /// <summary>First-person movement on a CharacterController: walk, sprint, aim-walk, jump.</summary>
+    /// <summary>First-person movement on a CharacterController: walk, sprint, aim-walk, jump, climb ladders.</summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMotor : MonoBehaviour
     {
@@ -15,6 +16,7 @@ namespace ZombiesFPS.Player
         public float jumpHeight = 1.1f;
         public float gravity = -22f;
         public float downedSpeed = 1.1f;
+        public float climbSpeed = 3.5f;
 
         CharacterController _controller;
         Vector3 _velocity;
@@ -38,6 +40,11 @@ namespace ZombiesFPS.Player
         public bool IsGrounded => _controller.isGrounded;
         public bool IsSprinting { get; private set; }
         public Vector3 Velocity => _velocity;
+        /// <summary>On a ladder right now.</summary>
+        public bool IsClimbing => _ladder != null;
+
+        Ladder _ladder;
+        float _noGrabUntil;
         public float PlanarSpeed => new Vector2(_velocity.x, _velocity.z).magnitude;
 
         void Awake()
@@ -52,6 +59,7 @@ namespace ZombiesFPS.Player
             transform.position = position;
             _controller.enabled = true;
             _velocity = Vector3.zero;
+            _ladder = null;
         }
 
         void Update()
@@ -60,6 +68,19 @@ namespace ZombiesFPS.Player
             Vector2 input = InputLocked ? Vector2.zero : GameInput.Move;
             bool aiming = !InputLocked && GameInput.AimHeld;
             bool firing = !InputLocked && GameInput.FireHeld;
+
+            // Walking into a ladder while facing it grabs it.
+            if (_ladder == null && !Downed && !InputLocked && Time.time >= _noGrabUntil && input.y > 0.1f)
+            {
+                var near = Ladder.Near(transform.position);
+                if (near != null && Vector3.Dot(transform.forward, -near.Out) > 0.35f) _ladder = near;
+            }
+            if (_ladder != null)
+            {
+                IsSprinting = false;
+                Climb(dt, input);
+                return;
+            }
 
             IsSprinting = !InputLocked && !Downed && GameInput.SprintHeld && input.y > 0.1f && !aiming && !firing;
             float targetSpeed = Downed ? downedSpeed : (IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed) * SpeedMultiplier;
@@ -79,6 +100,52 @@ namespace ZombiesFPS.Player
             _velocity = new Vector3(planar.x, vertical, planar.z);
             var flags = _controller.Move(_velocity * dt);
             if ((flags & CollisionFlags.Above) != 0 && _velocity.y > 0f) _velocity.y = 0f;
+        }
+
+        /// <summary>Forward climbs (backward while facing away from the ladder), back climbs down, jump lets go.</summary>
+        void Climb(float dt, Vector2 input)
+        {
+            var ladder = _ladder;
+            if (Downed || !ladder.InReach(transform.position))
+            {
+                LetGo(Vector3.zero, 0.3f);
+                return;
+            }
+            if (!InputLocked && GameInput.JumpPressed)
+            {
+                LetGo(ladder.Out * 3.5f + Vector3.up * 3f, 0.6f);
+                return;
+            }
+
+            bool facing = Vector3.Dot(transform.forward, -ladder.Out) > -0.2f;
+            float climb = input.y * climbSpeed * (facing ? 1f : -1f);
+            float height = transform.position.y - ladder.Base.y;
+            if (climb > 0f && height >= ladder.Height - 0.05f)
+            {
+                // Over the top: a hop forward onto the ledge.
+                LetGo(-ladder.Out * 3.2f + Vector3.up * 2.5f, 0.6f);
+                _controller.Move(_velocity * dt);
+                return;
+            }
+            if (climb < 0f && _controller.isGrounded && height < 0.1f)
+            {
+                LetGo(Vector3.zero, 0.5f);
+                return;
+            }
+
+            Vector3 side = Vector3.Cross(Vector3.up, ladder.Out);
+            Vector3 move = Vector3.up * climb
+                + side * (Vector3.Dot(transform.right * input.x, side) * 1.2f)
+                - ladder.Out * 0.6f; // Pressed against the rungs.
+            _velocity = move;
+            _controller.Move(move * dt);
+        }
+
+        void LetGo(Vector3 velocity, float noGrab)
+        {
+            _ladder = null;
+            _velocity = velocity;
+            _noGrabUntil = Time.time + noGrab;
         }
     }
 }

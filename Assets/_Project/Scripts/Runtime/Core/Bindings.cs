@@ -23,6 +23,7 @@ namespace ZombiesFPS.Core
         Grenade,
         ThrowingKnife,
         Concussion,
+        Map,
     }
 
     /// <summary>
@@ -40,6 +41,7 @@ namespace ZombiesFPS.Core
             KeyCode.Mouse0, KeyCode.Mouse1, KeyCode.R, KeyCode.E,
             KeyCode.Q, KeyCode.Alpha1, KeyCode.Alpha2,
             KeyCode.V, KeyCode.G, KeyCode.T, KeyCode.C,
+            KeyCode.M,
         };
 
         static readonly string[] Labels =
@@ -49,6 +51,7 @@ namespace ZombiesFPS.Core
             "Fire", "Aim down sights", "Reload", "Use / buy / revive",
             "Switch weapon", "Weapon 1", "Weapon 2",
             "Melee", "Throw grenade", "Throw knife", "Throw concussion bang",
+            "Show the map",
         };
 
         /// <summary>Keys the settings menu accepts when rebinding (Escape cancels instead).</summary>

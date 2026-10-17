@@ -17,8 +17,19 @@ MonoBehaviour:
   - 750
   - 1000
   - 1000
+  - 1000
   - 1250
   - 1250
+  - 1250
+  - 1500
+  - 1500
+  - 1500
+  - 1750
+  - 1750
+  - 2000
+  - 2000
+  - 2000
+  - 2250
   wallGuns:
   - gun: {fileID: 11400000, guid: aa74712322ac450a97d1f8f30d592622, type: 2}
     price: 500
@@ -49,3 +60,4 @@ MonoBehaviour:
     ammoPrice: 1100
   rareGuns:
   - {fileID: 11400000, guid: c740941ac31b46d18a037b3317b9ee84, type: 2}
+  - {fileID: 11400000, guid: db5ddce85ae74f5f93b2abd820a36265, type: 2}

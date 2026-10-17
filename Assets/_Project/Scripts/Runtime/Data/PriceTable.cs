@@ -22,7 +22,7 @@ namespace ZombiesFPS.Data
         }
 
         [Tooltip("Cost of each door, in the map's door order (see ZoneMap.Doors).")]
-        public long[] doorCosts = { 750, 750, 1000, 1000, 1250, 1250 };
+        public long[] doorCosts = { 750, 750, 1000, 1000, 1000, 1250, 1250, 1250, 1500, 1500, 1500, 1750, 1750, 2000, 2000, 2000, 2250 };
 
         [Tooltip("Upgrade machine: the cost of each visit (Mk II, Mk III, Mk IV).")]
         public long[] upgradeCosts = { 5000, 10000, 15000 };
@@ -30,7 +30,7 @@ namespace ZombiesFPS.Data
         [Tooltip("Guns on the walls, in the map's wall-buy order (see ZoneMap.WallBuys). A gun can appear twice.")]
         public List<WallGun> wallGuns = new List<WallGun>();
 
-        [Tooltip("Guns that aren't on any wall, only given as rewards (the Ion Lance from missions).")]
+        [Tooltip("Guns that aren't on any wall: the Ion Lance (a mission reward), then the Scrap Cannon (built at a build station).")]
         public List<GunData> rareGuns = new List<GunData>();
 
         public GunData RareGun(int index) => rareGuns != null && index >= 0 && index < rareGuns.Count ? rareGuns[index] : null;
@@ -89,7 +89,10 @@ namespace ZombiesFPS.Data
             var lance = MakeGun("Ion Lance", 260, 2f, true, 480f, 40, 200, 320, 2.4f, 2.8f, 0.15f, 0.5f, 0.2f, 1.25f, new Color(0.3f, 0.9f, 1f));
             lance.pierce = 2;
             lance.explosiveRounds = true;
-            table.rareGuns = new List<GunData> { lance };
+            var cannon = MakeGun("Scrap Cannon", 900, 1.5f, false, 110f, 6, 36, 60, 2.8f, 3.2f, 0.3f, 3.2f, 0.8f, 1.4f, new Color(1f, 0.55f, 0.15f));
+            cannon.pierce = 4;
+            cannon.explosiveRounds = true;
+            table.rareGuns = new List<GunData> { lance, cannon };
             return table;
         }
 

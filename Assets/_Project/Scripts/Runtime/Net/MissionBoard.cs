@@ -115,16 +115,27 @@ namespace ZombiesFPS.Net
             var map = GameConfig.Map;
             if (map == null || map.Generators == null) return;
             foreach (var g in map.Generators) g.SetState(GeneratorState.Idle, 0f);
+            if (map.Beacons != null)
+                foreach (var g in map.Beacons) g.SetState(GeneratorState.Idle, 0f);
             for (int i = 0; i < MissionData.SlotCount; i++)
             {
-                var def = DefIn(i);
-                if (def == null || def.objective != MissionObjective.HoldGenerator) continue;
+                var props = PropsFor(DefIn(i), map);
+                if (props == null) continue;
                 ulong slot = SlotValue(i);
-                int zone = MissionData.ZoneOf(slot);
-                if (zone < 0 || zone >= map.Generators.Length) continue;
+                int at = MissionData.ZoneOf(slot);
+                if (at < 0 || at >= props.Length) continue;
                 float progress = MissionData.TargetOf(slot) > 0 ? (float)MissionData.ProgressOf(slot) / MissionData.TargetOf(slot) : 0f;
-                map.Generators[zone].SetState(MissionData.DoneOf(slot) ? GeneratorState.Done : GeneratorState.Active, progress);
+                props[at].SetState(MissionData.DoneOf(slot) ? GeneratorState.Done : GeneratorState.Active, progress);
             }
+        }
+
+        /// <summary>The props a hold mission uses: zone generators, or high-spot beacons. Null for other missions.</summary>
+        static Generator[] PropsFor(MissionDef def, ZoneMap map)
+        {
+            if (def == null || map == null) return null;
+            if (def.objective == MissionObjective.HoldGenerator) return map.Generators;
+            if (def.objective == MissionObjective.HoldHighGround) return map.Beacons;
+            return null;
         }
 
         // ---------------------------------------------------------------- server
@@ -142,9 +153,12 @@ namespace ZombiesFPS.Net
             {
                 var def = DefIn(i);
                 ulong slot = SlotValue(i);
-                if (def == null || def.objective != MissionObjective.HoldGenerator || MissionData.DoneOf(slot)) continue;
-                int zone = MissionData.ZoneOf(slot);
-                if (map == null || zone >= map.Generators.Length || !AnyoneNear(map.Generators[zone].transform.position)) continue;
+                var props = PropsFor(def, map);
+                if (props == null || MissionData.DoneOf(slot)) continue;
+                int at = MissionData.ZoneOf(slot);
+                // The beacon only counts from up on the high spot, not from the floor below it.
+                bool level = def.objective == MissionObjective.HoldHighGround;
+                if (at >= props.Length || !AnyoneNear(props[at].transform.position, level)) continue;
                 _holdTime[i] += Time.deltaTime;
                 while (_holdTime[i] >= 1f)
                 {
@@ -192,13 +206,14 @@ namespace ZombiesFPS.Net
         [Rpc(SendTo.ClientsAndHost)]
         void MissionFailedRpc(int id) => MissionFailed?.Invoke(id);
 
-        static bool AnyoneNear(Vector3 position)
+        static bool AnyoneNear(Vector3 position, bool level = false)
         {
             float r = Data.generatorRadius;
             foreach (var p in NetPlayer.All)
             {
                 if (!p.IsAlive) continue;
                 Vector3 d = p.transform.position - position;
+                if (level && Mathf.Abs(d.y) > 1.5f) continue;
                 d.y = 0f;
                 if (d.sqrMagnitude <= r * r) return true;
             }
@@ -241,8 +256,8 @@ namespace ZombiesFPS.Net
                 int id = _pool[next++];
                 var def = Data.At(id);
                 haveSurvivor |= def.objective == MissionObjective.ProtectSurvivor;
-                bool placed = def.objective == MissionObjective.HoldGenerator || def.objective == MissionObjective.ProtectSurvivor;
-                int zone = placed ? PickGeneratorZone(openMask) : 0;
+                int zone = def.objective == MissionObjective.HoldHighGround ? PickHighSpot(openMask)
+                    : MissionData.IsPlaced(def.objective) ? PickGeneratorZone(openMask) : 0;
                 if (def.objective == MissionObjective.ProtectSurvivor) SurvivorHealth.Value = Data.survivorHealth;
                 SlotVariable(i).Value = MissionData.Pack(id, false, zone, 0, def.TargetFor(round));
             }
@@ -255,6 +270,15 @@ namespace ZombiesFPS.Net
             for (int z = 0; z < ZoneMap.ZoneCount; z++)
                 if (ZoneMap.IsZoneOpen(z, openMask)) _zones.Add(z);
             return _zones.Count > 0 ? _zones[UnityEngine.Random.Range(0, _zones.Count)] : ZoneMap.StartZone;
+        }
+
+        /// <summary>A high spot in a zone that's open if there is one; otherwise any, so the mission is a reason to open doors.</summary>
+        int PickHighSpot(int openMask)
+        {
+            _zones.Clear();
+            for (int s = 0; s < ZoneMap.HighSpotCount; s++)
+                if (ZoneMap.IsZoneOpen(ZoneMap.HighSpotZones[s], openMask)) _zones.Add(s);
+            return _zones.Count > 0 ? _zones[UnityEngine.Random.Range(0, _zones.Count)] : UnityEngine.Random.Range(0, ZoneMap.HighSpotCount);
         }
 
         /// <summary>Host only. A zombie died to a player.</summary>

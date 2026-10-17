@@ -44,6 +44,7 @@ namespace ZombiesFPS.UI
         bool _wasUnlocked;
         bool _consoleWasOpen;
         bool _wasGameOver;
+        bool _mapOpen;
 
         // Blackout atmosphere.
         float _blackout;
@@ -62,6 +63,9 @@ namespace ZombiesFPS.UI
             RoundManager.BossDefeated += OnBossDefeated;
             MissionBoard.MissionCompleted += OnMissionCompleted;
             MissionBoard.MissionFailed += OnMissionFailed;
+            BuildManager.PartFound += OnPartFound;
+            BuildManager.ItemBuilt += OnItemBuilt;
+            BuildManager.RobotBroke += OnRobotBroke;
             // The pause menu has its own Resume button, so a click there mustn't drop straight back into the game.
             PlayerLook.ClickToResume = false;
             gameObject.AddComponent<StoryDirector>().Init(player);
@@ -74,6 +78,9 @@ namespace ZombiesFPS.UI
             RoundManager.BossDefeated -= OnBossDefeated;
             MissionBoard.MissionCompleted -= OnMissionCompleted;
             MissionBoard.MissionFailed -= OnMissionFailed;
+            BuildManager.PartFound -= OnPartFound;
+            BuildManager.ItemBuilt -= OnItemBuilt;
+            BuildManager.RobotBroke -= OnRobotBroke;
             PlayerLook.ClickToResume = true;
             SettingsMenu.Close();
             DebugConsole.Close();
@@ -106,6 +113,40 @@ namespace ZombiesFPS.UI
             if (def == null) return;
             ShowBanner("MISSION FAILED", def.objective == MissionObjective.ProtectSurvivor ? $"{def.title}: the survivor didn't make it." : def.title, Ui.Bad);
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.DryFire, 1f);
+        }
+
+        static string NameOf(ulong clientId)
+        {
+            foreach (var p in NetPlayer.All)
+                if (p.OwnerClientId == clientId) return p == NetPlayer.Local ? "You" : p.DisplayName;
+            return "Someone";
+        }
+
+        void OnPartFound(int part, ulong finder)
+        {
+            var build = BuildManager.Instance;
+            if (build == null) return;
+            int item = BuildManager.ItemOf(part);
+            int found = build.PartsFound(item);
+            string sub = found >= ZoneMap.PartsPerBuildable
+                ? $"All parts found. Build the {BuildManager.BuildableNames[item]} at a build station (Garage Roof or Greenhouse Roof)."
+                : $"{BuildManager.BuildableNames[item]}: {found}/{ZoneMap.PartsPerBuildable} parts";
+            ShowBanner($"{NameOf(finder).ToUpperInvariant()} FOUND THE {BuildManager.PartNames[part].ToUpperInvariant()}", sub, BuildManager.BuildableColors[item]);
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.Purchase, 0.9f);
+        }
+
+        void OnItemBuilt(int item, ulong builder)
+        {
+            ShowBanner($"{BuildManager.BuildableNames[item].ToUpperInvariant()} BUILT", item == BuildManager.Bot
+                ? $"Switched on by {NameOf(builder)}. It helps for two minutes, then needs {BuildManager.RobotOfflineRounds} rounds to come back online."
+                : $"{NameOf(builder)} built it. Anyone can take one from a build station.", BuildManager.BuildableColors[item]);
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
+        }
+
+        void OnRobotBroke()
+        {
+            var build = BuildManager.Instance;
+            ShowBanner("BUDDY BOT OFFLINE", build != null ? $"Back online at round {build.RobotReadyRound.Value}" : null, BuildManager.BuildableColors[BuildManager.Bot]);
         }
 
         static string RewardText(MissionDef def, int round)
@@ -155,6 +196,7 @@ namespace ZombiesFPS.UI
             if (!SettingsMenu.IsCapturing && GameInput.DebugPressed(DebugKey.Console)) DebugConsole.Toggle();
             else if (DebugConsole.IsOpen && GameInput.PausePressed) DebugConsole.Toggle();
             if (!DebugConsole.IsOpen && GameInput.DebugPressed(DebugKey.ToggleHelp)) _showHelp = !_showHelp;
+            if (!DebugConsole.IsOpen && !SettingsMenu.IsCapturing && _player.Look.CursorLocked && GameInput.MapPressed) _mapOpen = !_mapOpen;
 
             bool gameOver = rounds != null && rounds.IsGameOver;
             if (_wasGameOver && !gameOver) PlayerLook.SetCursorLocked(true);
@@ -177,7 +219,12 @@ namespace ZombiesFPS.UI
             {
                 if (_pause == PauseScreen.Settings) SettingsMenu.Close();
                 _pause = PauseScreen.Main;
-                if (!console && GameInput.PausePressed) PlayerLook.SetCursorLocked(false);
+                // Esc closes the map first, then pauses.
+                if (!console && GameInput.PausePressed)
+                {
+                    if (_mapOpen) _mapOpen = false;
+                    else PlayerLook.SetCursorLocked(false);
+                }
             }
             else if (_wasUnlocked && !console && GameInput.PausePressed && !SettingsMenu.IsCapturing && !(rounds != null && rounds.IsGameOver))
             {
@@ -305,8 +352,12 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Perk: Tips.Offer("perk", "Perk machines sell lasting upgrades. You keep them until you go down, then they're gone."); break;
                     case BuyableKind.Armor: Tips.Offer("armor", "Armour plates soak up hits before your health. You can carry three and they get pricier each round."); break;
                     case BuyableKind.Reroll: Tips.Offer("reroll", "The shrine sells redraws for power-up cards. Press 4 while picking a power-up to redraw."); break;
+                    case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all three parts of the Scrap Cannon, Scrap Shield or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
+                    case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Scrap Shield or Buddy Bot here once the squad has all three of its parts; after that, take one whenever you need it."); break;
                 }
             }
+            if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
+            if (rounds.Round.Value >= 3) Tips.Offer("map", $"Press {K(GameAction.Map)} for the map: every zone, where your squad is, the high spots and the build stations.");
             if (_player.HasPowerUpOffer) Tips.Offer("powerup", "Power-up! Press 1, 2 or 3 to pick a card. Power-ups stack and stay for the whole game, even if you go down.");
             if (MissionBoard.Instance != null && MissionBoard.Instance.SetRound.Value > 0 && rounds.Round.Value >= 2)
                 Tips.Offer("mission", "Missions (top right) pay the whole squad. A new set of three arrives every 10 rounds.");
@@ -398,6 +449,7 @@ namespace ZombiesFPS.UI
             DrawTip(w, h, u);
             DrawSubtitles(w, h, u);
             if (_showHelp) DrawHelp(w, h, u, rounds);
+            if (_mapOpen && _player.Look.CursorLocked) MapScreen.Draw(w, h, u, _player);
 
             if (DebugConsole.IsOpen) DebugConsole.Draw(w, h, u);
             else if (!_player.Look.CursorLocked) DrawPause(w, h, u);
@@ -569,7 +621,7 @@ namespace ZombiesFPS.UI
                 return;
             }
             bool afford = _player.Points.Value >= price;
-            string text = $"{Capitalise(what)}   {price:N0}";
+            string text = price > 0 ? $"{Capitalise(what)}   {price:N0}" : Capitalise(what);
             Ui.Prompt(w / 2f, y, K(GameAction.Interact), text, Ui.Body, afford ? Ui.Text : Ui.Bad, u);
             if (!afford) Ui.Label(new Rect(0, y + 40 * u, w, 30 * u), $"You need {price - _player.Points.Value:N0} more points", Ui.Small, Ui.Muted, TextAnchor.MiddleCenter);
         }
@@ -697,6 +749,16 @@ namespace ZombiesFPS.UI
         }
 
         /// <summary>The current mission set, top right.</summary>
+        /// <summary>Where a placed mission is, for its description: " in the Depot", " on the Water Tower (Pump Station)".</summary>
+        static string MissionWhere(MissionDef def, ulong slot)
+        {
+            int at = MissionData.ZoneOf(slot);
+            if (def.objective == MissionObjective.HoldHighGround && at < ZoneMap.HighSpotCount)
+                return $" on the {ZoneMap.HighSpotNames[at]} ({ZoneMap.ZoneNames[ZoneMap.HighSpotZones[at]]})";
+            if (MissionData.IsPlaced(def.objective) && at < ZoneMap.ZoneCount) return $" in the {ZoneMap.ZoneNames[at]}";
+            return "";
+        }
+
         void DrawMissions(float w, float u)
         {
             var board = MissionBoard.Instance;
@@ -719,8 +781,7 @@ namespace ZombiesFPS.UI
                 ulong slot = board.SlotValue(i);
                 bool done = MissionData.DoneOf(slot), failed = MissionData.FailedOf(slot);
                 int target = MissionData.TargetOf(slot), progress = MissionData.ProgressOf(slot);
-                bool placed = def.objective == MissionObjective.HoldGenerator || def.objective == MissionObjective.ProtectSurvivor;
-                string where = placed ? $" in the {ZoneMap.ZoneNames[MissionData.ZoneOf(slot)]}" : "";
+                string where = MissionWhere(def, slot);
                 Color c = done ? Ui.Good : failed ? Ui.Bad : Ui.Text;
                 Ui.Label(new Rect(x + 18 * u, y, pw - 36 * u, 24 * u), def.title, Ui.Small, c, TextAnchor.MiddleLeft);
                 string state = done ? "DONE" : failed ? "FAILED" : $"{progress}/{target}";
@@ -748,7 +809,7 @@ namespace ZombiesFPS.UI
                 $"{Keys(GameAction.MoveForward, GameAction.MoveLeft, GameAction.MoveBack, GameAction.MoveRight)} move  ·  {K(GameAction.Sprint)} sprint  ·  {K(GameAction.Jump)} jump",
                 $"{K(GameAction.Fire)} fire  ·  {K(GameAction.Aim)} aim  ·  {K(GameAction.Reload)} reload  ·  {K(GameAction.SwitchWeapon)} switch gun",
                 $"{K(GameAction.Melee)} melee  ·  {K(GameAction.Grenade)} grenade  ·  {K(GameAction.ThrowingKnife)} knife  ·  {K(GameAction.Concussion)} bang",
-                $"{K(GameAction.Interact)} buy / hold to revive  ·  1 2 3 pick power-up  ·  4 redraw",
+                $"{K(GameAction.Interact)} buy / hold to revive  ·  1 2 3 pick power-up  ·  4 redraw  ·  {K(GameAction.Map)} map",
             };
             if (rounds != null && rounds.IsServer)
                 lines.Add("Test (host): = next round  ·  ] +10 rounds  ·  F1 god  ·  P +5,000  ·  O power-up  ·  B boss  ·  ` console");
@@ -781,6 +842,23 @@ namespace ZombiesFPS.UI
                     float fill = Mathf.Clamp01(_player.Armor.Value / perks.plateArmor - i);
                     Ui.Bar(new Rect(px + i * (pw + 4 * u), y - 14 * u, pw, 8 * u), fill, Ui.Sky);
                 }
+            }
+
+            // Scrap Shield and Buddy Bot, under the health bar.
+            float extraX = x;
+            if (_player.HasShield)
+            {
+                var sc = BuildManager.BuildableColors[BuildManager.Shield];
+                Ui.Bar(new Rect(extraX, y + 22 * u, 150 * u, 6 * u), _player.ShieldHealth.Value / BuildManager.ShieldMaxHealth, sc);
+                Ui.Label(new Rect(extraX + 156 * u, y + 14 * u, 120 * u, 22 * u), "SHIELD", Ui.Tiny, sc, TextAnchor.MiddleLeft);
+                extraX += 240 * u;
+            }
+            var build = BuildManager.Instance;
+            if (build != null && build.RobotActive && build.RobotOwner.Value == (long)_player.OwnerClientId)
+            {
+                var bc = BuildManager.BuildableColors[BuildManager.Bot];
+                Ui.Bar(new Rect(extraX, y + 22 * u, 150 * u, 6 * u), build.RobotTimeLeft.Value / BuildManager.RobotLifetime, bc);
+                Ui.Label(new Rect(extraX + 156 * u, y + 14 * u, 160 * u, 22 * u), $"BUDDY BOT {Mathf.CeilToInt(build.RobotTimeLeft.Value)}s", Ui.Tiny, bc, TextAnchor.MiddleLeft);
             }
 
             // Big round number.
