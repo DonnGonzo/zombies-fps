@@ -29,6 +29,8 @@ namespace ZombiesFPS.Editor
             boot.gunData = LoadOrCreate<GunData>("Gun_Rook9");
             boot.zombieData = LoadOrCreate<ZombieData>("Zombie_Walker");
             boot.roundData = LoadOrCreate<RoundData>("RoundData");
+            // No fallback asset: without one the game uses the built-in prices and wall guns.
+            boot.priceTable = AssetDatabase.LoadAssetAtPath<PriceTable>($"{DataFolder}/PriceTable.asset");
             EditorSceneManager.SaveScene(scene, ScenePath);
 
             var scenes = EditorBuildSettings.scenes;

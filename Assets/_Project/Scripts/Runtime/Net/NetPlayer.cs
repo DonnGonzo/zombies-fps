@@ -7,6 +7,7 @@ using ZombiesFPS.Core;
 using ZombiesFPS.Player;
 using ZombiesFPS.UI;
 using ZombiesFPS.Weapons;
+using ZombiesFPS.World;
 using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.Net
@@ -19,9 +20,10 @@ namespace ZombiesFPS.Net
     }
 
     /// <summary>
-    /// One connected player. The owner moves itself (owner-authority NetworkTransform) and predicts its
-    /// own shots; the host owns everything that costs health or money: damage, downs, revives, bleed-out,
-    /// points and kills. Remote players see a greybox body with a gun.
+    /// One connected player. The owner moves itself (owner-authority NetworkTransform), predicts its own
+    /// shots and keeps its own ammo; the host owns everything that costs health or money: damage, downs,
+    /// revives, bleed-out, points, kills, purchases and which guns are in the two weapon slots.
+    /// Remote players see a greybox body with a gun.
     /// </summary>
     public class NetPlayer : NetworkBehaviour
     {
@@ -31,6 +33,7 @@ namespace ZombiesFPS.Net
         public const float BleedOutTime = 30f;
         public const float ReviveTime = 3f;
         public const float ReviveRange = 2.2f;
+        public const int SlotCount = 2;
         const float EyeHeight = 1.62f;
 
         static readonly List<NetPlayer> s_All = new List<NetPlayer>();
@@ -56,6 +59,12 @@ namespace ZombiesFPS.Net
         public NetworkVariable<long> Points = new NetworkVariable<long>(0);
         public NetworkVariable<int> Kills = new NetworkVariable<int>(0);
         public NetworkVariable<int> Headshots = new NetworkVariable<int>(0);
+        /// <summary>Gun ids (GameConfig.Guns) in the two weapon slots; -1 is empty. Only the host changes them.</summary>
+        public NetworkVariable<int> Gun0 = new NetworkVariable<int>(0);
+        public NetworkVariable<int> Gun1 = new NetworkVariable<int>(-1);
+        /// <summary>Which slot is in the player's hands. The owner switches; the host reads it for damage.</summary>
+        public NetworkVariable<int> ActiveSlot = new NetworkVariable<int>(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         // Owner-only rig.
         PlayerMotor _motor;
@@ -64,6 +73,8 @@ namespace ZombiesFPS.Net
         Transform _pivot;
         AudioSource _uiAudio;
         bool _sentReviveHeld;
+        readonly int[] _slotMagazine = new int[SlotCount];
+        readonly int[] _slotReserve = new int[SlotCount];
 
         // Remote body.
         Transform _body;
@@ -83,6 +94,19 @@ namespace ZombiesFPS.Net
         /// <summary>Owner-side time of the last health drop, for the damage vignette.</summary>
         public float LocalLastDamageTime { get; private set; } = -100f;
         public Color SuitColor => SuitColors[(int)(OwnerClientId % (ulong)SuitColors.Length)];
+        /// <summary>Owner only: the door or wall gun the player is standing at, if any.</summary>
+        public Buyable FocusedBuyable { get; private set; }
+
+        public int GunInSlot(int slot) => slot == 0 ? Gun0.Value : slot == 1 ? Gun1.Value : -1;
+        NetworkVariable<int> SlotVariable(int slot) => slot == 0 ? Gun0 : Gun1;
+
+        public int SlotOf(int gunId)
+        {
+            if (gunId < 0) return -1;
+            for (int i = 0; i < SlotCount; i++)
+                if (GunInSlot(i) == gunId) return i;
+            return -1;
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -94,6 +118,8 @@ namespace ZombiesFPS.Net
                 Local = this;
                 PlayerName.Value = new FixedString32Bytes(Truncate(LocalName, 20));
                 Health.OnValueChanged += OnOwnerHealthChanged;
+                Gun0.OnValueChanged += OnGun0Changed;
+                Gun1.OnValueChanged += OnGun1Changed;
                 BuildLocalRig();
             }
             else
@@ -107,6 +133,8 @@ namespace ZombiesFPS.Net
             s_All.Remove(this);
             State.OnValueChanged -= OnStateChanged;
             Health.OnValueChanged -= OnOwnerHealthChanged;
+            Gun0.OnValueChanged -= OnGun0Changed;
+            Gun1.OnValueChanged -= OnGun1Changed;
             if (Local == this) Local = null;
         }
 
@@ -155,6 +183,7 @@ namespace ZombiesFPS.Net
             _gun.Init(GameConfig.Gun, cam, _look, _motor, () => IsAlive, gunAudio, _uiAudio, view);
             view.Init(_gun, _motor, _look);
             _gun.Fired += (origin, dir) => ShootRpc(origin, dir);
+            ResetLoadoutAmmo();
 
             new GameObject("HUD").AddComponent<PrototypeHud>().Init(this);
         }
@@ -227,6 +256,18 @@ namespace ZombiesFPS.Net
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.GodMode.Value && _gun.Reserve < _gun.Data.maxReserve) _gun.RefillAmmo();
 
+            bool canAct = IsAlive && _look.CursorLocked && !(rounds != null && rounds.IsGameOver);
+            if (canAct)
+            {
+                int want = GameInput.SlotPressed;
+                if (GameInput.SwitchWeaponPressed) want = 1 - ActiveSlot.Value;
+                if (want >= 0 && want != ActiveSlot.Value && GunInSlot(want) >= 0) EquipSlot(want, saveCurrent: true);
+            }
+
+            bool nearDowned = FindReviveTarget(transform.position) != null;
+            FocusedBuyable = canAct && !nearDowned ? FindBuyable() : null;
+            if (FocusedBuyable != null && GameInput.InteractPressed) BuyRpc(System.Array.IndexOf(GameConfig.Map.Buyables, FocusedBuyable));
+
             bool reviveHeld = IsAlive && GameInput.InteractHeld && _look.CursorLocked;
             if (reviveHeld != _sentReviveHeld)
             {
@@ -262,6 +303,99 @@ namespace ZombiesFPS.Net
                     }
                     break;
             }
+        }
+
+        // ---------------------------------------------------------------- weapons (owner)
+
+        /// <summary>Puts a slot's gun in the player's hands, first saving the ammo of the gun being put away.</summary>
+        void EquipSlot(int slot, bool saveCurrent)
+        {
+            if (_gun == null) return;
+            if (saveCurrent)
+            {
+                _slotMagazine[ActiveSlot.Value] = _gun.Magazine;
+                _slotReserve[ActiveSlot.Value] = _gun.Reserve;
+            }
+            var data = GameConfig.GunById(GunInSlot(slot));
+            if (data == null) return;
+            ActiveSlot.Value = slot;
+            _gun.Equip(data, _slotMagazine[slot], _slotReserve[slot]);
+        }
+
+        void OnGun0Changed(int previous, int current) => OnSlotGunChanged(0, current);
+        void OnGun1Changed(int previous, int current) => OnSlotGunChanged(1, current);
+
+        /// <summary>The host put a new gun in a slot (a wall buy or a restart): it arrives full and in hand.</summary>
+        void OnSlotGunChanged(int slot, int gunId)
+        {
+            var data = GameConfig.GunById(gunId);
+            if (data == null)
+            {
+                // Slot emptied: if it was in hand, fall back to the other one.
+                if (ActiveSlot.Value == slot && GunInSlot(1 - slot) >= 0) EquipSlot(1 - slot, saveCurrent: false);
+                return;
+            }
+            _slotMagazine[slot] = data.magazineSize;
+            _slotReserve[slot] = data.maxReserve;
+            EquipSlot(slot, saveCurrent: slot != ActiveSlot.Value);
+            if (_uiAudio != null) _uiAudio.PlayOneShot(ProceduralAudio.MagIn, 0.9f);
+        }
+
+        /// <summary>Every owned gun back to a full magazine and its starting reserve (respawn and restart).</summary>
+        void ResetLoadoutAmmo()
+        {
+            for (int i = 0; i < SlotCount; i++)
+            {
+                var data = GameConfig.GunById(GunInSlot(i));
+                _slotMagazine[i] = data != null ? data.magazineSize : 0;
+                _slotReserve[i] = data != null ? data.startingReserve : 0;
+            }
+            int slot = GunInSlot(ActiveSlot.Value) >= 0 ? ActiveSlot.Value : 0;
+            EquipSlot(slot, saveCurrent: false);
+        }
+
+        // ---------------------------------------------------------------- buying
+
+        /// <summary>The closest door or wall gun in reach, skipping doors that are already open.</summary>
+        Buyable FindBuyable()
+        {
+            var map = GameConfig.Map;
+            if (map == null) return null;
+            Buyable best = null;
+            float bestSqr = float.MaxValue;
+            Vector3 here = transform.position;
+            foreach (var b in map.Buyables)
+            {
+                if (b.Kind == BuyableKind.Door && MapState.Instance != null && MapState.Instance.IsDoorOpen(b.Index)) continue;
+                Vector3 d = b.Position - here;
+                d.y = 0f;
+                float sqr = d.sqrMagnitude;
+                if (sqr <= b.Range * b.Range && sqr < bestSqr)
+                {
+                    best = b;
+                    bestSqr = sqr;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>What a buyable would cost this player right now, and what they'd get. -1 if there is nothing to buy.</summary>
+        public long PriceFor(Buyable b, out string what)
+        {
+            what = null;
+            if (b == null) return -1;
+            var map = GameConfig.Map;
+            if (b.Kind == BuyableKind.Door)
+            {
+                if (MapState.Instance == null || MapState.Instance.IsDoorOpen(b.Index)) return -1;
+                what = "open the door to " + ZoneMap.ZoneNames[map.OtherSide(b.Index, transform.position)];
+                return GameConfig.Prices.DoorCost(b.Index);
+            }
+            var entry = GameConfig.Prices.WallGunAt(b.Index);
+            if (entry == null || entry.gun == null) return -1;
+            bool owned = SlotOf(GameConfig.GunId(entry.gun)) >= 0;
+            what = owned ? $"refill {entry.gun.displayName} ammo" : $"buy the {entry.gun.displayName}";
+            return owned ? entry.ammoPrice : entry.price;
         }
 
         /// <summary>Nearest downed teammate within revive range of a position, or null.</summary>
@@ -314,6 +448,13 @@ namespace ZombiesFPS.Net
             }
         }
 
+        /// <summary>Host only. Back to just the starter gun (a fresh game).</summary>
+        public void ServerResetLoadout()
+        {
+            Gun0.Value = 0;
+            Gun1.Value = -1;
+        }
+
         /// <summary>Host only. Brings a bled-out player back at the end of a round, keeping their points.</summary>
         public void ServerRespawn(Vector3 spawn)
         {
@@ -331,6 +472,7 @@ namespace ZombiesFPS.Net
             Points.Value = GameConfig.Round.startingPoints;
             Kills.Value = 0;
             Headshots.Value = 0;
+            ServerResetLoadout();
             ServerRespawn(spawn);
         }
 
@@ -347,7 +489,7 @@ namespace ZombiesFPS.Net
         void ShootRpc(Vector3 origin, Vector3 direction)
         {
             if (State.Value != LifeState.Alive) return;
-            var gun = GameConfig.Gun;
+            var gun = GameConfig.GunById(GunInSlot(ActiveSlot.Value)) ?? GameConfig.Gun;
             // Co-op trust model: accept the client's aim, but keep the origin near the player.
             Vector3 eye = transform.position + Vector3.up * EyeHeight;
             if ((origin - eye).sqrMagnitude > 2f * 2f) origin = eye;
@@ -423,7 +565,64 @@ namespace ZombiesFPS.Net
         void RespawnRpc(Vector3 position)
         {
             if (_motor != null) _motor.Teleport(position);
-            if (_gun != null) _gun.ResetAmmo();
+            ResetLoadoutAmmo();
+        }
+
+        /// <summary>Owner asks to buy the map's buyable at an index; the host checks reach and points.</summary>
+        [Rpc(SendTo.Server)]
+        void BuyRpc(int buyableIndex)
+        {
+            var map = GameConfig.Map;
+            var rounds = RoundManager.Instance;
+            if (map == null || buyableIndex < 0 || buyableIndex >= map.Buyables.Length) return;
+            if (State.Value != LifeState.Alive || (rounds != null && rounds.IsGameOver)) return;
+            var b = map.Buyables[buyableIndex];
+            Vector3 d = b.Position - transform.position;
+            d.y = 0f;
+            if (d.magnitude > b.Range + 1f) return;
+
+            long price = PriceFor(b, out _);
+            if (price < 0) return;
+            if (Points.Value < price)
+            {
+                PurchaseResultRpc(false);
+                return;
+            }
+            Points.Value -= price;
+
+            if (b.Kind == BuyableKind.Door)
+            {
+                MapState.Instance.ServerOpenDoor(b.Index);
+            }
+            else
+            {
+                int gunId = GameConfig.GunId(GameConfig.Prices.WallGunAt(b.Index).gun);
+                int owned = SlotOf(gunId);
+                if (owned >= 0) AmmoBoughtRpc(owned);
+                else SlotVariable(Gun1.Value < 0 ? 1 : Mathf.Clamp(ActiveSlot.Value, 0, SlotCount - 1)).Value = gunId;
+            }
+            PurchaseResultRpc(true);
+        }
+
+        [Rpc(SendTo.Owner)]
+        void PurchaseResultRpc(bool success)
+        {
+            if (_uiAudio != null) _uiAudio.PlayOneShot(success ? ProceduralAudio.Purchase : ProceduralAudio.Denied, 0.8f);
+        }
+
+        [Rpc(SendTo.Owner)]
+        void AmmoBoughtRpc(int slot)
+        {
+            if (_gun == null || slot < 0 || slot >= SlotCount) return;
+            if (slot == ActiveSlot.Value)
+            {
+                _gun.FillAmmo();
+                return;
+            }
+            var data = GameConfig.GunById(GunInSlot(slot));
+            if (data == null) return;
+            _slotMagazine[slot] = data.magazineSize;
+            _slotReserve[slot] = data.maxReserve;
         }
     }
 }

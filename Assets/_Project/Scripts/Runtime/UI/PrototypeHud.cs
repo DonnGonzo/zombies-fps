@@ -164,6 +164,7 @@ namespace ZombiesFPS.UI
                 DrawHitmarker(w, h, u);
                 DrawAmmo(w, h, u);
                 DrawRevivePrompt(w, h, u);
+                DrawBuyPrompt(w, h, u);
             }
             else if (state == LifeState.Downed)
             {
@@ -189,9 +190,9 @@ namespace ZombiesFPS.UI
             if (_showHelp)
             {
                 var r = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
-                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode" : "";
-                Shadowed(new Rect(w - 640 * u, 30 * u, 600 * u, 260 * u),
-                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · hold E revive" + host + "\nEsc menu · H hide help",
+                string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode · P +5,000 pts" : "";
+                Shadowed(new Rect(w - 800 * u, 30 * u, 760 * u, 260 * u),
+                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · Q / wheel switch gun\nE buy · hold E revive" + host + "\nEsc menu · H hide help",
                     r);
             }
 
@@ -245,6 +246,14 @@ namespace ZombiesFPS.UI
             Shadowed(new Rect(w - 420 * u, h - 140 * u, 260 * u, 90 * u), _gun.Magazine.ToString(), bigRight);
             Shadowed(new Rect(w - 160 * u, h - 112 * u, 120 * u, 50 * u), "/ " + _gun.Reserve, right);
             Shadowed(new Rect(w - 520 * u, h - 52 * u, 480 * u, 40 * u), _gun.Data.displayName, right);
+            int other = 1 - _player.ActiveSlot.Value;
+            var otherGun = GameConfig.GunById(_player.GunInSlot(other));
+            if (otherGun != null)
+            {
+                var dim = new GUIStyle(_small) { alignment = TextAnchor.LowerRight };
+                dim.normal.textColor = new Color(1f, 1f, 1f, 0.6f);
+                Shadowed(new Rect(w - 520 * u, h - 176 * u, 480 * u, 30 * u), $"Q  {otherGun.displayName}", dim);
+            }
 
             var c = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
             if (_gun.IsReloading) DrawProgress(w, h * 0.58f, u, _gun.ReloadProgress, "RELOADING");
@@ -268,6 +277,23 @@ namespace ZombiesFPS.UI
             var c = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
             Shadowed(new Rect(0, h * 0.64f, w, 36 * u), $"Hold E to revive {target.DisplayName}", c);
             if (target.ReviveProgress.Value > 0f) DrawProgress(w, h * 0.64f + 40 * u, u, target.ReviveProgress.Value, "REVIVING");
+        }
+
+        void DrawBuyPrompt(float w, float h, float u)
+        {
+            var b = _player.FocusedBuyable;
+            if (b == null) return;
+            long price = _player.PriceFor(b, out string what);
+            if (price < 0) return;
+            bool afford = _player.Points.Value >= price;
+            var c = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
+            if (!afford) c.normal.textColor = new Color(1f, 0.45f, 0.35f);
+            Shadowed(new Rect(0, h * 0.64f, w, 36 * u), $"Press E to {what}  [{price:N0}]", c);
+            if (!afford)
+            {
+                var s = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
+                Shadowed(new Rect(0, h * 0.64f + 36 * u, w, 30 * u), $"You need {price - _player.Points.Value:N0} more points", s);
+            }
         }
 
         void DrawHealth(float h, float u)

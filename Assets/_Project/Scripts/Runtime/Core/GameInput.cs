@@ -10,6 +10,7 @@ namespace ZombiesFPS.Core
         NextRound,
         JumpTenRounds,
         GodMode,
+        GivePoints,
         Restart,
         ToggleHelp,
     }
@@ -65,6 +66,15 @@ namespace ZombiesFPS.Core
         public static bool ReloadPressed => (K != null && K.rKey.wasPressedThisFrame) || (G != null && G.buttonWest.wasPressedThisFrame);
         public static bool PausePressed => (K != null && K.escapeKey.wasPressedThisFrame) || (G != null && G.startButton.wasPressedThisFrame);
         public static bool InteractHeld => (K != null && K.eKey.isPressed) || (G != null && G.buttonNorth.isPressed);
+        public static bool InteractPressed => (K != null && K.eKey.wasPressedThisFrame) || (G != null && G.buttonNorth.wasPressedThisFrame);
+
+        /// <summary>Swap to the other weapon: Q, the mouse wheel or the gamepad's east button.</summary>
+        public static bool SwitchWeaponPressed =>
+            (K != null && K.qKey.wasPressedThisFrame) || (M != null && Mathf.Abs(M.scroll.ReadValue().y) > 0.01f) ||
+            (G != null && G.buttonEast.wasPressedThisFrame);
+
+        /// <summary>The weapon slot picked with the number keys this frame (0 or 1), or -1.</summary>
+        public static int SlotPressed => K == null ? -1 : K.digit1Key.wasPressedThisFrame ? 0 : K.digit2Key.wasPressedThisFrame ? 1 : -1;
 
         public static bool DebugPressed(DebugKey key)
         {
@@ -74,6 +84,7 @@ namespace ZombiesFPS.Core
                 case DebugKey.NextRound: return K.equalsKey.wasPressedThisFrame;
                 case DebugKey.JumpTenRounds: return K.rightBracketKey.wasPressedThisFrame;
                 case DebugKey.GodMode: return K.gKey.wasPressedThisFrame;
+                case DebugKey.GivePoints: return K.pKey.wasPressedThisFrame;
                 case DebugKey.Restart: return K.enterKey.wasPressedThisFrame || (G != null && G.startButton.wasPressedThisFrame);
                 case DebugKey.ToggleHelp: return K.hKey.wasPressedThisFrame;
                 default: return false;
@@ -95,6 +106,9 @@ namespace ZombiesFPS.Core
         public static bool ReloadPressed => Input.GetKeyDown(KeyCode.R);
         public static bool PausePressed => Input.GetKeyDown(KeyCode.Escape);
         public static bool InteractHeld => Input.GetKey(KeyCode.E);
+        public static bool InteractPressed => Input.GetKeyDown(KeyCode.E);
+        public static bool SwitchWeaponPressed => Input.GetKeyDown(KeyCode.Q) || Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f;
+        public static int SlotPressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : -1;
 
         public static bool DebugPressed(DebugKey key)
         {
@@ -103,6 +117,7 @@ namespace ZombiesFPS.Core
                 case DebugKey.NextRound: return Input.GetKeyDown(KeyCode.Equals);
                 case DebugKey.JumpTenRounds: return Input.GetKeyDown(KeyCode.RightBracket);
                 case DebugKey.GodMode: return Input.GetKeyDown(KeyCode.G);
+                case DebugKey.GivePoints: return Input.GetKeyDown(KeyCode.P);
                 case DebugKey.Restart: return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
                 case DebugKey.ToggleHelp: return Input.GetKeyDown(KeyCode.H);
                 default: return false;

@@ -11,7 +11,7 @@ namespace ZombiesFPS.Core
         const int Rate = 44100;
 
         static AudioClip s_Gunshot, s_DryFire, s_MagOut, s_MagIn, s_HitTick, s_HeadshotTick, s_KillTick, s_PlayerHurt, s_ZombieSwipe;
-        static AudioClip s_RoundStart, s_RoundEnd;
+        static AudioClip s_RoundStart, s_RoundEnd, s_Purchase, s_Denied, s_DoorOpen;
         static AudioClip[] s_Groans;
 
         public static AudioClip Gunshot => s_Gunshot ? s_Gunshot : (s_Gunshot = MakeGunshot());
@@ -26,6 +26,10 @@ namespace ZombiesFPS.Core
         // Low, ominous chord as a round begins; a rising three-note figure when it is cleared.
         public static AudioClip RoundStart => s_RoundStart ? s_RoundStart : (s_RoundStart = MakeChime("RoundStart", 3f, 1.2f, 0.5f,
             new[] { 55f, 82.4f, 110f, 130.8f }, new[] { 0f, 0f, 0.05f, 0.1f }));
+        public static AudioClip Purchase => s_Purchase ? s_Purchase : (s_Purchase = MakeChime("Purchase", 0.6f, 7f, 0.45f,
+            new[] { 1318.5f, 1760f }, new[] { 0f, 0.07f }));
+        public static AudioClip Denied => s_Denied ? s_Denied : (s_Denied = MakeBuzz());
+        public static AudioClip DoorOpen => s_DoorOpen ? s_DoorOpen : (s_DoorOpen = MakeRumble());
         public static AudioClip RoundEnd => s_RoundEnd ? s_RoundEnd : (s_RoundEnd = MakeChime("RoundEnd", 2.2f, 2.2f, 0.4f,
             new[] { 220f, 261.6f, 329.6f }, new[] { 0f, 0.22f, 0.44f }));
 
@@ -117,6 +121,39 @@ namespace ZombiesFPS.Core
                 d[i] = Mathf.Clamp(sum * gain / Mathf.Sqrt(freqs.Length), -1f, 1f);
             }
             return Build(name, d);
+        }
+
+        static AudioClip MakeBuzz()
+        {
+            int n = (int)(Rate * 0.32f);
+            var d = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                // Two detuned square waves: a flat "no".
+                float a = Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 98f * t));
+                float b = Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 104f * t));
+                float env = Mathf.Clamp01(t * 80f) * Mathf.Clamp01((0.32f - t) * 20f);
+                d[i] = (a + b) * 0.12f * env;
+            }
+            return Build("Denied", d);
+        }
+
+        static AudioClip MakeRumble()
+        {
+            var rng = new System.Random(7);
+            int n = (int)(Rate * 1.1f);
+            var d = new float[n];
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (noise - lp) * 0.04f;
+                float env = Mathf.Clamp01(t * 20f) * Mathf.Exp(-t * 2.5f);
+                d[i] = Mathf.Clamp(lp * 3.5f * env + Mathf.Sin(2f * Mathf.PI * 45f * t) * 0.25f * env, -1f, 1f);
+            }
+            return Build("DoorOpen", d);
         }
 
         static AudioClip MakeThud()

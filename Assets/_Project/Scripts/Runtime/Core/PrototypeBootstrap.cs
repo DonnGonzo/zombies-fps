@@ -8,12 +8,13 @@ using ZombiesFPS.Data;
 using ZombiesFPS.Net;
 using ZombiesFPS.Player;
 using ZombiesFPS.Weapons;
+using ZombiesFPS.World;
 using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.Core
 {
     /// <summary>
-    /// Entry point. Builds the world every machine shares (lighting, greybox arena + NavMesh, effects),
+    /// Entry point. Builds the world every machine shares (lighting, the zone map + NavMesh, effects),
     /// shows the host/join menu, and owns the NetworkManager. Everything that changes during play lives
     /// on network objects: NetPlayer, NetZombie and RoundManager.
     /// </summary>
@@ -23,6 +24,7 @@ namespace ZombiesFPS.Core
         public GunData gunData;
         public ZombieData zombieData;
         public RoundData roundData;
+        public PriceTable priceTable;
 
         const string NameKey = "ZombiesFPS.PlayerName";
         const string AddressKey = "ZombiesFPS.JoinAddress";
@@ -47,14 +49,15 @@ namespace ZombiesFPS.Core
             GameConfig.Gun = gunData != null ? gunData : ScriptableObject.CreateInstance<GunData>();
             GameConfig.Zombie = zombieData != null ? zombieData : ScriptableObject.CreateInstance<ZombieData>();
             GameConfig.Round = roundData != null ? roundData : ScriptableObject.CreateInstance<RoundData>();
+            GameConfig.Prices = priceTable != null ? priceTable : PriceTable.CreateDefault(GameConfig.Gun);
+            GameConfig.Guns = GameConfig.Prices.BuildCatalog(GameConfig.Gun);
             GameConfig.PlayerPrefab = Resources.Load<GameObject>("Net/NetPlayer");
             GameConfig.ZombiePrefab = Resources.Load<GameObject>("Net/NetZombie");
             GameConfig.DirectorPrefab = Resources.Load<GameObject>("Net/NetDirector");
 
             SetUpEnvironment();
-            var arena = PrototypeArena.Build();
-            GameConfig.ZombieSpawnPoints = arena.SpawnPoints;
-            GameConfig.PlayerStart = arena.PlayerStart;
+            GameConfig.Map = ZoneMap.Build(GameConfig.Prices);
+            GameConfig.PlayerStart = GameConfig.Map.PlayerStart;
             new GameObject("FX").AddComponent<FxSystem>();
             BuildMenuCamera();
             CreateNetworkManager();
@@ -97,7 +100,7 @@ namespace ZombiesFPS.Core
         void BuildMenuCamera()
         {
             var go = new GameObject("Menu Camera");
-            go.transform.SetPositionAndRotation(new Vector3(-18f, 9f, -20f), Quaternion.Euler(22f, 42f, 0f));
+            go.transform.SetPositionAndRotation(new Vector3(-9f, 8f, -10f), Quaternion.Euler(28f, 38f, 0f));
             _menuCamera = go.AddComponent<Camera>();
             _menuCamera.clearFlags = CameraClearFlags.SolidColor;
             _menuCamera.backgroundColor = FogColor;

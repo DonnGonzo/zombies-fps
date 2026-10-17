@@ -31,6 +31,8 @@ namespace ZombiesFPS.Weapons
         float _reloadDuration;
         bool _magOutPlayed;
         bool _dryFirePlayed;
+        float _raiseEndTime;
+        float _raiseDuration = 0.01f;
 
         public GunData Data => _data;
         public int Magazine { get; private set; }
@@ -40,6 +42,12 @@ namespace ZombiesFPS.Weapons
         public float AimAmount { get; private set; }
         public float CurrentSpread { get; private set; }
         public float LastShotTime { get; private set; } = -100f;
+        /// <summary>0 just switched to, 1 fully raised and ready.</summary>
+        public float RaiseProgress => 1f - Mathf.Clamp01((_raiseEndTime - Time.time) / _raiseDuration);
+        public bool IsRaising => Time.time < _raiseEndTime;
+
+        /// <summary>Raised when a different gun is put in the player's hands.</summary>
+        public event Action Equipped;
 
         /// <summary>Raised when the host confirms a hit: (killed, headshot).</summary>
         public event Action<bool, bool> Hit;
@@ -70,7 +78,7 @@ namespace ZombiesFPS.Weapons
 
             UpdateReload();
 
-            bool wantsAim = canAct && GameInput.AimHeld && !IsReloading && !_motor.IsSprinting;
+            bool wantsAim = canAct && GameInput.AimHeld && !IsReloading && !IsRaising && !_motor.IsSprinting;
             AimAmount = Mathf.MoveTowards(AimAmount, wantsAim ? 1f : 0f, dt / _data.aimTime);
             _look.AimAmount = AimAmount;
             float eased = AimAmount * AimAmount * (3f - 2f * AimAmount);
@@ -148,7 +156,7 @@ namespace ZombiesFPS.Weapons
 
         void TryStartReload()
         {
-            if (IsReloading || Magazine >= _data.magazineSize || Reserve <= 0) return;
+            if (IsReloading || IsRaising || Magazine >= _data.magazineSize || Reserve <= 0) return;
             IsReloading = true;
             _reloadDuration = Magazine == 0 ? _data.emptyReloadTime : _data.reloadTime;
             _reloadEndTime = Time.time + _reloadDuration;
@@ -188,10 +196,32 @@ namespace ZombiesFPS.Weapons
             IsReloading = false;
         }
 
-        /// <summary>Wall-buy ammo refill hook for Phase 3.</summary>
+        /// <summary>Puts a gun in the player's hands with the given ammo, then raises it before it can fire.</summary>
+        public void Equip(GunData data, int magazine, int reserve)
+        {
+            _data = data;
+            Magazine = Mathf.Clamp(magazine, 0, data.magazineSize);
+            Reserve = Mathf.Max(0, reserve);
+            IsReloading = false;
+            _bloom = 0f;
+            _raiseDuration = Mathf.Max(0.05f, data.raiseTime);
+            _raiseEndTime = Time.time + _raiseDuration;
+            _nextFireTime = Mathf.Max(_nextFireTime, _raiseEndTime);
+            Equipped?.Invoke();
+        }
+
+        /// <summary>Tops the reserve up to the maximum (god mode).</summary>
         public void RefillAmmo()
         {
             Reserve = _data.maxReserve;
+        }
+
+        /// <summary>Full magazine and full reserve (bought ammo off the wall).</summary>
+        public void FillAmmo()
+        {
+            Magazine = _data.magazineSize;
+            Reserve = _data.maxReserve;
+            IsReloading = false;
         }
     }
 }

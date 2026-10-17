@@ -26,6 +26,7 @@ namespace ZombiesFPS.Weapons
         float _kickBack, _kickPitch;
         Vector2 _sway;
         float _sprintWeight;
+        Renderer[] _accentParts;
 
         public Transform Muzzle { get; private set; }
 
@@ -35,6 +36,23 @@ namespace ZombiesFPS.Weapons
             _motor = motor;
             _look = look;
             BuildModel();
+            Restyle();
+            _gun.Equipped += Restyle;
+        }
+
+        void OnDestroy()
+        {
+            if (_gun != null) _gun.Equipped -= Restyle;
+        }
+
+        /// <summary>Stretches and tints the shared greybox model to suggest which gun is held.</summary>
+        void Restyle()
+        {
+            var data = _gun.Data;
+            if (data == null || _model == null) return;
+            _model.localScale = new Vector3(1f, 1f, Mathf.Clamp(data.modelLength, 0.3f, 2f));
+            var accent = Greybox.Lit(data.accent);
+            foreach (var r in _accentParts) r.sharedMaterial = accent;
         }
 
         void BuildModel()
@@ -45,13 +63,14 @@ namespace ZombiesFPS.Weapons
             var tan = new Color(0.42f, 0.36f, 0.27f);
 
             Greybox.Box("Receiver", _model, new Vector3(0f, 0f, 0f), new Vector3(0.07f, 0.09f, 0.32f), dark, collider: false);
-            Greybox.Box("Handguard", _model, new Vector3(0f, 0.005f, 0.22f), new Vector3(0.065f, 0.065f, 0.18f), tan, collider: false);
+            var handguard = Greybox.Box("Handguard", _model, new Vector3(0f, 0.005f, 0.22f), new Vector3(0.065f, 0.065f, 0.18f), tan, collider: false);
             Greybox.Box("Barrel", _model, new Vector3(0f, 0.015f, 0.36f), new Vector3(0.03f, 0.03f, 0.2f), dark, collider: false);
             var mag = Greybox.Box("Magazine", _model, new Vector3(0f, -0.1f, 0.06f), new Vector3(0.045f, 0.14f, 0.07f), mid, collider: false);
             mag.transform.localRotation = Quaternion.Euler(12f, 0f, 0f);
             var grip = Greybox.Box("Grip", _model, new Vector3(0f, -0.085f, -0.09f), new Vector3(0.04f, 0.1f, 0.05f), tan, collider: false);
             grip.transform.localRotation = Quaternion.Euler(-15f, 0f, 0f);
-            Greybox.Box("Stock", _model, new Vector3(0f, -0.015f, -0.25f), new Vector3(0.05f, 0.08f, 0.18f), tan, collider: false);
+            var stock = Greybox.Box("Stock", _model, new Vector3(0f, -0.015f, -0.25f), new Vector3(0.05f, 0.08f, 0.18f), tan, collider: false);
+            _accentParts = new[] { handguard.GetComponent<Renderer>(), grip.GetComponent<Renderer>(), stock.GetComponent<Renderer>() };
             // Iron sights: rear notch halves and a front post, tops at y = 0.071.
             Greybox.Box("RearSightL", _model, new Vector3(-0.012f, 0.058f, -0.12f), new Vector3(0.01f, 0.026f, 0.015f), dark, collider: false);
             Greybox.Box("RearSightR", _model, new Vector3(0.012f, 0.058f, -0.12f), new Vector3(0.01f, 0.026f, 0.015f), dark, collider: false);
@@ -114,14 +133,18 @@ namespace ZombiesFPS.Weapons
             _sprintWeight = Mathf.MoveTowards(_sprintWeight, _motor.IsSprinting ? 1f : 0f, dt * 5f);
             float reloadWeight = _gun.IsReloading ? Mathf.Sin(Mathf.PI * _gun.ReloadProgress) : 0f;
             reloadWeight = Mathf.Clamp01(reloadWeight * 1.6f);
+            float lowered = 1f - _gun.RaiseProgress;
+            lowered *= lowered;
 
             Vector3 pos = Vector3.Lerp(HipPosition, AimPosition, aimEased) + bob
                           + new Vector3(-0.05f, -0.05f, -0.02f) * _sprintWeight
                           + new Vector3(0f, -0.1f, -0.02f) * reloadWeight
+                          + new Vector3(0f, -0.22f, -0.06f) * lowered
                           + new Vector3(0f, 0f, -_kickBack);
             Vector3 euler = new Vector3(_sway.x - _kickPitch, _sway.y, 0f)
                             + new Vector3(12f, -32f, 12f) * _sprintWeight
-                            + new Vector3(35f, 0f, 28f) * reloadWeight;
+                            + new Vector3(35f, 0f, 28f) * reloadWeight
+                            + new Vector3(40f, 0f, 0f) * lowered;
 
             _model.localPosition = pos;
             _model.localRotation = Quaternion.Euler(euler);

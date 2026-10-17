@@ -1,0 +1,381 @@
+using System.Collections.Generic;
+using Unity.AI.Navigation;
+using UnityEngine;
+using ZombiesFPS.Core;
+using ZombiesFPS.Data;
+
+namespace ZombiesFPS.World
+{
+    public enum BuyableKind
+    {
+        Door,
+        WallGun,
+    }
+
+    /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
+    public class Buyable
+    {
+        public BuyableKind Kind;
+        public int Index;
+        /// <summary>Where the player stands to use it (floor level + 1 m).</summary>
+        public Vector3 Position;
+        public float Range;
+    }
+
+    public class Zone
+    {
+        public int Id;
+        public string Name;
+        public Vector3 Center;
+        public readonly List<Transform> SpawnPoints = new List<Transform>();
+
+        public bool Contains(Vector3 p) =>
+            Mathf.Abs(p.x - Center.x) <= ZoneMap.ZoneHalfSize && Mathf.Abs(p.z - Center.z) <= ZoneMap.ZoneHalfSize;
+    }
+
+    /// <summary>
+    /// The Phase 3 greybox map: six 24 m zones in a 3 x 2 grid, linked by six buyable doors into one loop,
+    /// so there is always a way round to retreat and kite. Players start in the Gate Yard; each door opens
+    /// a new zone and its zombie windows. Built in code on every machine, and the NavMesh is baked at
+    /// runtime with the doors left out so they can carve it while closed.
+    ///
+    ///   Barracks (4) | Chapel (3)    | Garage (2)
+    ///   -------------+---------------+-----------
+    ///   Courtyard (5)| Gate Yard (0) | Depot (1)
+    /// </summary>
+    public class ZoneMap
+    {
+        public const int ZoneCount = 6;
+        public const int StartZone = 0;
+        public const float ZoneHalfSize = 12f;
+        const float ZoneSize = ZoneHalfSize * 2f;
+        const float WallHeight = 5f;
+        const float InnerWall = 0.6f;
+        const float GapWidth = 3.2f;
+        const float GapHeight = 3.2f;
+        const float DoorRange = 2.6f;
+        const float WallBuyRange = 2f;
+
+        public static readonly string[] ZoneNames = { "Gate Yard", "Depot", "Garage", "Chapel", "Barracks", "Courtyard" };
+
+        static readonly Vector3[] ZoneCenters =
+        {
+            new Vector3(0f, 0f, 0f), new Vector3(24f, 0f, 0f), new Vector3(24f, 0f, 24f),
+            new Vector3(0f, 0f, 24f), new Vector3(-24f, 0f, 24f), new Vector3(-24f, 0f, 0f),
+        };
+
+        /// <summary>The zones each door joins, in door order. PriceTable.doorCosts follows this order.</summary>
+        public static readonly Vector2Int[] DoorLinks =
+        {
+            new Vector2Int(0, 1), new Vector2Int(0, 5), new Vector2Int(1, 2),
+            new Vector2Int(5, 4), new Vector2Int(2, 3), new Vector2Int(4, 3),
+        };
+
+        static readonly Vector3[] DoorCenters =
+        {
+            new Vector3(12f, 0f, 0f), new Vector3(-12f, 0f, 0f), new Vector3(24f, 0f, 12f),
+            new Vector3(-24f, 0f, 12f), new Vector3(12f, 0f, 24f), new Vector3(-12f, 0f, 24f),
+        };
+
+        /// <summary>Which zone each wall gun is in, in wall-buy order. PriceTable.wallGuns follows this order.</summary>
+        public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 3 };
+
+        static readonly Color[] FloorTints =
+        {
+            new Color(0.33f, 0.34f, 0.33f), new Color(0.36f, 0.34f, 0.3f), new Color(0.3f, 0.31f, 0.33f),
+            new Color(0.34f, 0.3f, 0.3f), new Color(0.31f, 0.33f, 0.3f), new Color(0.36f, 0.36f, 0.33f),
+        };
+        static readonly Color Wall = new Color(0.46f, 0.45f, 0.42f);
+        static readonly Color Cover = new Color(0.4f, 0.36f, 0.3f);
+        static readonly Color Concrete = new Color(0.55f, 0.55f, 0.53f);
+        static readonly Color Board = new Color(0.3f, 0.2f, 0.12f);
+        static readonly Color DoorWood = new Color(0.34f, 0.23f, 0.13f);
+        static readonly Color Chalk = new Color(0.82f, 0.8f, 0.72f);
+        static readonly Color Lamp = new Color(1f, 0.85f, 0.6f);
+
+        public Transform Root { get; private set; }
+        public Zone[] Zones { get; private set; }
+        public Door[] Doors { get; private set; }
+        public Buyable[] Buyables { get; private set; }
+        public Vector3 PlayerStart { get; private set; }
+
+        // ---------------------------------------------------------------- queries
+
+        /// <summary>The zone a position is in, or -1 outside the map.</summary>
+        public int ZoneAt(Vector3 position)
+        {
+            for (int i = 0; i < Zones.Length; i++)
+                if (Zones[i].Contains(position)) return i;
+            return -1;
+        }
+
+        /// <summary>A zone is open once any door into it is bought. The start zone is always open.</summary>
+        public static bool IsZoneOpen(int zone, int openDoorMask)
+        {
+            if (zone == StartZone) return true;
+            for (int i = 0; i < DoorLinks.Length; i++)
+                if ((openDoorMask & (1 << i)) != 0 && (DoorLinks[i].x == zone || DoorLinks[i].y == zone)) return true;
+            return false;
+        }
+
+        public void CollectSpawnPoints(int openDoorMask, List<Transform> into)
+        {
+            into.Clear();
+            foreach (var zone in Zones)
+                if (IsZoneOpen(zone.Id, openDoorMask)) into.AddRange(zone.SpawnPoints);
+        }
+
+        /// <summary>The zone on the other side of a door from a position.</summary>
+        public int OtherSide(int door, Vector3 from)
+        {
+            var link = DoorLinks[door];
+            int here = ZoneAt(from);
+            return here == link.x ? link.y : here == link.y ? link.x : link.y;
+        }
+
+        // ---------------------------------------------------------------- building
+
+        public static ZoneMap Build(PriceTable prices)
+        {
+            var map = new ZoneMap();
+            map.BuildInternal(prices);
+            return map;
+        }
+
+        void BuildInternal(PriceTable prices)
+        {
+            Root = new GameObject("Map").transform;
+            Zones = new Zone[ZoneCount];
+            for (int i = 0; i < ZoneCount; i++) Zones[i] = new Zone { Id = i, Name = ZoneNames[i], Center = ZoneCenters[i] };
+
+            // Floors, one per zone so each reads slightly differently.
+            for (int i = 0; i < ZoneCount; i++)
+                Greybox.Box("Floor " + ZoneNames[i], Root, ZoneCenters[i] + new Vector3(0f, -0.5f, 0f), new Vector3(ZoneSize, 1f, ZoneSize), FloorTints[i]);
+
+            BuildWalls();
+            BuildWindows();
+            BuildDressing();
+            BuildLamps();
+
+            var surface = Root.gameObject.AddComponent<NavMeshSurface>();
+            surface.collectObjects = CollectObjects.Children;
+            surface.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
+            surface.BuildNavMesh();
+
+            // Doors and wall-buy panels go in after the bake: closed doors carve the NavMesh instead.
+            var buyables = new List<Buyable>();
+            BuildDoors(buyables);
+            BuildWallBuys(prices, buyables);
+            Buyables = buyables.ToArray();
+
+            PlayerStart = new Vector3(0f, 0.05f, -4f);
+        }
+
+        void BuildWalls()
+        {
+            float xMin = -36f, xMax = 36f, zMin = -12f, zMax = 36f;
+            float midX = (xMin + xMax) / 2f, midZ = (zMin + zMax) / 2f;
+            float spanX = xMax - xMin, spanZ = zMax - zMin;
+
+            // Perimeter: inner faces sit exactly on the map edge.
+            Greybox.Box("Wall S", Root, new Vector3(midX, WallHeight / 2f, zMin - 0.5f), new Vector3(spanX + 2f, WallHeight, 1f), Wall);
+            Greybox.Box("Wall N", Root, new Vector3(midX, WallHeight / 2f, zMax + 0.5f), new Vector3(spanX + 2f, WallHeight, 1f), Wall);
+            Greybox.Box("Wall W", Root, new Vector3(xMin - 0.5f, WallHeight / 2f, midZ), new Vector3(1f, WallHeight, spanZ), Wall);
+            Greybox.Box("Wall E", Root, new Vector3(xMax + 0.5f, WallHeight / 2f, midZ), new Vector3(1f, WallHeight, spanZ), Wall);
+
+            // Interior walls with door gaps.
+            WallAlongZ(12f, zMin, zMax, 0f, 24f);
+            WallAlongZ(-12f, zMin, zMax, 0f, 24f);
+            WallAlongX(12f, xMin, xMax, -24f, 24f);
+        }
+
+        /// <summary>A wall at a fixed x running along z, with door gaps centred on the given z values.</summary>
+        void WallAlongZ(float x, float from, float to, params float[] gaps)
+        {
+            float start = from;
+            foreach (float g in gaps)
+            {
+                float end = g - GapWidth / 2f;
+                Greybox.Box("Wall", Root, new Vector3(x, WallHeight / 2f, (start + end) / 2f), new Vector3(InnerWall, WallHeight, end - start), Wall);
+                Greybox.Box("Lintel", Root, new Vector3(x, (GapHeight + WallHeight) / 2f, g), new Vector3(InnerWall, WallHeight - GapHeight, GapWidth), Wall);
+                start = g + GapWidth / 2f;
+            }
+            Greybox.Box("Wall", Root, new Vector3(x, WallHeight / 2f, (start + to) / 2f), new Vector3(InnerWall, WallHeight, to - start), Wall);
+        }
+
+        /// <summary>A wall at a fixed z running along x, with door gaps centred on the given x values.</summary>
+        void WallAlongX(float z, float from, float to, params float[] gaps)
+        {
+            float start = from;
+            foreach (float g in gaps)
+            {
+                float end = g - GapWidth / 2f;
+                Greybox.Box("Wall", Root, new Vector3((start + end) / 2f, WallHeight / 2f, z), new Vector3(end - start, WallHeight, InnerWall), Wall);
+                Greybox.Box("Lintel", Root, new Vector3(g, (GapHeight + WallHeight) / 2f, z), new Vector3(GapWidth, WallHeight - GapHeight, InnerWall), Wall);
+                start = g + GapWidth / 2f;
+            }
+            Greybox.Box("Wall", Root, new Vector3((start + to) / 2f, WallHeight / 2f, z), new Vector3(to - start, WallHeight, InnerWall), Wall);
+        }
+
+        void BuildWindows()
+        {
+            float north = 12f + InnerWall / 2f, south = 12f - InnerWall / 2f;
+            // Zone, a point on the wall face, and the normal pointing into the zone.
+            AddWindow(0, new Vector3(-7f, 0f, -12f), Vector3.forward);
+            AddWindow(0, new Vector3(7f, 0f, -12f), Vector3.forward);
+            AddWindow(0, new Vector3(6f, 0f, south), Vector3.back);
+            AddWindow(1, new Vector3(24f, 0f, -12f), Vector3.forward);
+            AddWindow(1, new Vector3(36f, 0f, 6f), Vector3.left);
+            AddWindow(2, new Vector3(16f, 0f, 36f), Vector3.back);
+            AddWindow(2, new Vector3(36f, 0f, 18f), Vector3.left);
+            AddWindow(3, new Vector3(-7f, 0f, 36f), Vector3.back);
+            AddWindow(3, new Vector3(-4f, 0f, north), Vector3.forward);
+            AddWindow(4, new Vector3(-24f, 0f, 36f), Vector3.back);
+            AddWindow(4, new Vector3(-36f, 0f, 18f), Vector3.right);
+            AddWindow(5, new Vector3(-24f, 0f, -12f), Vector3.forward);
+            AddWindow(5, new Vector3(-36f, 0f, 6f), Vector3.right);
+        }
+
+        void AddWindow(int zone, Vector3 wallFace, Vector3 inward)
+        {
+            var rot = Quaternion.LookRotation(inward, Vector3.up);
+            Vector3 boards = wallFace + inward * 0.06f;
+            for (int i = 0; i < 3; i++)
+            {
+                var board = Greybox.Box("Board", Root, boards + Vector3.up * (1.1f + i * 0.45f), new Vector3(1.8f, 0.22f, 0.08f), Board, collider: false);
+                board.transform.localRotation = rot * Quaternion.Euler(0f, 0f, (i - 1) * 9f);
+            }
+            var point = Greybox.Empty("ZombieSpawn " + ZoneNames[zone], Root, wallFace + inward * 1.2f);
+            point.localRotation = rot;
+            Zones[zone].SpawnPoints.Add(point);
+        }
+
+        void BuildDressing()
+        {
+            // Gate Yard: a low wall and crates to fight around.
+            Greybox.Box("Low wall", Root, new Vector3(0f, 0.55f, 4f), new Vector3(6f, 1.1f, 0.5f), Concrete);
+            Crates(new Vector3(-7f, 0f, 5f));
+            Crates(new Vector3(7.5f, 0f, -6f));
+
+            // Depot: two long shelving runs with aisles round them.
+            Greybox.Box("Shelf", Root, new Vector3(24f, 1.2f, -5f), new Vector3(8f, 2.4f, 1f), Cover);
+            Greybox.Box("Shelf", Root, new Vector3(24f, 1.2f, 5f), new Vector3(8f, 2.4f, 1f), Cover);
+            Crates(new Vector3(31f, 0f, 0f));
+
+            // Garage: a raised platform with a ramp, and a car-sized block.
+            Greybox.Box("Platform", Root, new Vector3(27f, 1f, 30f), new Vector3(8f, 2f, 8f), Concrete);
+            var ramp = Greybox.Box("Ramp", Root, new Vector3(27f, 0.95f, 22.44f), new Vector3(3f, 0.3f, 7.4f), Cover);
+            ramp.transform.localRotation = Quaternion.Euler(-16f, 0f, 0f); // High end meets the platform's south edge.
+            Greybox.Box("Wreck", Root, new Vector3(18f, 0.75f, 20f), new Vector3(2f, 1.5f, 4.2f), new Color(0.3f, 0.32f, 0.36f));
+
+            // Chapel: pews either side of an aisle, and an altar.
+            for (int row = 0; row < 4; row++)
+            {
+                float z = 18f + row * 3f;
+                Greybox.Box("Pew", Root, new Vector3(-4f, 0.45f, z), new Vector3(6f, 0.9f, 0.6f), Cover);
+                Greybox.Box("Pew", Root, new Vector3(4f, 0.45f, z), new Vector3(6f, 0.9f, 0.6f), Cover);
+            }
+            Greybox.Box("Altar", Root, new Vector3(0f, 0.6f, 32f), new Vector3(3f, 1.2f, 1.2f), Concrete);
+
+            // Barracks: bunks down both sides.
+            for (int i = 0; i < 4; i++)
+            {
+                float z = 16f + i * 4f;
+                Greybox.Box("Bunk", Root, new Vector3(-30f, 0.8f, z), new Vector3(2f, 1.6f, 1f), Cover);
+                Greybox.Box("Bunk", Root, new Vector3(-18f, 0.8f, z), new Vector3(2f, 1.6f, 1f), Cover);
+            }
+
+            // Courtyard: a fountain and four pillars.
+            var fountain = Greybox.Prim(PrimitiveType.Cylinder, "Fountain", Root, new Vector3(-24f, 0.4f, 0f), new Vector3(5f, 0.4f, 5f), Concrete);
+            Object.DestroyImmediate(fountain.GetComponent<Collider>());
+            var fountainCollider = fountain.AddComponent<MeshCollider>();
+            fountainCollider.convex = true;
+            foreach (var p in new[] { new Vector3(-30f, 0f, -6f), new Vector3(-18f, 0f, -6f), new Vector3(-30f, 0f, 6f), new Vector3(-18f, 0f, 6f) })
+                Greybox.Box("Pillar", Root, p + Vector3.up * (WallHeight / 2f), new Vector3(1.4f, WallHeight, 1.4f), Concrete);
+        }
+
+        void Crates(Vector3 at)
+        {
+            Greybox.Box("Crate", Root, at + new Vector3(0f, 0.6f, 0f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
+            Greybox.Box("Crate", Root, at + new Vector3(1.3f, 0.6f, 0.4f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
+            Greybox.Box("Crate", Root, at + new Vector3(0.6f, 1.8f, 0.2f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
+        }
+
+        void BuildLamps()
+        {
+            for (int i = 0; i < ZoneCount; i++) AddLamp(ZoneCenters[i] + new Vector3(0f, 4.4f, 0f));
+            AddLamp(new Vector3(0f, 4.4f, -9f));
+        }
+
+        void AddLamp(Vector3 position)
+        {
+            Greybox.Prim(PrimitiveType.Cube, "Lamp", Root, position, new Vector3(0.5f, 0.1f, 0.5f), Lamp, collider: false, unlit: true);
+            var go = new GameObject("Lamp Light");
+            go.transform.SetParent(Root, false);
+            go.transform.localPosition = position + Vector3.down * 0.3f;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.range = 17f;
+            light.intensity = 1.6f;
+            light.color = Lamp;
+            light.shadows = LightShadows.None;
+        }
+
+        void BuildDoors(List<Buyable> buyables)
+        {
+            Doors = new Door[DoorLinks.Length];
+            for (int i = 0; i < DoorLinks.Length; i++)
+            {
+                Vector3 c = DoorCenters[i];
+                // Doors on the x = +/-12 walls face along x; doors on the z = 12 wall face along z.
+                bool facesX = Mathf.Abs(Mathf.Abs(c.x) - 12f) < 0.01f;
+                var rot = facesX ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
+                var go = Greybox.Box("Door " + ZoneNames[DoorLinks[i].x] + " - " + ZoneNames[DoorLinks[i].y], Root,
+                    c + Vector3.up * (GapHeight / 2f), new Vector3(GapWidth, GapHeight, 0.35f), DoorWood);
+                go.transform.localRotation = rot;
+                var door = go.AddComponent<Door>();
+                door.Init(i);
+                Doors[i] = door;
+                buyables.Add(new Buyable { Kind = BuyableKind.Door, Index = i, Position = c + Vector3.up, Range = DoorRange });
+            }
+        }
+
+        void BuildWallBuys(PriceTable prices, List<Buyable> buyables)
+        {
+            float south = 12f - InnerWall / 2f;
+            // Wall face and inward normal for each wall gun, in WallBuyZones order.
+            var spots = new[]
+            {
+                (new Vector3(-6f, 0f, south), Vector3.back),
+                (new Vector3(36f, 0f, -4f), Vector3.left),
+                (new Vector3(-36f, 0f, -4f), Vector3.right),
+                (new Vector3(36f, 0f, 24f), Vector3.left),
+                (new Vector3(-36f, 0f, 28f), Vector3.right),
+                (new Vector3(6f, 0f, 36f), Vector3.back),
+            };
+            for (int i = 0; i < spots.Length; i++)
+            {
+                var (face, inward) = spots[i];
+                var entry = prices.WallGunAt(i);
+                BuildWallBuyPanel(face, inward, entry != null ? entry.gun : null);
+                buyables.Add(new Buyable { Kind = BuyableKind.WallGun, Index = i, Position = face + inward * 1f + Vector3.up, Range = WallBuyRange });
+            }
+        }
+
+        void BuildWallBuyPanel(Vector3 face, Vector3 inward, GunData gun)
+        {
+            var panel = Greybox.Empty("WallBuy " + (gun != null ? gun.displayName : "?"), Root, face + inward * 0.03f + Vector3.up * 1.5f);
+            panel.localRotation = Quaternion.LookRotation(-inward, Vector3.up);
+            // A chalk outline with the gun's silhouette inside, like an old wall chalk drawing.
+            Greybox.Box("Chalk T", panel, new Vector3(0f, 0.42f, 0f), new Vector3(1.6f, 0.05f, 0.02f), Chalk, collider: false);
+            Greybox.Box("Chalk B", panel, new Vector3(0f, -0.42f, 0f), new Vector3(1.6f, 0.05f, 0.02f), Chalk, collider: false);
+            Greybox.Box("Chalk L", panel, new Vector3(-0.78f, 0f, 0f), new Vector3(0.05f, 0.88f, 0.02f), Chalk, collider: false);
+            Greybox.Box("Chalk R", panel, new Vector3(0.78f, 0f, 0f), new Vector3(0.05f, 0.88f, 0.02f), Chalk, collider: false);
+            float length = gun != null ? Mathf.Clamp(gun.modelLength, 0.4f, 1.5f) : 1f;
+            var accent = gun != null ? gun.accent : Cover;
+            Greybox.Box("Gun", panel, new Vector3(0f, 0.05f, 0f), new Vector3(0.9f * length, 0.12f, 0.04f), new Color(0.16f, 0.17f, 0.18f), collider: false);
+            Greybox.Box("Grip", panel, new Vector3(-0.15f * length, -0.1f, 0f), new Vector3(0.08f, 0.2f, 0.04f), accent, collider: false);
+            Greybox.Box("Stock", panel, new Vector3(-0.5f * length, 0.02f, 0f), new Vector3(0.25f * length, 0.14f, 0.04f), accent, collider: false);
+        }
+    }
+}

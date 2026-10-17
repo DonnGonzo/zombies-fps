@@ -26,8 +26,11 @@ namespace ZombiesFPS.Net
     {
         public static RoundManager Instance { get; private set; }
 
-        const float MinSpawnDistance = 12f;
+        const float MinSpawnDistance = 5f;
         const float RetrySpawnDelay = 0.25f;
+        /// <summary>Zombies come from one of this many open windows nearest the players, so they find them fast.</summary>
+        const int NearestWindows = 4;
+        const long DebugPoints = 5000;
 
         public NetworkVariable<GamePhase> Phase = new NetworkVariable<GamePhase>(GamePhase.Intermission);
         /// <summary>The current round, or the last one played during an intermission. 0 before round 1.</summary>
@@ -43,6 +46,7 @@ namespace ZombiesFPS.Net
         public NetworkVariable<bool> Won = new NetworkVariable<bool>(false);
 
         readonly List<NetZombie> _zombies = new List<NetZombie>();
+        readonly List<Transform> _spawnPoints = new List<Transform>();
         int _toSpawn;
         float _nextSpawnTime;
 
@@ -107,6 +111,8 @@ namespace ZombiesFPS.Net
         void HandleDebugKeys()
         {
             if (GameInput.DebugPressed(DebugKey.GodMode)) GodMode.Value = !GodMode.Value;
+            if (GameInput.DebugPressed(DebugKey.GivePoints))
+                foreach (var p in NetPlayer.All) p.Points.Value += DebugPoints;
             if (IsGameOver) return;
             if (GameInput.DebugPressed(DebugKey.NextRound)) SkipToRound(Round.Value + 1);
             if (GameInput.DebugPressed(DebugKey.JumpTenRounds)) SkipToRound(Round.Value + 10);
@@ -174,6 +180,7 @@ namespace ZombiesFPS.Net
             ClearZombies();
             int slot = 0;
             foreach (var p in NetPlayer.All) p.ServerResetForRestart(GameConfig.PlayerSpawn(slot++));
+            if (MapState.Instance != null) MapState.Instance.ServerReset();
             Round.Value = 0;
             Won.Value = false;
             BeginIntermission(GameConfig.Round.firstRoundDelay);
@@ -195,12 +202,15 @@ namespace ZombiesFPS.Net
 
         bool TrySpawn()
         {
-            var points = GameConfig.ZombieSpawnPoints;
-            int start = Random.Range(0, points.Length);
-            for (int i = 0; i < points.Length; i++)
+            // Windows in open zones, nearest the players first; pick at random among the closest few.
+            GameConfig.Map.CollectSpawnPoints(MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0, _spawnPoints);
+            _spawnPoints.RemoveAll(p => TooCloseToPlayers(p.position));
+            _spawnPoints.Sort((a, b) => DistanceToPlayers(a.position).CompareTo(DistanceToPlayers(b.position)));
+            int count = Mathf.Min(NearestWindows, _spawnPoints.Count);
+            int start = Random.Range(0, Mathf.Max(1, count));
+            for (int i = 0; i < count; i++)
             {
-                var point = points[(start + i) % points.Length];
-                if (TooCloseToPlayers(point.position)) continue;
+                var point = _spawnPoints[(start + i) % count];
                 if (!NavMesh.SamplePosition(point.position, out var hit, 2f, NavMesh.AllAreas)) continue;
 
                 var zombie = ZombiePool.Instance.Get(hit.position, point.rotation);
@@ -216,6 +226,14 @@ namespace ZombiesFPS.Net
                 return true;
             }
             return false;
+        }
+
+        static float DistanceToPlayers(Vector3 position)
+        {
+            float best = float.MaxValue;
+            foreach (var p in NetPlayer.All)
+                if (p.IsAlive) best = Mathf.Min(best, (p.transform.position - position).sqrMagnitude);
+            return best;
         }
 
         bool TooCloseToPlayers(Vector3 position)

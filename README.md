@@ -2,9 +2,27 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
-## Current state: Phase 2 (round loop), on top of Phases 0 and 1
+## Current state: Phase 3 (map, doors and wall guns), on top of Phases 0-2
 
-A first-person greybox slice you can play with up to 4 friends, using Netcode for GameObjects with a host-authoritative model, and now a real round-based game loop.
+A first-person greybox co-op zombie game for up to 4 players: Netcode for GameObjects with a host-authoritative model, a round-based loop, and now a map to buy your way through.
+
+**Map, doors and wall guns (Phase 3)**
+- Six zones in a 3 x 2 grid, joined by six doors into one loop, so there is always a way round to retreat:
+
+  | Barracks | Chapel | Garage |
+  |---|---|---|
+  | **Courtyard** | **Gate Yard** (start) | **Depot** |
+
+- Doors cost 750 (next to the start), 1,000, then 1,250. Opening one opens the zone behind it and its zombie windows. Zombies come from the open windows nearest the players
+- Wall guns, drawn in chalk on the walls: buy a gun once, then buy ammo for it at about half price. Walk up and press E
+  - Rook-9 Carbine ammo (Gate Yard, Barracks) 250
+  - Hatchet .44 revolver (Depot) 750
+  - Wren-7 SMG (Courtyard) 1,000
+  - Brennan DMR (Garage) 1,500
+  - Talon LMG (Chapel) 2,500
+- Two weapon slots. A third gun replaces the one in your hands. Switch with Q, the mouse wheel or 1 / 2
+- Every price is in one asset, `Data/PriceTable`. Each gun is its own `GunData` asset
+- Doors and buys are checked and paid for on the host; everyone sees doors open together
 
 **Round loop (Phase 2)**
 - One host-owned `RoundManager` runs the game: intermission, round active, game over
@@ -25,7 +43,7 @@ A first-person greybox slice you can play with up to 4 friends, using Netcode fo
 - The host presses Enter after a game over to restart for everyone
 
 **Gameplay slice (Phase 0)**
-- Walled greybox yard with cover, a raised platform, boarded spawn windows and a NavMesh baked at runtime
+- Greybox world with cover, boarded spawn windows and a NavMesh baked at runtime (now the six-zone map above)
 - First-person controller: walk, sprint, jump, aim-walk, mouse look, recoil and camera shake
 - One hitscan automatic rifle (Rook-9 Carbine): magazine + reserve, reload, aim down sights, spread/bloom, tracers, muzzle flash, impact debris, hitmarkers (white hit, gold headshot, red kill)
 - Walker zombie: chases the nearest standing player, telegraphed swing you can back out of, hit flash, stagger, falls away from the shot, headshot kills pop the head
@@ -56,22 +74,25 @@ If the scene is ever missing or broken, **Zombies FPS → Rebuild Prototype Scen
 |---|---|
 | Move / sprint / jump | WASD / Shift / Space |
 | Fire / aim / reload | Left mouse / right mouse / R |
+| Buy (door, wall gun, ammo) | E |
+| Switch weapon | Q / mouse wheel / 1, 2 |
 | Revive a downed teammate | Hold E |
-| Test mode (host): next round / jump 10 rounds / god mode | `=` / `]` / `G` |
+| Test mode (host): next round / jump 10 rounds / god mode / +5,000 points | `=` / `]` / `G` / `P` |
 | Free the mouse (shows Leave) / toggle help | Esc / H |
 | Restart after game over (host) | Enter |
 
-A gamepad works too (sticks, triggers, south = jump, west = reload).
+A gamepad works too (sticks, triggers, south = jump, west = reload, north = buy / revive, east = switch weapon).
 
 ## Tuning
 
 Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even during Play mode:
 
-- `Gun_Rook9`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom
+- `Gun_Rook9`, `Gun_Hatchet44`, `Gun_Wren7`, `Gun_BrennanDMR`, `Gun_TalonLMG`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom, and the model's length and colour
+- `PriceTable`: door costs and each wall gun's price and ammo price
 - `Zombie_Walker`: speeds per tier, attack damage/range/wind-up, stagger, points
 - `RoundData`: zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests (round formulas, live cap, spawn pacing, round bonus) from **Window → General → Test Runner → EditMode**.
+Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 
@@ -80,7 +101,7 @@ Assets/_Project/
   Data/            ScriptableObject balance assets
   Resources/Net/   Network prefabs (player, zombie, round manager). Bodies are built in code on spawn
   Scenes/          Prototype.unity
-  Scripts/Runtime/ Core (bootstrap + menu, arena, input, audio), Net (players, director), Player, Weapons, Zombies, Combat, UI, Data
+  Scripts/Runtime/ Core (bootstrap + menu, input, audio), World (zone map, doors), Net (players, rounds, map state), Player, Weapons, Zombies, Combat, UI, Data
   Scripts/Editor/  Menu helpers
   Tests/EditMode/  Round formula tests
 ```
@@ -99,4 +120,4 @@ The prototype builds its scene from code (`PrototypeBootstrap`) so there are no 
 
 - Unity Relay + Lobby join codes, so friends can join without port forwarding. This needs the project linked to a Unity Cloud project (Edit → Project Settings → Services).
 - An autoplay bot for overnight balance runs to rounds 100, 250 and 500 (planned for Phase 2 in the design doc).
-- Phase 3: a real map blockout with 5-6 zones, doors, wall guns and ammo purchases to spend points on.
+- Phase 4: power-ups every 5 rounds, the upgrade machine, more zombie types and a boss.

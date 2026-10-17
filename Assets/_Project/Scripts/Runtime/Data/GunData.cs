@@ -43,6 +43,15 @@ namespace ZombiesFPS.Data
         public float aimFov = 52f;
         [Min(0.01f)] public float aimTime = 0.16f;
 
+        [Header("Handling")]
+        [Tooltip("Time to raise the gun after switching to it or buying it.")]
+        [Min(0.05f)] public float raiseTime = 0.45f;
+
+        [Header("Look (greybox)")]
+        [Tooltip("Stretches the first-person model front to back: under 1 for pistols, over 1 for long guns.")]
+        [Min(0.3f)] public float modelLength = 1f;
+        public Color accent = new Color(0.42f, 0.36f, 0.27f);
+
         public float SecondsPerShot => 60f / roundsPerMinute;
     }
 }
