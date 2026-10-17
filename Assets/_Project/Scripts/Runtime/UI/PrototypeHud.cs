@@ -42,12 +42,29 @@ namespace ZombiesFPS.UI
             _audio = gameObject.AddComponent<AudioSource>();
             _audio.playOnAwake = false;
             RoundManager.BossDefeated += OnBossDefeated;
+            MissionBoard.MissionCompleted += OnMissionCompleted;
         }
 
         void OnDestroy()
         {
             if (_gun != null) _gun.Hit -= OnHit;
             RoundManager.BossDefeated -= OnBossDefeated;
+            MissionBoard.MissionCompleted -= OnMissionCompleted;
+        }
+
+        void OnMissionCompleted(int id)
+        {
+            var def = GameConfig.Missions != null ? GameConfig.Missions.At(id) : null;
+            var board = MissionBoard.Instance;
+            if (def == null || board == null) return;
+            ShowBanner("MISSION COMPLETE", $"{def.title}: {RewardText(def, board.SetRound.Value)} for everyone");
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
+        }
+
+        static string RewardText(MissionDef def, int round)
+        {
+            string bonus = def.bonus == MissionBonus.MaxAmmo ? " and full ammo" : def.bonus == MissionBonus.PowerUpReroll ? " and a power-up reroll" : "";
+            return $"+{def.PointsFor(round):N0} pts{bonus}";
         }
 
         void OnBossDefeated(long bonus)
@@ -228,13 +245,14 @@ namespace ZombiesFPS.UI
             DrawSquad(w, u);
             DrawPowerUps(h, u);
             DrawPowerUpOffer(w, h, u);
+            DrawMissions(w, u);
 
             if (_showHelp)
             {
                 var r = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
                 string host = rounds != null && rounds.IsServer ? "\nTest mode (host):  = next round · ] jump 10 rounds · G god mode · P +5,000 pts · O power-up · B boss" : "";
                 Shadowed(new Rect(w - 800 * u, 30 * u, 760 * u, 260 * u),
-                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · Q / wheel switch gun\nE buy · hold E revive · 1/2/3 pick power-up" + host + "\nEsc menu · H hide help",
+                    "WASD move · Shift sprint · Space jump\nLMB fire · RMB aim · R reload · Q / wheel switch gun\nE buy · hold E revive · 1/2/3 pick power-up · 4 redraw" + host + "\nEsc menu · H hide help",
                     r);
             }
 
@@ -416,6 +434,42 @@ namespace ZombiesFPS.UI
             Shadowed(new Rect(0, h * 0.2f + 110 * u, w, 40 * u), _bannerSub, sub);
         }
 
+        /// <summary>The current mission set, top right under the help text.</summary>
+        void DrawMissions(float w, float u)
+        {
+            var board = MissionBoard.Instance;
+            var data = GameConfig.Missions;
+            if (board == null || data == null || board.SetRound.Value <= 0) return;
+            float x = w - 640 * u, y = 300 * u, lw = 600 * u;
+            var head = new GUIStyle(_small) { alignment = TextAnchor.UpperRight, fontStyle = FontStyle.Bold };
+            head.normal.textColor = new Color(0.6f, 0.85f, 1f);
+            int next = data.NextRefreshRound(board.SetRound.Value);
+            Shadowed(new Rect(x, y, lw, 26 * u), $"MISSIONS  ·  new set at round {next}", head);
+            y += 28 * u;
+            var line = new GUIStyle(_small) { alignment = TextAnchor.UpperRight };
+            for (int i = 0; i < MissionData.SlotCount; i++)
+            {
+                var def = board.DefIn(i);
+                if (def == null) continue;
+                ulong slot = board.SlotValue(i);
+                bool done = MissionData.DoneOf(slot);
+                int target = MissionData.TargetOf(slot);
+                string where = def.objective == MissionObjective.HoldGenerator ? $" in the {ZombiesFPS.World.ZoneMap.ZoneNames[MissionData.ZoneOf(slot)]}" : "";
+                string state = done ? "DONE" : $"{MissionData.ProgressOf(slot)}/{target}";
+                line.normal.textColor = done ? new Color(0.5f, 1f, 0.55f) : Color.white;
+                Shadowed(new Rect(x, y, lw, 26 * u), $"{def.title}: {def.Describe(target)}{where}   {state}", line);
+                y += 24 * u;
+                if (!done)
+                {
+                    var reward = new GUIStyle(line);
+                    reward.normal.textColor = new Color(1f, 0.85f, 0.4f, 0.85f);
+                    Shadowed(new Rect(x, y, lw, 24 * u), RewardText(def, board.SetRound.Value), reward);
+                    y += 24 * u;
+                }
+                y += 4 * u;
+            }
+        }
+
         void DrawBossBars(float w, float u)
         {
             float bw = 600 * u, bh = 12 * u, y = 100 * u;
@@ -461,6 +515,12 @@ namespace ZombiesFPS.UI
 
             var head = new GUIStyle(_label) { alignment = TextAnchor.MiddleCenter };
             head.normal.textColor = empowered ? new Color(1f, 0.8f, 0.3f) : new Color(0.85f, 0.75f, 1f);
+            if (_player.PowerRerolls.Value > 0)
+            {
+                var hint = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
+                hint.normal.textColor = new Color(1f, 1f, 1f, 0.75f);
+                Shadowed(new Rect(0, y + ch + 6 * u, w, 26 * u), $"Press 4 to redraw the cards ({_player.PowerRerolls.Value} left)", hint);
+            }
             string more = _player.QueuedOffers.Value > 0 ? $"   ({_player.QueuedOffers.Value} more waiting)" : "";
             Shadowed(new Rect(0, y - 40 * u, w, 36 * u), (empowered ? $"EMPOWERED: PICK A POWER-UP (+{levels} levels)" : "PICK A POWER-UP") + more, head);
 

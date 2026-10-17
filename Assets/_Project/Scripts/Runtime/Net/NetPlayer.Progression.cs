@@ -29,6 +29,8 @@ namespace ZombiesFPS.Net
         public NetworkVariable<int> MachineWindowUsed = new NetworkVariable<int>(-1);
         /// <summary>Offers waiting behind the pending one (several milestones can land at once when skipping rounds).</summary>
         public NetworkVariable<int> QueuedOffers = new NetworkVariable<int>(0);
+        /// <summary>Free redraws of a power-up offer's cards (a mission reward).</summary>
+        public NetworkVariable<int> PowerRerolls = new NetworkVariable<int>(0);
 
         readonly Collider[] _overlap = new Collider[64];
         readonly HashSet<NetZombie> _splashed = new HashSet<NetZombie>();
@@ -245,6 +247,15 @@ namespace ZombiesFPS.Net
             if (gained > 0f && State.Value == LifeState.Alive) Health.Value = Mathf.Min(MaxHealthNow, Health.Value + gained);
         }
 
+        /// <summary>Owner spends a reroll: the pending offer is dealt again.</summary>
+        [Rpc(SendTo.Server)]
+        void RerollPowerUpsRpc()
+        {
+            if (!HasPowerUpOffer || PowerRerolls.Value <= 0) return;
+            PowerRerolls.Value--;
+            DealOffer(OfferIsEmpowered);
+        }
+
         [Rpc(SendTo.Server)]
         void PickPowerUpRpc(int card)
         {
@@ -267,6 +278,7 @@ namespace ZombiesFPS.Net
             MachineWindowUsed.Value = -1;
             _offerQueue.Clear();
             QueuedOffers.Value = 0;
+            PowerRerolls.Value = 0;
         }
 
         /// <summary>Chain rounds: the hit jumps to the nearest other zombie in range.</summary>

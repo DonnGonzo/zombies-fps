@@ -78,6 +78,9 @@ namespace ZombiesFPS.Core
         /// <summary>The weapon slot picked with the number keys this frame (0 or 1), or -1.</summary>
         public static int SlotPressed => K == null ? -1 : K.digit1Key.wasPressedThisFrame ? 0 : K.digit2Key.wasPressedThisFrame ? 1 : -1;
 
+        /// <summary>Redraw the power-up cards with a reroll: 4 or d-pad down.</summary>
+        public static bool RerollPressed => (K != null && K.digit4Key.wasPressedThisFrame) || (G != null && G.dpad.down.wasPressedThisFrame);
+
         /// <summary>A power-up card picked with 1/2/3 (or d-pad left/up/right), else -1.</summary>
         public static int ChoicePressed
         {
@@ -134,6 +137,8 @@ namespace ZombiesFPS.Core
         public static bool InteractPressed => Input.GetKeyDown(KeyCode.E);
         public static bool SwitchWeaponPressed => Input.GetKeyDown(KeyCode.Q) || Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f;
         public static int SlotPressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : -1;
+
+        public static bool RerollPressed => Input.GetKeyDown(KeyCode.Alpha4);
 
         public static int ChoicePressed => Input.GetKeyDown(KeyCode.Alpha1) ? 0 : Input.GetKeyDown(KeyCode.Alpha2) ? 1 : Input.GetKeyDown(KeyCode.Alpha3) ? 2 : -1;
 

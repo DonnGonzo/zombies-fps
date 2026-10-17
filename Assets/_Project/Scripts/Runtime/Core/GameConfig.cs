@@ -22,6 +22,7 @@ namespace ZombiesFPS.Core
         public static RoundData Round;
         public static PriceTable Prices;
         public static UpgradeData Upgrades;
+        public static MissionData Missions;
         /// <summary>Every gun in the game; a gun's index is its network id.</summary>
         public static GunData[] Guns;
 

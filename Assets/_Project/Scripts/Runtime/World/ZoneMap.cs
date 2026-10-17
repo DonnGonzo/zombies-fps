@@ -84,6 +84,17 @@ namespace ZombiesFPS.World
         /// <summary>Which zone each wall gun is in, in wall-buy order. PriceTable.wallGuns follows this order.</summary>
         public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 3 };
 
+        /// <summary>One mission generator per zone (zone order), against a wall and clear of windows and doors.</summary>
+        static readonly (Vector3 position, float yaw)[] GeneratorSpots =
+        {
+            (new Vector3(0f, 0f, -10.6f), 180f),
+            (new Vector3(32f, 0f, -10.6f), 180f),
+            (new Vector3(34.6f, 0f, 14f), 90f),
+            (new Vector3(9f, 0f, 34.6f), 0f),
+            (new Vector3(-31f, 0f, 34.6f), 0f),
+            (new Vector3(-32f, 0f, -10.6f), 180f),
+        };
+
         static readonly Color[] FloorTints =
         {
             new Color(0.33f, 0.34f, 0.33f), new Color(0.36f, 0.34f, 0.3f), new Color(0.3f, 0.31f, 0.33f),
@@ -101,6 +112,8 @@ namespace ZombiesFPS.World
         public Zone[] Zones { get; private set; }
         public Door[] Doors { get; private set; }
         public Buyable[] Buyables { get; private set; }
+        /// <summary>Mission generators, indexed by zone.</summary>
+        public Generator[] Generators { get; private set; }
         public Vector3 PlayerStart { get; private set; }
 
         // ---------------------------------------------------------------- queries
@@ -160,6 +173,7 @@ namespace ZombiesFPS.World
             BuildWindows();
             BuildDressing();
             BuildLamps();
+            BuildGenerators();
 
             var surface = Root.gameObject.AddComponent<NavMeshSurface>();
             surface.collectObjects = CollectObjects.Children;
@@ -363,6 +377,20 @@ namespace ZombiesFPS.World
                 var entry = prices.WallGunAt(i);
                 BuildWallBuyPanel(face, inward, entry != null ? entry.gun : null);
                 buyables.Add(new Buyable { Kind = BuyableKind.WallGun, Index = i, Position = face + inward * 1f + Vector3.up, Range = WallBuyRange });
+            }
+        }
+
+        void BuildGenerators()
+        {
+            Generators = new Generator[ZoneCount];
+            for (int i = 0; i < ZoneCount; i++)
+            {
+                var (position, yaw) = GeneratorSpots[i];
+                var go = Greybox.Empty("Generator " + ZoneNames[i], Root, position).gameObject;
+                // The gauge side faces into the zone.
+                go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+                Generators[i] = go.AddComponent<Generator>();
+                Generators[i].Init();
             }
         }
 

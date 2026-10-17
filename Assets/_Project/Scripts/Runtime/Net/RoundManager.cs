@@ -160,6 +160,7 @@ namespace ZombiesFPS.Net
             _nextSpawnTime = Time.time + 1f;
             _bossesToSpawn = GameConfig.Round.BossCountForRound(Round.Value);
             _nextBossTime = Time.time + FirstBossDelay;
+            if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnRoundStarted(Round.Value);
             Phase.Value = GamePhase.RoundActive;
             UpdateZombiesLeft();
         }
@@ -169,6 +170,7 @@ namespace ZombiesFPS.Net
             long bonus = GameConfig.Round.RoundBonus(Round.Value);
             foreach (var p in NetPlayer.All) p.Points.Value += bonus;
             RespawnBledOutPlayers();
+            if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnRoundCompleted();
             var upgrades = GameConfig.Upgrades;
             if (upgrades != null && upgrades.IsPowerUpRound(Round.Value)) OfferPowerUps(upgrades.IsEmpoweredRound(Round.Value));
 
@@ -218,6 +220,7 @@ namespace ZombiesFPS.Net
             int slot = 0;
             foreach (var p in NetPlayer.All) p.ServerResetForRestart(GameConfig.PlayerSpawn(slot++));
             if (MapState.Instance != null) MapState.Instance.ServerReset();
+            if (MissionBoard.Instance != null) MissionBoard.Instance.ServerReset();
             Round.Value = 0;
             Won.Value = false;
             BeginIntermission(GameConfig.Round.firstRoundDelay);
@@ -318,6 +321,7 @@ namespace ZombiesFPS.Net
         void OnZombieDied(NetZombie zombie, DamageInfo info)
         {
             Forget(zombie);
+            if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnKill(zombie, info.IsHeadshot);
             if (zombie.Kind == ZombieKind.Boss)
             {
                 long bonus = GameConfig.Round.bossBonus;

@@ -266,6 +266,7 @@ namespace ZombiesFPS.Net
             {
                 int choice = GameInput.ChoicePressed;
                 if (choice >= 0) PickPowerUpRpc(choice);
+                else if (GameInput.RerollPressed && PowerRerolls.Value > 0) RerollPowerUpsRpc();
             }
             if (canAct)
             {
@@ -457,6 +458,7 @@ namespace ZombiesFPS.Net
             Health.Value = Mathf.Max(0f, Health.Value - amount);
             if (Health.Value <= 0f)
             {
+                if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnPlayerDowned();
                 State.Value = LifeState.Downed;
                 BleedOutRemaining.Value = BleedOutTime;
                 ReviveProgress.Value = 0f;
@@ -659,6 +661,15 @@ namespace ZombiesFPS.Net
         void PurchaseResultRpc(bool success)
         {
             if (_uiAudio != null) _uiAudio.PlayOneShot(success ? ProceduralAudio.Purchase : ProceduralAudio.Denied, 0.8f);
+        }
+
+        /// <summary>Host only. Every gun this player owns back to full (a mission reward).</summary>
+        public void ServerRefillAllAmmo() => RefillAllRpc();
+
+        [Rpc(SendTo.Owner)]
+        void RefillAllRpc()
+        {
+            for (int slot = 0; slot < SlotCount; slot++) AmmoBoughtRpc(slot);
         }
 
         [Rpc(SendTo.Owner)]

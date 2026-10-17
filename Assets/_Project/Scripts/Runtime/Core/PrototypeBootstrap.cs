@@ -26,6 +26,7 @@ namespace ZombiesFPS.Core
         public RoundData roundData;
         public PriceTable priceTable;
         public UpgradeData upgradeData;
+        public MissionData missionData;
         [Tooltip("Runner, crawler, brute, spitter and boss. Any type missing here uses built-in values.")]
         public ZombieData[] zombieTypes;
 
@@ -56,6 +57,7 @@ namespace ZombiesFPS.Core
             GameConfig.Prices = priceTable != null ? priceTable : PriceTable.CreateDefault(GameConfig.Gun);
             GameConfig.Guns = GameConfig.Prices.BuildCatalog(GameConfig.Gun);
             GameConfig.Upgrades = upgradeData != null ? upgradeData : ScriptableObject.CreateInstance<UpgradeData>();
+            GameConfig.Missions = missionData != null ? missionData : ScriptableObject.CreateInstance<MissionData>();
             GameConfig.PlayerPrefab = Resources.Load<GameObject>("Net/NetPlayer");
             GameConfig.ZombiePrefab = Resources.Load<GameObject>("Net/NetZombie");
             GameConfig.DirectorPrefab = Resources.Load<GameObject>("Net/NetDirector");

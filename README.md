@@ -2,9 +2,14 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
-## Current state: Phase 4 (power-ups, upgrade machine, zombie types and bosses), on top of Phases 0-3
+## Current state: Phase 5 part A (missions), on top of Phases 0-4
 
 A first-person greybox co-op zombie game for up to 4 players: Netcode for GameObjects with a host-authoritative model, a round-based loop, and now a map to buy your way through.
+
+**Missions (Phase 5, part A)**
+- Three optional missions are handed out on round 1, then a fresh set on rounds 10, 20, 30 and so on. An unfinished set just goes away when it refreshes. They're listed top right; progress is shared by the squad and every player gets the reward
+- Objective types: kill N zombies, get N headshot kills, kill N of one type (runners, crawlers, brutes, spitters, once they've shown up), hold a generator (stand next to the lit generator in an open zone while the round is on), and clear N rounds in a row with nobody going down
+- Targets and rewards grow with the round. Rewards are points plus, for some missions, full ammo for everyone or a power-up reroll (press 4 on the power-up cards to redraw them)
 
 **Zombie types and bosses (Phase 4, part B)**
 - New types join the mix as the rounds climb, each ramping in over a few rounds (a banner names them on the round they arrive):
@@ -90,7 +95,7 @@ If the scene is ever missing or broken, **Zombies FPS → Rebuild Prototype Scen
 | Move / sprint / jump | WASD / Shift / Space |
 | Fire / aim / reload | Left mouse / right mouse / R |
 | Buy (door, wall gun, ammo, upgrade) | E |
-| Pick a power-up | 1 / 2 / 3 |
+| Pick a power-up / redraw the cards (with a reroll) | 1 / 2 / 3 / 4 |
 | Switch weapon | Q / mouse wheel / 1, 2 |
 | Revive a downed teammate | Hold E |
 | Test mode (host): next round / jump 10 rounds / god mode / +5,000 points / power-up offer / spawn a boss | `=` / `]` / `G` / `P` / `O` / `B` |
@@ -105,11 +110,12 @@ Select an asset in `Assets/_Project/Data` and edit it in the Inspector, even dur
 
 - `Gun_Rook9`, `Gun_Hatchet44`, `Gun_Wren7`, `Gun_BrennanDMR`, `Gun_TalonLMG`: damage, headshot multiplier, fire rate, magazine, reload times, spread, recoil, ADS zoom, and the model's length and colour
 - `PriceTable`: door costs, upgrade machine costs, and each wall gun's price and ammo price
+- `MissionData`: each mission's objective, target and reward (base plus growth per round), how often sets refresh, generator radius
 - `UpgradeData`: each power-up's max bonus and half level, how often offers come, empowered levels, machine tiers, chain and explosive damage
 - `Zombie_Walker`, `Zombie_Runner`, `Zombie_Crawler`, `Zombie_Brute`, `Zombie_Spitter`, `Zombie_Boss`: health multiplier, speeds per tier, attack damage/range/wind-up, stagger, points, first round and spawn share, alive limit, look, armour and weak point, leg-hit slow, acid spit
 - `RoundData`: boss rounds and boss bonus, zombie count `base + a·round^0.85`, live cap, spawn pacing, intermission length, starting points and round bonus, health curve (linear → steep to round 30 → soft cap → late-game growth), speed tier rounds
 
-Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds) from **Window → General → Test Runner → EditMode**.
+Run the tests (round formulas, live cap, spawn pacing, round bonus, the door loop, prices, power-up curves, machine windows, zombie type arrival, boss rounds, mission packing, refresh rounds and targets) from **Window → General → Test Runner → EditMode**.
 
 ## Layout
 
@@ -138,4 +144,4 @@ The prototype builds its scene from code (`PrototypeBootstrap`) so there are no 
 - Unity Relay + Lobby join codes, so friends can join without port forwarding. This needs the project linked to a Unity Cloud project (Edit → Project Settings → Services).
 - An autoplay bot for overnight balance runs to rounds 100, 250 and 500 (planned for Phase 2 in the design doc).
 - Perks: 8 buyable perks, lost when you go down (in the design doc, not scheduled yet).
-- Phase 5: optional missions (3 at a time, rotating every 10 rounds) and the spawn shop.
+- Phase 5 part B: XP and levels saved between runs, and the spawn shop selling attachments unlocked by level.
