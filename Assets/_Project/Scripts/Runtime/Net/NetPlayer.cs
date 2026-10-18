@@ -644,6 +644,8 @@ namespace ZombiesFPS.Net
             Vector3 normal = -direction;
             bool flesh = false;
             NetZombie primaryZombie = null;
+            // Where chain and explosive effects go off: the first zombie hit, or where the bullet stops.
+            Vector3 impact = end, impactNormal = normal;
             var tier = GameConfig.Upgrades.Tier(TierInSlot(ActiveSlot.Value));
             double baseDamage = gun.damage * (double)GunDamageMultiplier(ActiveSlot.Value);
             int count = Physics.RaycastNonAlloc(origin, direction, _hits, gun.range, ~0, QueryTriggerInteraction.Ignore);
@@ -666,7 +668,7 @@ namespace ZombiesFPS.Net
                     flesh = true;
                     end = hit.point;
                     normal = hit.normal;
-                    if (primaryZombie == null) primaryZombie = zombie;
+                    if (primaryZombie == null) { primaryZombie = zombie; impact = hit.point; impactNormal = hit.normal; }
                     float mult = hitbox.isHead ? gun.headshotMultiplier * (1f + Bonus(PowerStat.HeadshotDamage)) : hitbox.multiplier;
                     long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * mult * carried));
                     var result = zombie.TakeDamage(new DamageInfo(damage, hit.point, direction, hitbox.isHead, OwnerClientId, _pierced.Count - 1));
@@ -689,16 +691,18 @@ namespace ZombiesFPS.Net
                 break;
             }
 
+            if (primaryZombie == null) { impact = end; impactNormal = normal; }
+
             if (primary)
             {
-                if (tier != null && tier.chain && primaryZombie != null) ServerChain(primaryZombie, end, baseDamage, direction);
+                if (tier != null && tier.chain && primaryZombie != null) ServerChain(primaryZombie, impact, baseDamage, direction);
                 bool explosive = (tier != null && tier.explosive) || gun.explosiveRounds;
-                if (explosive) ServerExplode(primaryZombie, end, baseDamage, direction);
-                ShotFxRpc(end, normal, flesh, explosive, true, _pierced.Count);
+                if (explosive) ServerExplode(primaryZombie, impact, baseDamage, direction);
+                ShotFxRpc(end, normal, flesh, explosive, true, _pierced.Count, impact, impactNormal);
             }
             else
             {
-                ShotFxRpc(end, normal, flesh, false, false, _pierced.Count);
+                ShotFxRpc(end, normal, flesh, false, false, _pierced.Count, impact, impactNormal);
             }
         }
 
@@ -734,13 +738,13 @@ namespace ZombiesFPS.Net
 
         /// <summary>Everyone but the shooter sees and hears the shot.</summary>
         [Rpc(SendTo.NotOwner)]
-        void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive, bool withSound, int pierced)
+        void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive, bool withSound, int pierced, Vector3 impact, Vector3 impactNormal)
         {
             if (_remoteMuzzle == null) return;
             int tier = TierInSlot(ActiveSlot.Value);
             FxSystem.Instance?.ShowTracer(_remoteMuzzle.position, end, UpgradeData.TierGlow(tier), pierced > 1);
             FxSystem.Instance?.Impact(end, normal, flesh ? FxSystem.Blood : FxSystem.Dust, flesh ? 5 : 3, 3f, 0.06f);
-            if (explosive) FxSystem.Instance?.Impact(end, normal, FxSystem.Blast, 16, 6f, 0.09f);
+            if (explosive) FxSystem.Instance?.Impact(impact, impactNormal, FxSystem.Blast, 16, 6f, 0.09f);
             if (!withSound) return;
             _remoteAudio.pitch = Random.Range(0.94f, 1.06f);
             _remoteAudio.PlayOneShot(ProceduralAudio.GunshotFor(tier), 0.8f);

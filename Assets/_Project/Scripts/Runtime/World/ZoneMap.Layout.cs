@@ -384,7 +384,7 @@ namespace ZombiesFPS.World
         public static Vector3 BenchPlace(int bench, int buildable) => BenchPosition(bench) + new Vector3((buildable - 1) * 1.8f, 1f, -1.2f);
 
         /// <summary>The upgrade machine stands in a north alcove of the Lantern Core, the zone at the heart of the far side.</summary>
-        static readonly Vector3 MachinePosition = L(9, 10f, 0f, 15f);
+        static readonly Vector3 MachinePosition = L(9, 10f, 0f, 14.9f);
         /// <summary>The spawn shop's counter in the Gate Yard, served from the west side.</summary>
         static readonly Vector3 ShopPosition = L(0, 11f, 0f, -6f);
 

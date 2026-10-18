@@ -113,6 +113,7 @@ namespace ZombiesFPS.Zombies
         Vector3 _scrambleStart, _scrambleEnd;
         float _scrambleTime, _scrambleDuration;
         float _belowSince = -1f;
+        float _aboveSince = -1f;
         readonly RaycastHit[] _sightHits = new RaycastHit[8];
 
         public bool IsAlive => _mode.Value != ZombieMode.Dead;
@@ -192,6 +193,7 @@ namespace ZombiesFPS.Zombies
                 _onLink = false;
                 _scrambling = false;
                 _belowSince = -1f;
+                _aboveSince = -1f;
                 _agent.updatePosition = true;
                 _nextSpitTime = Time.time + UnityEngine.Random.Range(1f, _data.spitCooldown);
             }
@@ -503,10 +505,12 @@ namespace ZombiesFPS.Zombies
             bool level = Mathf.Abs(rise) < AttackHeight;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
-            if (_mode.Value == ZombieMode.Chasing && TryStartScramble(rise, distance)) return;
-
             // Zombies crowding a protect-mission survivor are where they should be, not stuck.
             var lured = MissionBoard.Lure;
+            bool goingForLure = lured.HasValue && (lured.Value - transform.position).sqrMagnitude < distance * distance;
+            if (_mode.Value == ZombieMode.Chasing && !goingForLure && !_data.IsBoss
+                && (TryStartScramble(rise, distance) || TryStartDrop(rise))) return;
+
             bool atLure = lured.HasValue && (lured.Value - transform.position).sqrMagnitude < 6f * 6f;
             if (_mode.Value == ZombieMode.Chasing && distance > StuckMinTargetDistance && !atLure)
             {
@@ -693,12 +697,75 @@ namespace ZombiesFPS.Zombies
             return true;
         }
 
-        /// <summary>Host: hand over hand up the side, then over the edge onto the player's level.</summary>
+        /// <summary>
+        /// Host: a zombie stranded up on something with no way down (it scrambled onto a container after a
+        /// player who has since jumped off) walks to the edge nearest the player and drops down to them.
+        /// </summary>
+        bool TryStartDrop(float rise)
+        {
+            if (rise > -ScrambleMinRise || _agent.pathPending)
+            {
+                _aboveSince = -1f;
+                return false;
+            }
+            Vector3 target = _target.transform.position;
+            bool noWayDown = _agent.pathStatus != NavMeshPathStatus.PathComplete || _agent.pathEndPosition.y > target.y + 1f;
+            if (!noWayDown)
+            {
+                _aboveSince = -1f;
+                return false;
+            }
+            if (_aboveSince < 0f) _aboveSince = Time.time;
+            if (Time.time - _aboveSince < ScrambleDelay) return false;
+
+            Vector3 start = transform.position;
+            Vector3 toward = target - start;
+            toward.y = 0f;
+            float flat = toward.magnitude;
+            toward = flat > 0.01f ? toward / flat : transform.forward;
+            foreach (float off in new[] { 1.5f, 2.5f, 3.5f })
+            {
+                Vector3 probe = start + toward * Mathf.Min(off, Mathf.Max(1f, flat));
+                probe.y = target.y;
+                if (!NavMesh.SamplePosition(probe, out var hit, 1.5f, NavMesh.AllAreas) || hit.position.y > start.y - 1f) continue;
+                Vector3 over = new Vector3(hit.position.x, start.y, hit.position.z);
+                if (!Clear(start + Vector3.up * 1f, over + Vector3.up * 1f) || !Clear(over + Vector3.up * 1f, hit.position + Vector3.up * 0.5f)) continue;
+
+                _scrambling = true;
+                _aboveSince = -1f;
+                _scrambleStart = start;
+                _scrambleEnd = hit.position;
+                _scrambleTime = 0f;
+                float across = Vector3.Distance(new Vector3(start.x, 0f, start.z), new Vector3(hit.position.x, 0f, hit.position.z));
+                _scrambleDuration = across / Mathf.Max(1.5f, _moveSpeed) + (start.y - hit.position.y) / 6f + 0.1f;
+                _agent.isStopped = true;
+                _agent.updatePosition = false;
+                transform.rotation = Quaternion.LookRotation(toward, Vector3.up);
+                return true;
+            }
+            _aboveSince = Time.time;
+            return false;
+        }
+
+        /// <summary>Host: hand over hand up the side, then over the edge onto the player's level (or off the edge and down).</summary>
         void UpdateScramble(float dt)
         {
             _scrambleTime += dt;
             float t = Mathf.Clamp01(_scrambleTime / _scrambleDuration);
             float rise = _scrambleEnd.y - _scrambleStart.y;
+            if (rise < 0f)
+            {
+                // Dropping: walk off the edge, then fall.
+                float walkShare = Mathf.Clamp01(1f - (-rise / 6f) / _scrambleDuration);
+                float off = Mathf.Clamp01(t / Mathf.Max(0.01f, walkShare));
+                float fall = Mathf.Clamp01((t - walkShare) / Mathf.Max(0.01f, 1f - walkShare));
+                Vector3 step = _scrambleEnd - _scrambleStart;
+                step.y = 0f;
+                transform.position = _scrambleStart + step * off + Vector3.up * (rise * fall * fall);
+                if (t < 1f) return;
+                FinishScramble();
+                return;
+            }
             float climbShare = Mathf.Clamp01(rise / ClimbSpeed / _scrambleDuration);
             float vertical = Mathf.Clamp01(t / Mathf.Max(0.01f, climbShare));
             float across = Mathf.Clamp01((t - climbShare) / Mathf.Max(0.01f, 1f - climbShare));
@@ -708,7 +775,11 @@ namespace ZombiesFPS.Zombies
             float lip = 0.35f * Mathf.Sin(across * Mathf.PI);
             transform.position = _scrambleStart + flat * across + Vector3.up * (rise * vertical + lip);
             if (t < 1f) return;
+            FinishScramble();
+        }
 
+        void FinishScramble()
+        {
             _scrambling = false;
             _agent.updatePosition = true;
             _agent.Warp(_scrambleEnd);

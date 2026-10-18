@@ -196,27 +196,29 @@ namespace ZombiesFPS.Weapons
             Array.Sort(_traceHits, 0, count, NearestFirst.Instance);
             _traced.Clear();
             int pierceLeft = Pierce;
+            // Explosive rounds go off at the first zombie hit, or where the bullet stops (matches the host).
+            bool blastDone = !(ExplosiveRounds && first);
             for (int i = 0; i < count; i++)
             {
                 var hit = _traceHits[i];
                 if (hit.collider.GetComponentInParent<NetPlayer>() != null) continue;
                 var hitbox = hit.collider.GetComponent<Hitbox>();
-                if (hitbox != null && hitbox.Owner != null)
+                if (hitbox != null && hitbox.Owner is NetZombie z)
                 {
-                    if (!hitbox.Owner.IsAlive || !_traced.Add(hitbox.Owner)) continue;
+                    if (!z.IsAlive || !_traced.Add(z)) continue;
                     passed++;
                     FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
-                    pierceLeft -= hitbox.Owner is NetZombie z ? z.PenetrationCost : 1;
+                    if (!blastDone) { blastDone = true; FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f); }
+                    pierceLeft -= z.PenetrationCost;
                     if (pierceLeft >= 0) continue;
-                    end = hit.point;
-                    if (ExplosiveRounds && first) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
-                    return end;
+                    return hit.point;
                 }
                 end = hit.point;
                 FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, pellets > 1 ? 2 : 4, 2.5f, 0.05f);
-                if (ExplosiveRounds && first) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
+                if (!blastDone) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
                 return end;
             }
+            if (!blastDone) FxSystem.Instance?.Impact(end, -dir, FxSystem.Blast, 16, 6f, 0.09f);
             return end;
         }
 
