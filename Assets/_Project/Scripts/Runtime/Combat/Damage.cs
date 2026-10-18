@@ -11,10 +11,13 @@ namespace ZombiesFPS.Combat
         public readonly bool IsHeadshot;
         /// <summary>Network client id of the player who dealt the damage.</summary>
         public readonly ulong AttackerId;
+        /// <summary>For bullets: how many zombies this one had already gone through.</summary>
+        public readonly int Pierced;
 
-        public DamageInfo(long amount, Vector3 point, Vector3 direction, bool isHeadshot, ulong attackerId = 0)
+        public DamageInfo(long amount, Vector3 point, Vector3 direction, bool isHeadshot, ulong attackerId = 0, int pierced = 0)
         {
             AttackerId = attackerId;
+            Pierced = pierced;
             Amount = amount;
             Point = point;
             Direction = direction;

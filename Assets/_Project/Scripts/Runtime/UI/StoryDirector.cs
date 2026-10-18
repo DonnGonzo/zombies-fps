@@ -37,6 +37,8 @@ namespace ZombiesFPS.UI
         public static int CurrentAct { get; private set; }
         /// <summary>The last story call heard, for the pause menu.</summary>
         public static string LastBeat { get; private set; }
+        /// <summary>Raised on this machine when round 50 is cleared and the story's finale plays.</summary>
+        public static event System.Action StoryCompleted;
 
         public void Init(NetPlayer player)
         {
@@ -112,6 +114,14 @@ namespace ZombiesFPS.UI
 
             var phase = rounds.Phase.Value;
             int round = rounds.Round.Value;
+            // Round 50 cleared: the story is over. The game carries on, with the Trader on the radio.
+            if (phase == GamePhase.Intermission && _lastPhase == GamePhase.RoundActive && round == StoryData.FinalRound)
+            {
+                foreach (var line in StoryData.Finale) Radio(line);
+                LastBeat = StoryData.Finale[StoryData.Finale.Length - 1];
+                CurrentAct = StoryData.ActFor(round + 1);
+                StoryCompleted?.Invoke();
+            }
             if (phase == GamePhase.RoundActive && (round != _lastRound || _lastPhase != GamePhase.RoundActive))
             {
                 if (round < _lastRound) _lastSetRound = 0; // A restart.

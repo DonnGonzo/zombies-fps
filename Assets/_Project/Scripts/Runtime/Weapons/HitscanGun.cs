@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using ZombiesFPS.Combat;
 using ZombiesFPS.Core;
 using ZombiesFPS.Data;
+using ZombiesFPS.Net;
 using ZombiesFPS.Player;
+using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.Weapons
 {
@@ -57,6 +60,10 @@ namespace ZombiesFPS.Weapons
         public float ReloadSpeed { get; set; } = 1f;
         /// <summary>Upgraded guns with explosive rounds show a burst where they hit.</summary>
         public bool ExplosiveRounds { get; set; }
+        /// <summary>The upgrade machine tier of the gun in hand (0 = not upgraded): its sound and glow. Set before Equip.</summary>
+        public int UpgradeTier { get; set; }
+        /// <summary>How many zombies a bullet goes through after the first (for the local effects; the host decides hits).</summary>
+        public int Pierce { get; set; }
         /// <summary>The camo colour of the gun in hand, or null for its own colours. Set before Equip.</summary>
         public Color? Camo { get; set; }
         public int MagazineCapacity => ScaledMagazine(_data, CapacityScale);
@@ -156,24 +163,15 @@ namespace ZombiesFPS.Weapons
                 Vector2 offset = UnityEngine.Random.insideUnitCircle * spread;
                 Vector3 dir = Quaternion.AngleAxis(offset.x, cam.up) * Quaternion.AngleAxis(offset.y, cam.right) * cam.forward;
 
-                Vector3 end = cam.position + dir * _data.range;
                 // Local raycast is for effects only; damage is decided by the host.
-                if (Physics.Raycast(cam.position, dir, out var hit, _data.range, ~0, QueryTriggerInteraction.Ignore))
-                {
-                    end = hit.point;
-                    var hitbox = hit.collider.GetComponent<Hitbox>();
-                    bool flesh = hitbox != null && hitbox.Owner != null && hitbox.Owner.IsAlive;
-                    if (flesh) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
-                    else FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, pellets > 1 ? 2 : 4, 2.5f, 0.05f);
-                    if (ExplosiveRounds && p == 0) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
-                }
+                Vector3 end = TraceEffects(cam.position, dir, pellets, p == 0, out int passed);
                 // The first pellet carries the machine tier's chain and explosive effects.
                 Fired?.Invoke(cam.position, dir, p == 0);
-                if (_view != null) FxSystem.Instance?.ShowTracer(_view.Muzzle.position, end);
+                if (_view != null) FxSystem.Instance?.ShowTracer(_view.Muzzle.position, end, UpgradeData.TierGlow(UpgradeTier), passed > 1);
             }
 
             _audio.pitch = UnityEngine.Random.Range(0.94f, 1.06f);
-            _audio.PlayOneShot(ProceduralAudio.Gunshot, 0.75f);
+            _audio.PlayOneShot(ProceduralAudio.GunshotFor(UpgradeTier), 0.75f);
 
             float recoilScale = Mathf.Lerp(1f, _data.aimRecoilScale, AimAmount);
             _look.AddRecoil(_data.recoilPitch * recoilScale, UnityEngine.Random.Range(-_data.recoilYaw, _data.recoilYaw) * recoilScale);
@@ -181,6 +179,51 @@ namespace ZombiesFPS.Weapons
             _bloom = Mathf.Min(_bloom + _data.bloomPerShot, _data.maxBloom);
 
             if (Magazine == 0 && Reserve > 0) TryStartReload();
+        }
+
+        readonly RaycastHit[] _traceHits = new RaycastHit[32];
+        readonly HashSet<IDamageable> _traced = new HashSet<IDamageable>();
+
+        /// <summary>
+        /// Blood on every zombie the bullet goes through (as many as its pierce allows) and dust where it stops,
+        /// the same way the host works out the hits. Returns where the tracer ends and how many zombies it passed.
+        /// </summary>
+        Vector3 TraceEffects(Vector3 origin, Vector3 dir, int pellets, bool first, out int passed)
+        {
+            passed = 0;
+            Vector3 end = origin + dir * _data.range;
+            int count = Physics.RaycastNonAlloc(origin, dir, _traceHits, _data.range, ~0, QueryTriggerInteraction.Ignore);
+            Array.Sort(_traceHits, 0, count, NearestFirst.Instance);
+            _traced.Clear();
+            int pierceLeft = Pierce;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = _traceHits[i];
+                if (hit.collider.GetComponentInParent<NetPlayer>() != null) continue;
+                var hitbox = hit.collider.GetComponent<Hitbox>();
+                if (hitbox != null && hitbox.Owner != null)
+                {
+                    if (!hitbox.Owner.IsAlive || !_traced.Add(hitbox.Owner)) continue;
+                    passed++;
+                    FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blood, hitbox.isHead ? 9 : 5, 3.5f, 0.07f);
+                    pierceLeft -= hitbox.Owner is NetZombie z ? z.PenetrationCost : 1;
+                    if (pierceLeft >= 0) continue;
+                    end = hit.point;
+                    if (ExplosiveRounds && first) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
+                    return end;
+                }
+                end = hit.point;
+                FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Dust, pellets > 1 ? 2 : 4, 2.5f, 0.05f);
+                if (ExplosiveRounds && first) FxSystem.Instance?.Impact(hit.point, hit.normal, FxSystem.Blast, 16, 6f, 0.09f);
+                return end;
+            }
+            return end;
+        }
+
+        sealed class NearestFirst : IComparer<RaycastHit>
+        {
+            public static readonly NearestFirst Instance = new NearestFirst();
+            public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
         }
 
         void TryStartReload()

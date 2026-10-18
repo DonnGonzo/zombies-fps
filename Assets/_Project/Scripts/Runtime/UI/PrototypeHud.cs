@@ -62,6 +62,7 @@ namespace ZombiesFPS.UI
             _audio.playOnAwake = false;
             RoundManager.BossDefeated += OnBossDefeated;
             MissionBoard.MissionCompleted += OnMissionCompleted;
+            StoryDirector.StoryCompleted += OnStoryCompleted;
             MissionBoard.MissionFailed += OnMissionFailed;
             BuildManager.PartFound += OnPartFound;
             BuildManager.ItemBuilt += OnItemBuilt;
@@ -77,6 +78,7 @@ namespace ZombiesFPS.UI
             if (_gun != null) _gun.Hit -= OnHit;
             RoundManager.BossDefeated -= OnBossDefeated;
             MissionBoard.MissionCompleted -= OnMissionCompleted;
+            StoryDirector.StoryCompleted -= OnStoryCompleted;
             MissionBoard.MissionFailed -= OnMissionFailed;
             BuildManager.PartFound -= OnPartFound;
             BuildManager.ItemBuilt -= OnItemBuilt;
@@ -169,6 +171,9 @@ namespace ZombiesFPS.UI
             _hitKilled = killed;
             _hitHead = headshot;
         }
+
+        void OnStoryCompleted() =>
+            ShowBanner("STORY COMPLETE", "The Lantern is dead. Keep going: the Trader's bounties are on the board, and round 500 is the record.", Ui.Amber);
 
         void ShowBanner(string title, string sub, Color color)
         {
@@ -503,7 +508,8 @@ namespace ZombiesFPS.UI
             float lh = string.IsNullOrEmpty(last) ? 0f : Ui.Tiny.CalcHeight(new GUIContent($"\"{last}\""), cw - 48 * u) + 40 * u;
             var r = new Rect(pause.xMax + 24 * u, pause.y, cw, 90 * u + sh + lh);
             Ui.PanelBox(r, StoryData.RadioColor, u);
-            Ui.Label(new Rect(r.x + 24 * u, r.y + 20 * u, cw, 26 * u), $"ACT {act + 1} OF 4", Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
+            string actLine = act < StoryData.StoryActs ? $"ACT {act + 1} OF {StoryData.StoryActs}  ·  THE STORY ENDS AT ROUND {StoryData.FinalRound}" : "STORY COMPLETE";
+            Ui.Label(new Rect(r.x + 24 * u, r.y + 20 * u, cw, 26 * u), actLine, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
             Ui.Label(new Rect(r.x + 24 * u, r.y + 44 * u, cw, 34 * u), StoryData.ActNames[act].ToUpperInvariant(), Ui.Bold, StoryData.RadioColor, TextAnchor.MiddleLeft);
             Ui.Label(new Rect(r.x + 24 * u, r.y + 82 * u, cw - 48 * u, sh), summary, style, Ui.Text, TextAnchor.UpperLeft);
             style.wordWrap = wrap;

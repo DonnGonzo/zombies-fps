@@ -15,12 +15,13 @@ MonoBehaviour:
   displayName: Scrap Cannon
   damage: 900
   headshotMultiplier: 1.5
+  pierce: 4
+  pierceDamageKept: 0.85
   range: 90
   automatic: 0
   roundsPerMinute: 110
   pellets: 1
   pelletSpread: 0
-  pierce: 4
   explosiveRounds: 1
   magazineSize: 6
   startingReserve: 36

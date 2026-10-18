@@ -45,15 +45,31 @@ namespace ZombiesFPS.UI
 
             int openMask = MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0;
             int here = local != null ? map.ZoneAt(local.transform.position) : -1;
-            float zonePx = ZoneMap.ZoneHalfSize * 2f * scale;
+            for (int z = 0; z < ZoneMap.ZoneCount; z++)
+            {
+                bool open = ZoneMap.IsZoneOpen(z, openMask);
+                foreach (var rect in ZoneMap.ZoneRects(z))
+                {
+                    Vector2 a = ToMap(new Vector3(rect.xMin, 0f, rect.yMax)), b = ToMap(new Vector3(rect.xMax, 0f, rect.yMin));
+                    Ui.Fill(new Rect(a.x, a.y, b.x - a.x, b.y - a.y), z == here ? ZoneHere : open ? ZoneOpen : ZoneClosed);
+                }
+            }
+            // Walls, then each zone's name over its middle.
+            float wallPx = Mathf.Max(2f, ZoneMap.WallThickness * scale);
+            foreach (var piece in ZoneMap.Walls)
+            {
+                if (piece.Bottom > 0f) continue;
+                Vector2 a = ToMap(new Vector3(piece.A.x, 0f, piece.A.y)), b = ToMap(new Vector3(piece.B.x, 0f, piece.B.y));
+                var r = piece.AlongX ? new Rect(Mathf.Min(a.x, b.x), a.y - wallPx / 2f, Mathf.Abs(b.x - a.x), wallPx)
+                    : new Rect(a.x - wallPx / 2f, Mathf.Min(a.y, b.y), wallPx, Mathf.Abs(b.y - a.y));
+                Ui.Fill(r, Wall);
+            }
             for (int z = 0; z < ZoneMap.ZoneCount; z++)
             {
                 bool open = ZoneMap.IsZoneOpen(z, openMask);
                 Vector2 c = ToMap(ZoneMap.ZoneCenter(z));
-                var r = new Rect(c.x - zonePx / 2f + 2 * u, c.y - zonePx / 2f + 2 * u, zonePx - 4 * u, zonePx - 4 * u);
-                Ui.Fill(r, z == here ? ZoneHere : open ? ZoneOpen : ZoneClosed);
-                Ui.Label(new Rect(r.x, r.y + 8 * u, r.width, 26 * u), ZoneMap.ZoneNames[z].ToUpperInvariant(), Ui.Small, open ? Ui.Text : Ui.Muted, TextAnchor.UpperCenter);
-                if (!open) Ui.Label(new Rect(r.x, r.yMax - 30 * u, r.width, 22 * u), "locked", Ui.Tiny, Ui.A(Ui.Muted, 0.8f), TextAnchor.MiddleCenter);
+                Ui.Label(new Rect(c.x - 90 * u, c.y - 13 * u, 180 * u, 26 * u), ZoneMap.ZoneNames[z].ToUpperInvariant(), Ui.Small, open ? Ui.Text : Ui.Muted, TextAnchor.MiddleCenter);
+                if (!open) Ui.Label(new Rect(c.x - 90 * u, c.y + 10 * u, 180 * u, 20 * u), "locked", Ui.Tiny, Ui.A(Ui.Muted, 0.8f), TextAnchor.MiddleCenter);
             }
 
             // Doors: green once bought, amber with a price while closed.
@@ -61,8 +77,8 @@ namespace ZombiesFPS.UI
             {
                 bool open = (openMask & (1 << d)) != 0;
                 Vector2 c = ToMap(ZoneMap.DoorCenter(d));
-                var link = ZoneMap.DoorLinks[d];
-                bool alongX = Mathf.Abs(ZoneMap.ZoneCenter(link.x).x - ZoneMap.ZoneCenter(link.y).x) > 1f;
+                // A door in a north-south wall is drawn upright.
+                bool alongX = ZoneMap.DoorInWallAlongZ(d);
                 float len = 3.2f * scale + 6 * u, thick = 8 * u;
                 var r = alongX ? new Rect(c.x - thick / 2f, c.y - len / 2f, thick, len) : new Rect(c.x - len / 2f, c.y - thick / 2f, len, thick);
                 Ui.Fill(r, open ? Ui.Good : Ui.Amber);

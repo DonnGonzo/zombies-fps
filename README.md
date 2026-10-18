@@ -6,8 +6,15 @@ Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design pla
 
 All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the map, power-ups, the upgrade machine, six zombie types and bosses, missions, XP and the spawn shop, perks, the story and voice lines. Art is still greybox and the voices are placeholder "blips" with subtitles. A plain-language feature list is in the project files as `feature-breakdown.pdf`.
 
+**Zombies that climb, bullet penetration, a new layout, the story to round 50, upgraded guns**
+- Zombies reach you on every high place. Parkour blocks are now 3 m square so zombies keep a path onto them, and a zombie standing under a player it has no path up to (a crate, a block, a ledge whose ladder is behind a shut door) scrambles up the side after a moment. High spots with a ladder or a jump up are still reached the long way round
+- Bullet penetration: some guns' bullets go through zombies and keep going until they run out of punch or hit a wall or prop. Each zombie takes a bit of the damage out of the bullet; a brute counts as two zombies and a boss stops it dead. Vanta .50 sniper goes through 5 (keeps 90% each time), Ion Lance 3, Scrap Cannon 4, Brennan DMR 2, Talon LMG and Hatchet .44 one each. Every upgrade machine tier adds more (Mk II and Mk III +1, Mk IV +2), so upgraded guns of any kind punch through. Tracers run to where the bullet finally stops, and a piercing shot leaves a heavier streak
+- New map layout: the twelve zones are no longer a grid of equal squares. The Chapel is a cross, the Barracks a long hall, the Depot a wide warehouse, the Loading Dock and Archives L-shaped, the Pump Station a T, the Lantern Core a stepped octagon reached through a short passage, and the Crane Yard is the biggest open space. There are walled-off gaps between some zones, so the outline is ragged too. Same 17 doors and prices; the map screen draws the real shapes
+- The story now runs from round 1 and finishes at round 50: Setup (1-10), Rising stakes (11-25), the Twist (26-40, Vale unmasked at round 28) and the Endgame (41-50). Clearing round 50 plays the finale and shows STORY COMPLETE. The game carries on after that (the win is still round 500): the Trader takes over the radio and posts bounties, six new well-paid missions that only appear after the story (two of every three jobs), including Skewer, a new kind of mission for kills made with bullets that already went through another zombie
+- Upgraded guns sound different and glow: each machine tier has its own gunshot (Mk II a cold zap, Mk III a crackling electric arc, Mk IV a deep plasma boom with an echo), glowing strips and a muzzle ring in the tier's colour (ice blue, violet, molten orange) on your gun and on teammates' guns, and tracers in the same colour
+
 **Bigger map, climbing and buildables**
-- The map is four times bigger: twelve 34 m zones in a 4 x 3 grid, and every pair of neighbouring zones is joined by a door (17 doors, 750 near the start up to 2,250 at the far side), so there are lots of ways round:
+- The map is four times bigger: twelve zones of different shapes (see above), and every pair of neighbouring zones is joined by a door (17 doors, 750 near the start up to 2,250 at the far side), so there are lots of ways round. Roughly, north up:
 
   | Greenhouse | Archives | Lantern Core | Crane Yard |
   |---|---|---|---|
@@ -26,11 +33,11 @@ All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the 
 - Test console: `doors` opens every door, `parts` finds every part, `goto crane` or `goto high 2` teleports you
 
 **Story, NPCs and voice (Phase 6)**
-- The Dispatcher talks to the squad over the radio in four acts that follow the design doc: Setup (rounds 1-25), Rising stakes (26-100), the Twist (101-250, the Dispatcher turns out to be Director Vale and every generator you powered fed the Lantern) and the Endgame (251-500, up the lift shaft), with calls at rounds 1, 2, 3, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 100, 101, 110, 125, 150, 175, 200, 225, 250, 251, 275, 300, 350, 400, 450, 475, 499 and on winning. She also comments on new mission sets, finished missions, boss rounds, blackouts and game overs
+- The Dispatcher talks to the squad over the radio in four acts, all within the first 50 rounds: Setup (rounds 1-10), Rising stakes (11-25), the Twist (26-40, the Dispatcher turns out to be Director Vale and every generator you powered fed the Lantern) and the Endgame (41-50, the lift to the surface), with about 30 calls along the way and a finale when round 50 is cleared. After that the Trader has the radio, with calls at rounds 51, 60, 75, 100, 150, 200, 300, 400, 499 and on winning. The radio also comments on new mission sets, finished missions, boss rounds, blackouts and game overs
 - The Trader stands behind the spawn shop counter and tells a bit of lore each time you open the shop, different for each act
 - Pick one of four characters in the main menu: Marlow (ex-cop), Dee (mechanic), Dr. Hale (facility scientist) and Rook (courier). Each has lines for 16 events (round start and end, going down, being revived, a teammate down, buying doors, guns and perks, the upgrade machine, low ammo, power-ups, bosses, milestone rounds 50/100/250/500, blackouts, missions), and two players standing together between rounds trade banter
 - Lines show as subtitles (Settings, Accessibility) and play placeholder speech blips at each character's pitch; radio calls always show. The pause menu has a "story so far" card
-- Two sabotage missions join the pool in the Twist: Cut the Feed (round 101) and The Defector (round 110)
+- Two sabotage missions join the pool in the Twist: Cut the Feed (round 26) and The Defector (round 28)
 
 **Perks, armour and rerolls**
 - Eight perk machines around the map (placeholder names): Ironhide Tonic 2,500 (double health), Slick Fingers 3,000 (reload 50% faster), Second Wind 1,500 (revive twice as fast; solo, get yourself up once), Hair Trigger 2,000 (fire 33% faster), Fleet Foot 2,000 (move 12% faster), Steady Hand 2,000 (40% less spread), Hazard Ward 2,500 (acid and slow immune, 15% less damage), Bloodline 4,000 (kills heal you, faster regen)
@@ -43,7 +50,7 @@ All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the 
 - Frag grenades (G, start with 2, carry 4), throwing knives (T, 3/3, instant-kill early on, sticks in walls) and concussion bangs (C, 1/2, stuns zombies for 3 s then slows them). Supplies top up every round and fill up with full ammo. Damage scales with zombie health so they stay useful late
 
 **More guns and rounds**
-- New wall guns: Mauler 12 shotgun (pellets), Kestrel AR and Vanta .50 sniper (bullets pierce through zombies). The Ion Lance is a rare prototype weapon only from The Prototype mission
+- New wall guns: Mauler 12 shotgun (pellets), Kestrel AR and Vanta .50 sniper (bullets go through zombies; see bullet penetration above). The Ion Lance is a rare prototype weapon only from The Prototype mission
 - Every 25th round is a blackout: the lights drop, runners flood in, and every kill pays double
 - Protect missions: Safe Passage (round 5) and The Prototype (round 25) put a survivor with a flare in an open zone. Zombies go for them; stay close and keep them alive. They show on screen through walls
 

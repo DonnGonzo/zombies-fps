@@ -50,6 +50,7 @@ namespace ZombiesFPS.Weapons
 
         readonly List<Chunk> _chunks = new List<Chunk>(ChunkCount);
         readonly List<Tracer> _tracers = new List<Tracer>(TracerCount);
+        Material _tracerMat;
         int _nextChunk, _nextTracer;
 
         void Awake()
@@ -63,7 +64,7 @@ namespace ZombiesFPS.Weapons
                 _chunks.Add(new Chunk { T = go.transform, R = go.GetComponent<Renderer>() });
             }
 
-            var tracerMat = Greybox.Unlit(new Color(1f, 0.9f, 0.6f, 0.8f));
+            var tracerMat = _tracerMat = Greybox.Unlit(new Color(1f, 0.9f, 0.6f, 0.8f));
             for (int i = 0; i < TracerCount; i++)
             {
                 var go = new GameObject("Tracer");
@@ -155,13 +156,22 @@ namespace ZombiesFPS.Weapons
             }
         }
 
-        public void ShowTracer(Vector3 from, Vector3 to)
+        public void ShowTracer(Vector3 from, Vector3 to) => ShowTracer(from, to, Color.clear, false);
+
+        /// <summary>
+        /// A tracer in an upgraded gun's glow colour (clear for the usual warm streak). A bullet that went
+        /// through zombies leaves a heavier streak that lingers a moment longer.
+        /// </summary>
+        public void ShowTracer(Vector3 from, Vector3 to, Color glow, bool piercing)
         {
             var tr = _tracers[_nextTracer];
             tr.Line.SetPosition(0, from);
             tr.Line.SetPosition(1, to);
+            tr.Line.sharedMaterial = glow.a > 0f ? Greybox.Unlit(new Color(glow.r, glow.g, glow.b, 0.85f)) : _tracerMat;
+            tr.Line.startWidth = piercing ? 0.05f : 0.025f;
+            tr.Line.endWidth = piercing ? 0.025f : 0.01f;
             tr.Line.enabled = true;
-            tr.Life = 0.045f;
+            tr.Life = piercing ? 0.09f : 0.045f;
             _tracers[_nextTracer] = tr;
             _nextTracer = (_nextTracer + 1) % _tracers.Count;
         }

@@ -54,6 +54,31 @@ namespace ZombiesFPS.Tests
         }
 
         [Test]
+        public void Bounties_ArriveAsSoonAsTheStoryEnds()
+        {
+            Assert.AreEqual(StoryData.FinalRound + 1, MissionData.PostStoryRound);
+            Assert.IsTrue(_data.IsRefreshRound(MissionData.PostStoryRound));
+            Assert.AreEqual(MissionData.PostStoryRound, _data.NextRefreshRound(50));
+            Assert.AreEqual(MissionData.PostStoryRound, _data.SetStartRound(55));
+            Assert.AreEqual(60, _data.SetStartRound(60));
+            Assert.AreEqual(50, _data.SetStartRound(50));
+            int bounties = 0;
+            for (int id = 0; id < _data.Count; id++)
+            {
+                var def = _data.At(id);
+                if (def.minRound < MissionData.PostStoryRound) Assert.LessOrEqual(def.minRound, StoryData.FinalRound, def.title);
+                else
+                {
+                    bounties++;
+                    Assert.IsFalse(_data.IsEligible(id, StoryData.FinalRound, k => 1), def.title);
+                    Assert.IsTrue(_data.IsEligible(id, MissionData.PostStoryRound, k => 1), def.title);
+                }
+            }
+            Assert.GreaterOrEqual(bounties, 4);
+            Assert.IsTrue(_data.missions.Exists(m => m.objective == MissionObjective.PierceKills));
+        }
+
+        [Test]
         public void KillTypeMissions_WaitForTheirZombies()
         {
             int brutes = _data.missions.FindIndex(m => m.objective == MissionObjective.KillType && m.zombieKind == ZombieKind.Brute);

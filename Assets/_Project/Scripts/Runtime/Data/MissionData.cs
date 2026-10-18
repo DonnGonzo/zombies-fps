@@ -21,6 +21,8 @@ namespace ZombiesFPS.Data
         ProtectSurvivor,
         /// <summary>Someone climbs to one of the map's high spots and holds its signal beacon for a number of seconds.</summary>
         HoldHighGround,
+        /// <summary>The squad kills a number of zombies with bullets that had already gone through another zombie.</summary>
+        PierceKills,
     }
 
     /// <summary>What a finished mission gives every player, on top of its points.</summary>
@@ -102,11 +104,22 @@ namespace ZombiesFPS.Data
             new MissionDef("Acid Test", "Kill {0} spitters", MissionObjective.KillType, 5, 0.08f, 30, 700, 50, MissionBonus.PowerUpReroll, 30, ZombieKind.Spitter),
             new MissionDef("Safe Passage", "Keep the survivor alive for {0} seconds", MissionObjective.ProtectSurvivor, 40, 0.3f, 90, 700, 50, MissionBonus.MaxAmmo, 5),
             new MissionDef("The Prototype", "Protect the engineer for {0} seconds. She's carrying a prototype weapon", MissionObjective.ProtectSurvivor, 60, 0.3f, 120, 1000, 60, MissionBonus.RareWeapon, 25),
-            new MissionDef("Cut the Feed", "Overload the Lantern relay: hold it for {0} seconds", MissionObjective.HoldGenerator, 60, 0.3f, 120, 1200, 50, MissionBonus.PowerUpReroll, 101),
+            new MissionDef("Cut the Feed", "Overload the Lantern relay: hold it for {0} seconds", MissionObjective.HoldGenerator, 60, 0.3f, 120, 1200, 50, MissionBonus.PowerUpReroll, 26),
             new MissionDef("King of the Hill", "Climb up and hold the signal beacon for {0} seconds", MissionObjective.HoldHighGround, 30, 0.3f, 75, 900, 50, MissionBonus.MaxAmmo, 6),
             new MissionDef("Signal Boost", "Boost the Dispatcher's signal: hold the high-ground beacon for {0} seconds", MissionObjective.HoldHighGround, 45, 0.3f, 100, 1200, 60, MissionBonus.PowerUpReroll, 15),
-            new MissionDef("The Defector", "Keep the defecting scientist alive for {0} seconds", MissionObjective.ProtectSurvivor, 70, 0.2f, 120, 1400, 60, MissionBonus.MaxAmmo, 110),
+            new MissionDef("The Defector", "Keep the defecting scientist alive for {0} seconds", MissionObjective.ProtectSurvivor, 70, 0.2f, 120, 1400, 60, MissionBonus.MaxAmmo, StoryData.UnmaskRound),
+
+            // The Trader's bounties: only once the story is over (round 50), bigger and better paid.
+            new MissionDef("Bounty: Skewer", "Kill {0} zombies with bullets that went through another one first", MissionObjective.PierceKills, 12, 0.1f, 60, 1600, 40, MissionBonus.PowerUpReroll, PostStoryRound),
+            new MissionDef("Bounty: Big Game", "Kill {0} brutes", MissionObjective.KillType, 12, 0.08f, 60, 1800, 50, MissionBonus.MaxAmmo, PostStoryRound, ZombieKind.Brute),
+            new MissionDef("Bounty: Crow's Nest", "Hold a high-ground beacon for {0} seconds", MissionObjective.HoldHighGround, 60, 0.2f, 120, 2000, 50, MissionBonus.MaxAmmo, PostStoryRound),
+            new MissionDef("Bounty: Last Runner", "Keep the Trader's runner alive for {0} seconds", MissionObjective.ProtectSurvivor, 80, 0.2f, 140, 2200, 60, MissionBonus.RareWeapon, PostStoryRound),
+            new MissionDef("Bounty: Untouchable", "Clear {0} rounds in a row with nobody going down", MissionObjective.NoDowns, 3, 0, 3, 2500, 60, MissionBonus.PowerUpReroll, PostStoryRound),
+            new MissionDef("Bounty: Cull Order", "Kill {0} zombies", MissionObjective.Kills, 150, 1, 900, 1500, 40, MissionBonus.None, PostStoryRound),
         };
+
+        /// <summary>The Trader's bounties appear once the story is over.</summary>
+        public const int PostStoryRound = StoryData.FinalRound + 1;
 
         [Tooltip("A fresh set of missions every Nth round (and on round 1).")]
         public int refreshEveryRounds = 10;
@@ -122,16 +135,21 @@ namespace ZombiesFPS.Data
         public int Count => Mathf.Min(MaxMissions, missions != null ? missions.Count : 0);
         public MissionDef At(int id) => id >= 0 && id < Count ? missions[id] : null;
 
-        public bool IsRefreshRound(int round) => round == 1 || (refreshEveryRounds > 0 && round > 0 && round % refreshEveryRounds == 0);
+        /// <summary>A new set comes on round 1, every Nth round, and straight after the story ends (for the bounties).</summary>
+        public bool IsRefreshRound(int round) => round == 1 || round == PostStoryRound || (refreshEveryRounds > 0 && round > 0 && round % refreshEveryRounds == 0);
 
         /// <summary>The round the current set was handed out on, for a given round.</summary>
         public int SetStartRound(int round)
         {
-            if (refreshEveryRounds <= 0 || round < refreshEveryRounds) return 1;
-            return round - round % refreshEveryRounds;
+            int start = refreshEveryRounds <= 0 || round < refreshEveryRounds ? 1 : round - round % refreshEveryRounds;
+            return round >= PostStoryRound && start < PostStoryRound ? PostStoryRound : start;
         }
 
-        public int NextRefreshRound(int round) => refreshEveryRounds <= 0 ? int.MaxValue : (Mathf.Max(0, round) / refreshEveryRounds + 1) * refreshEveryRounds;
+        public int NextRefreshRound(int round)
+        {
+            int next = refreshEveryRounds <= 0 ? int.MaxValue : (Mathf.Max(0, round) / refreshEveryRounds + 1) * refreshEveryRounds;
+            return round < PostStoryRound && next > PostStoryRound ? PostStoryRound : next;
+        }
 
         /// <summary>Whether a mission can be handed out on a round. KillType missions wait until their zombie type is around.</summary>
         public bool IsEligible(int id, int round, Func<ZombieKind, int> firstRoundOf)

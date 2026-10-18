@@ -210,6 +210,104 @@ namespace ZombiesFPS.Core
             return Build("Gunshot", d);
         }
 
+        static readonly AudioClip[] s_Upgraded = new AudioClip[4];
+
+        /// <summary>
+        /// The shot of a gun with an upgrade machine tier: plain for tier 0, then a sound of its own per tier so
+        /// an upgraded gun is easy to pick out by ear. Mk II zaps, Mk III crackles with electricity, Mk IV booms.
+        /// </summary>
+        public static AudioClip GunshotFor(int tier)
+        {
+            if (tier <= 0) return Gunshot;
+            tier = Mathf.Min(tier, s_Upgraded.Length - 1);
+            if (!s_Upgraded[tier]) s_Upgraded[tier] = tier == 1 ? MakeZapShot() : tier == 2 ? MakeArcShot() : MakePlasmaShot();
+            return s_Upgraded[tier];
+        }
+
+        /// <summary>The crack every shot starts with: bright noise that dies away fast.</summary>
+        static float Crack(System.Random rng, ref float lp, float t, float decay)
+        {
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lp += (noise - lp) * Mathf.Lerp(0.9f, 0.08f, Mathf.Clamp01(t * 8f));
+            return lp * Mathf.Exp(-t * decay);
+        }
+
+        /// <summary>Mk II: a short crack with a falling laser "pew" and an icy shimmer on top.</summary>
+        static AudioClip MakeZapShot()
+        {
+            var rng = new System.Random(71);
+            int n = (int)(Rate * 0.5f);
+            var d = new float[n];
+            float lp = 0f, phase = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float crack = Crack(rng, ref lp, t, 26f);
+                float freq = Mathf.Lerp(2600f, 420f, Mathf.Clamp01(t * 5f));
+                phase += 2f * Mathf.PI * freq / Rate;
+                float pew = Mathf.Sin(phase) * Mathf.Exp(-t * 9f);
+                float shimmer = Mathf.Sin(2f * Mathf.PI * 5200f * t) * Mathf.Sin(2f * Mathf.PI * 37f * t) * Mathf.Exp(-t * 14f);
+                float thump = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(120f, 45f, Mathf.Clamp01(t * 6f)) * t) * Mathf.Exp(-t * 28f);
+                d[i] = Mathf.Clamp(crack * 0.6f + pew * 0.45f + shimmer * 0.12f + thump * 0.6f, -1f, 1f);
+            }
+            return Build("Gunshot Mk II", d);
+        }
+
+        /// <summary>Mk III: a buzzing electric arc with crackling sparks and a rising whine.</summary>
+        static AudioClip MakeArcShot()
+        {
+            var rng = new System.Random(72);
+            int n = (int)(Rate * 0.6f);
+            var d = new float[n];
+            float lp = 0f, whinePhase = 0f, spark = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float crack = Crack(rng, ref lp, t, 20f);
+                // A sawtooth buzz, chopped by a fast tremolo.
+                float saw = 2f * ((140f * t) % 1f) - 1f;
+                float buzz = saw * (0.6f + 0.4f * Mathf.Sin(2f * Mathf.PI * 34f * t)) * Mathf.Exp(-t * 6f);
+                // Sparks: random snaps that thin out.
+                if (rng.NextDouble() < 0.004 * Mathf.Exp(-t * 4f)) spark = (float)(rng.NextDouble() * 2.0 - 1.0);
+                spark *= 0.93f;
+                whinePhase += 2f * Mathf.PI * Mathf.Lerp(600f, 1500f, Mathf.Clamp01(t * 3f)) / Rate;
+                float whine = Mathf.Sin(whinePhase) * Mathf.Exp(-t * 7f);
+                float thump = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(110f, 40f, Mathf.Clamp01(t * 6f)) * t) * Mathf.Exp(-t * 24f);
+                d[i] = Mathf.Clamp(crack * 0.55f + buzz * 0.3f + spark * 0.5f + whine * 0.18f + thump * 0.7f, -1f, 1f);
+            }
+            return Build("Gunshot Mk III", d);
+        }
+
+        /// <summary>Mk IV: a deep plasma boom with a low whoosh and a throbbing echo.</summary>
+        static AudioClip MakePlasmaShot()
+        {
+            var rng = new System.Random(73);
+            int n = (int)(Rate * 0.85f);
+            var dry = new float[n];
+            float lp = 0f, rumble = 0f, tonePhase = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float crack = Crack(rng, ref lp, t, 16f);
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                rumble += (noise - rumble) * 0.03f;
+                float boom = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(70f, 26f, Mathf.Clamp01(t * 3f)) * t) * Mathf.Exp(-t * 7f);
+                tonePhase += 2f * Mathf.PI * Mathf.Lerp(180f, 520f, Mathf.Clamp01(t * 2.5f)) / Rate;
+                float tone = (Mathf.Sin(tonePhase) + Mathf.Sin(tonePhase * 1.02f)) * 0.5f * Mathf.Exp(-t * 6f);
+                dry[i] = crack * 0.6f + rumble * 3f * Mathf.Exp(-t * 5f) + boom * 0.9f + tone * 0.25f;
+            }
+            var d = new float[n];
+            int echo = (int)(Rate * 0.11f);
+            for (int i = 0; i < n; i++)
+            {
+                float s = dry[i];
+                if (i >= echo) s += dry[i - echo] * 0.35f;
+                if (i >= echo * 2) s += dry[i - echo * 2] * 0.15f;
+                d[i] = Mathf.Clamp(s, -1f, 1f);
+            }
+            return Build("Gunshot Mk IV", d);
+        }
+
         static AudioClip MakeClick(string name, float length, float gain, int seed)
         {
             var rng = new System.Random(seed);

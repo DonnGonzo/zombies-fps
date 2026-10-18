@@ -89,5 +89,30 @@ namespace ZombiesFPS.Tests
             }
             Assert.IsTrue(_data.Tier(_data.MaxTier).explosive);
         }
+
+        [Test]
+        public void UpgradedBullets_GoThroughMoreZombies_AndGlowPerTier()
+        {
+            var sniper = ScriptableObject.CreateInstance<GunData>();
+            sniper.pierce = 5;
+            var smg = ScriptableObject.CreateInstance<GunData>();
+            Assert.AreEqual(5, sniper.PierceWith(null));
+            Assert.AreEqual(0, smg.PierceWith(null), "most guns stop in the first zombie");
+            int last = 0;
+            var colors = new System.Collections.Generic.HashSet<Color>();
+            for (int t = 1; t <= _data.MaxTier; t++)
+            {
+                int pierce = smg.PierceWith(_data.Tier(t));
+                Assert.GreaterOrEqual(pierce, last);
+                Assert.Greater(pierce, 0, "every upgraded gun pierces");
+                last = pierce;
+                Assert.Greater(UpgradeData.TierGlow(t).a, 0f);
+                colors.Add(UpgradeData.TierGlow(t));
+            }
+            Assert.AreEqual(_data.MaxTier, colors.Count, "each tier glows its own colour");
+            Assert.AreEqual(0f, UpgradeData.TierGlow(0).a, "a plain gun doesn't glow");
+            Object.DestroyImmediate(sniper);
+            Object.DestroyImmediate(smg);
+        }
     }
 }

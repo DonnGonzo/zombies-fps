@@ -57,8 +57,9 @@ namespace ZombiesFPS.Data
     /// each character's voice lines and the banter pairs. Written as text for placeholder "blip" voices and
     /// subtitles; real recordings replace the blips later and can keep these as scripts.
     ///
-    /// Story outline, from the design doc: Setup (rounds 1-25), Rising stakes (26-100), Twist (101-250),
-    /// Endgame (251-500), with a checkpoint every 25 rounds.
+    /// The story runs from round 1 and finishes at round 50: Setup (1-10), Rising stakes (11-25), Twist
+    /// (26-40) and Endgame (41-50). After that the game carries on as long as the squad lasts (a win at
+    /// round 500), with the Trader on the radio and his bounty missions on the board.
     /// </summary>
     public static class StoryData
     {
@@ -69,22 +70,33 @@ namespace ZombiesFPS.Data
         public static readonly Color DirectorColor = new Color(1f, 0.45f, 0.4f);
         public static readonly Color TraderColor = new Color(1f, 0.8f, 0.45f);
 
-        public static readonly string[] ActNames = { "Setup", "Rising Stakes", "The Twist", "Endgame" };
+        /// <summary>The story is told by round 50; the finale plays when that round is cleared.</summary>
+        public const int FinalRound = 50;
+        /// <summary>Acts in the story itself. One more "act" follows it: the aftermath, for as long as the squad survives.</summary>
+        public const int StoryActs = 4;
+        /// <summary>The round the radio voice turns out to be Director Vale.</summary>
+        public const int UnmaskRound = 28;
+
+        public static readonly string[] ActNames = { "Setup", "Rising Stakes", "The Twist", "Endgame", "Aftermath" };
         public static readonly string[] ActSummaries =
         {
             "You woke up in a dead research facility. A voice on the radio, the Dispatcher, says the exits open once the power is back.",
             "The power is coming back, and so is something on Sublevel 9. The Dispatcher won't say what the Lantern is.",
             "The Dispatcher is Director Vale, who ran this place. Every generator you started fed the Lantern, the thing making the dead walk. Time to break it.",
-            "The Lantern is cracked and Vale has sealed the facility. The only way left is up the old lift shaft, five hundred rounds deep.",
+            "The Lantern is cracking and Vale has sealed the facility. The only way left is the old lift, and it needs your power to reach the surface.",
+            "The Lantern is dead and Vale has gone quiet, but the dead didn't get the message. The Trader runs the radio now and pays bounties for every job. How long can you hold out?",
         };
 
-        /// <summary>Which act a round belongs to: 0 Setup, 1 Rising stakes, 2 Twist, 3 Endgame.</summary>
-        public static int ActFor(int round) => round <= 25 ? 0 : round <= 100 ? 1 : round <= 250 ? 2 : 3;
+        /// <summary>Which act a round belongs to: 0 Setup, 1 Rising stakes, 2 Twist, 3 Endgame, 4 the aftermath once the story is over.</summary>
+        public static int ActFor(int round) => round <= 10 ? 0 : round <= 25 ? 1 : round <= 40 ? 2 : round <= FinalRound ? 3 : 4;
+
+        public static bool StoryOver(int round) => round > FinalRound;
 
         /// <summary>Whether the radio voice has been unmasked by this round (the speaker name changes).</summary>
-        public static bool Unmasked(int round) => round >= 110;
-        public static string RadioSpeaker(int round) => Unmasked(round) ? DirectorName : DispatcherName;
-        public static Color RadioSpeakerColor(int round) => Unmasked(round) ? DirectorColor : RadioColor;
+        public static bool Unmasked(int round) => round >= UnmaskRound;
+        /// <summary>Who's on the radio: the Dispatcher, then Vale once unmasked, then the Trader once the story is over.</summary>
+        public static string RadioSpeaker(int round) => StoryOver(round) ? TraderName : Unmasked(round) ? DirectorName : DispatcherName;
+        public static Color RadioSpeakerColor(int round) => StoryOver(round) ? TraderColor : Unmasked(round) ? DirectorColor : RadioColor;
 
         public static readonly StoryBeat[] Beats =
         {
@@ -93,49 +105,53 @@ namespace ZombiesFPS.Data
                 "The power's out on every level and the containment doors failed. Those things out there used to be staff.",
                 "Stay alive. Get the generators running and I can open the exits. I'll mark jobs for you as I find them."),
             new StoryBeat(2, "Kills buy you everything down there. The doors, the wall guns, all of it still runs on facility credit."),
-            new StoryBeat(3, "The east and west wings should still have weapons lockers. Open the doors if you can afford it."),
+            new StoryBeat(3, "The yards and the depot should still have weapons lockers. Open the doors if you can afford it."),
             new StoryBeat(5, "Your vitals just spiked. The facility's field is reacting to you. Lean into it. It might keep you alive."),
-            new StoryBeat(10, "There's a reconditioning unit in the back, the one that hums. Feed a gun into it and it comes out meaner.",
+            new StoryBeat(7, "Somebody left parts for the old field kits lying around. Get them to a workbench and you can build something useful."),
+            new StoryBeat(10, "There's a reconditioning unit by the Lantern Core, the one that hums. Feed a gun into it and it comes out meaner.",
                 "Ignore the warning labels. Nobody who wrote them is coming back."),
-            new StoryBeat(15, "Generator two is on. I'm seeing lights on Sublevel 4. Keep going."),
-            new StoryBeat(20, "You're doing better than the last team. Much better."),
-            new StoryBeat(25, "That's the upper grid restored. The doors still won't open, but now I can see the whole facility.",
-                "There's a lot more of them below you than I thought. Keep the power climbing."),
 
             // Act 2: Rising stakes.
-            new StoryBeat(30, "Before you ask: no, I don't know where they're coming from. Focus on the generators."),
-            new StoryBeat(40, "Readings from Sublevel 9 are going up every time you clear a wave. It's probably interference."),
-            new StoryBeat(50, "Fifty rounds. Most security teams don't last ten.",
-                "There's a containment core on Sublevel 9. The staff called it the Lantern. It's nothing you need to worry about."),
-            new StoryBeat(60, "Someone's been sending signals from the lower labs. Ignore them. The system is old and full of echoes."),
-            new StoryBeat(75, "Three quarters of the grid is back. Whatever you're doing, don't stop now."),
-            new StoryBeat(90, "The Lantern is drawing almost everything you restore. That's expected. Keep the power coming."),
-            new StoryBeat(100, "One hundred. The grid is fully restored.",
+            new StoryBeat(12, "Generator two is on. I'm seeing lights on Sublevel 4. Keep going."),
+            new StoryBeat(15, "You're doing better than the last team. Much better."),
+            new StoryBeat(18, "Readings from Sublevel 9 are going up every time you clear a wave. It's probably interference.",
+                "There's a containment core down there. The staff called it the Lantern. It's nothing you need to worry about."),
+            new StoryBeat(20, "Someone's been sending signals from the lower labs. Ignore them. The system is old and full of echoes."),
+            new StoryBeat(23, "The Lantern is drawing almost everything you restore. That's expected. Keep the power coming."),
+            new StoryBeat(25, "The grid is fully restored.",
                 "Lantern at full charge. Thank you. Truly. You have no idea how long I've waited for a team like you."),
 
             // Act 3: The twist.
-            new StoryBeat(101, "Why haven't the exits opened? Patience. There's one more thing I need from you."),
-            new StoryBeat(110, "...Fine. You found the logs. Yes, my name is Vale. I ran this facility. I still do.",
+            new StoryBeat(26, "Why haven't the exits opened? Patience. There's one more thing I need from you."),
+            new StoryBeat(UnmaskRound, "...Fine. You found the logs. Yes, my name is Vale. I ran this facility. I still do.",
                 "The Lantern doesn't stop the dead. It makes them. And every round you survive feeds it.",
                 "You were never meant to leave. You were meant to keep it charged."),
-            new StoryBeat(125, "Sabotaging the relays won't save you. It will just make the next wave angrier."),
-            new StoryBeat(150, "You're making this harder than it needs to be. I could open a door for you. Just one. Stop pulling cables and it's yours."),
-            new StoryBeat(175, "The Lantern is unstable. Do you understand what happens to the people standing next to it when it breaks?"),
-            new StoryBeat(200, "Two hundred rounds. I've stopped counting your kills. The Lantern hasn't.",
-                "I can hear the cracks in the core from here. Please stop."),
-            new StoryBeat(225, "If the Lantern goes, I lose the lock on everything down there. Including you. Think carefully."),
-            new StoryBeat(250, "...You've cracked the core. It's leaking everywhere now.",
+            new StoryBeat(30, "Sabotaging the relays won't save you. It will just make the next wave angrier."),
+            new StoryBeat(33, "You're making this harder than it needs to be. I could open a door for you. Just one. Stop pulling cables and it's yours."),
+            new StoryBeat(35, "The Lantern is unstable. Do you understand what happens to the people standing next to it when it breaks?"),
+            new StoryBeat(38, "I can hear the cracks in the core from here. Please stop."),
+            new StoryBeat(40, "...You've cracked the core. It's leaking everywhere now.",
                 "Fine. The surface lift is real, and it's at the bottom of the old shaft. I'm sealing every other door. Let's see how far you get."),
 
             // Act 4: Endgame.
-            new StoryBeat(251, "This is Vale. Facility-wide lockdown is in effect. Nobody leaves. Including the dead."),
-            new StoryBeat(275, "The shaft is two hundred and fifty floors of them. You won't make it. Nobody makes it."),
-            new StoryBeat(300, "Three hundred. The lift motor is drawing power. Your power. You're feeding your own way out now."),
-            new StoryBeat(350, "I built the Lantern to end death. Do you know what it did instead? It ended everything else."),
-            new StoryBeat(400, "Four hundred. I'm making you an offer, one last time. Stay. Keep the Lantern burning and I'll keep you alive forever."),
-            new StoryBeat(450, "The core is screaming. Even I can hear it now."),
-            new StoryBeat(475, "Twenty-five rounds. The lift is almost at the surface. I won't stop you. I don't think I can."),
-            new StoryBeat(499, "This is the last one. Whatever's left of the Lantern is coming up the shaft after you."),
+            new StoryBeat(41, "This is Vale. Facility-wide lockdown is in effect. Nobody leaves. Including the dead."),
+            new StoryBeat(43, "The lift needs power to climb, and the only power left is what you make down there. Every round you clear lifts it a floor."),
+            new StoryBeat(45, "I built the Lantern to end death. Do you know what it did instead? It ended everything else."),
+            new StoryBeat(47, "I'm making you an offer, one last time. Stay. Keep the Lantern burning and I'll keep you alive forever."),
+            new StoryBeat(49, "The core is screaming. Even I can hear it now. Whatever's left of it is coming for you."),
+            new StoryBeat(FinalRound, "This is the last of it. Hold this round and the lift reaches the surface. Hold it."),
+
+            // After the story: the Trader has the radio.
+            new StoryBeat(51, "Trader here. Found Vale's headset on the floor. Radio's mine now.",
+                "Lantern's dead but the dead didn't notice. I'm putting bounties on the board. Work them and I'll make it worth your while."),
+            new StoryBeat(60, "Sixty. You're the longest-lived customers I've ever had."),
+            new StoryBeat(75, "Seventy-five. The lift's still up top. The rest of the world can wait a little longer."),
+            new StoryBeat(100, "A hundred rounds. I'm naming a sandwich after you."),
+            new StoryBeat(150, "One-fifty. They're coming up from floors I didn't know we had."),
+            new StoryBeat(200, "Two hundred. Whatever's down there is learning. Shoot faster."),
+            new StoryBeat(300, "Three hundred. I've stopped writing your names in the ledger. I need the ink."),
+            new StoryBeat(400, "Four hundred. If anyone ever asks what happened down here, I'm telling them about you."),
+            new StoryBeat(499, "One more. Hold this and nobody will ever top it."),
         };
 
         public static StoryBeat? BeatFor(int round)
@@ -145,11 +161,18 @@ namespace ZombiesFPS.Data
             return null;
         }
 
+        /// <summary>Said by the radio when round 50 is cleared and the story is over.</summary>
+        public static readonly string[] Finale =
+        {
+            "...The lift is through. Daylight. You actually did it. The Lantern's gone dark.",
+            "I won't stop you. I don't think I can. Go, before I change my mind about the door.",
+        };
+
         /// <summary>Said by the radio when you win at round 500.</summary>
         public static readonly string[] Victory =
         {
-            "...The lift is through. Daylight. You actually did it.",
-            "Go. Before I change my mind about the door.",
+            "Five hundred. That's it. There's nothing left down here to come up those stairs.",
+            "Go home. Drinks are on the house. Well, on the shop.",
         };
 
         /// <summary>Said by the radio on a game over, by act.</summary>
@@ -159,6 +182,7 @@ namespace ZombiesFPS.Data
             "Another team gone. The Lantern thanks you for your contribution.",
             "And that's the end of the sabotage. I'll have the cables reconnected by morning.",
             "So close. The shaft keeps whoever falls in it.",
+            "And that's closing time. Best customers I ever had.",
         };
 
         /// <summary>When a new set of missions arrives, by act.</summary>
@@ -168,6 +192,7 @@ namespace ZombiesFPS.Data
             new[] { "More jobs. The facility pays well when you do as you're told.", "Three new jobs. Don't wander off the list." },
             new[] { "Someone's put sabotage jobs on your board. They didn't come from me.", "I see what's on your board now. Stop it." },
             new[] { "The lift is listing jobs automatically now. I can't stop that either.", "More jobs on the board. The way out pays its way." },
+            new[] { "Fresh bounties on the board. Cash on completion.", "New bounties. The big ones pay big." },
         };
 
         public static readonly string[][] MissionComplete =
@@ -176,6 +201,7 @@ namespace ZombiesFPS.Data
             new[] { "Nicely done. The Lantern... the grid appreciates it.", "Job complete. Keep it up." },
             new[] { "That relay was expensive.", "Every job you finish costs me something. You know that?" },
             new[] { "Fine. Take your reward.", "Another job done. You really want to see the sky." },
+            new[] { "Bounty paid. Pleasure doing business.", "That's a bounty. Don't spend it all at once. Actually, do. At my shop." },
         };
 
         public const string SurvivorLost = "The survivor's gone. Add them to the list.";
@@ -210,8 +236,15 @@ namespace ZombiesFPS.Data
             {
                 "The lift shaft? I've seen it. Long way up. Bring a better scope.",
                 "If you make it out, tell them the Trader stayed. Somebody has to mind the shop.",
-                "Five hundred floors and you're still buying grips. I respect that.",
-                "Whatever's coming up that shaft, it isn't Vale. Not anymore.",
+                "Nearly there and you're still buying grips. I respect that.",
+                "Whatever's coming for you now, it isn't Vale. Not anymore.",
+            },
+            new[]
+            {
+                "You could have gone up that lift. You stayed. Good for business.",
+                "Vale's headset fits me nicely. Don't tell her.",
+                "Bounties are honest work. Well. Work.",
+                "The record down here is round five hundred. Nobody's ever set it. No pressure.",
             },
         };
 

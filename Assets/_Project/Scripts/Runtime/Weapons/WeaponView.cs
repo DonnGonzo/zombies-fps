@@ -1,5 +1,6 @@
 using UnityEngine;
 using ZombiesFPS.Core;
+using ZombiesFPS.Data;
 using ZombiesFPS.Player;
 
 namespace ZombiesFPS.Weapons
@@ -27,6 +28,11 @@ namespace ZombiesFPS.Weapons
         Vector2 _sway;
         float _sprintWeight;
         Renderer[] _accentParts;
+        // Upgraded guns glow in their machine tier's colour: strips down the sides and a ring at the muzzle.
+        GameObject _glow;
+        Renderer[] _glowParts;
+        Light _glowLight;
+        int _glowTier = -1;
         Transform _knife;
         float _meleeStart = -100f, _throwStart = -100f;
         const float MeleeTime = 0.38f, ThrowTime = 0.45f;
@@ -92,6 +98,24 @@ namespace ZombiesFPS.Weapons
             _flashLight.shadows = LightShadows.None;
             _flash.SetActive(false);
 
+            _glow = Greybox.Empty("Upgrade Glow", _model, Vector3.zero).gameObject;
+            var glowParts = new[]
+            {
+                Greybox.Prim(PrimitiveType.Cube, "StripL", _glow.transform, new Vector3(-0.0345f, 0.005f, 0.22f), new Vector3(0.004f, 0.014f, 0.17f), Color.white, collider: false, unlit: true),
+                Greybox.Prim(PrimitiveType.Cube, "StripR", _glow.transform, new Vector3(0.0345f, 0.005f, 0.22f), new Vector3(0.004f, 0.014f, 0.17f), Color.white, collider: false, unlit: true),
+                Greybox.Prim(PrimitiveType.Cube, "Spine", _glow.transform, new Vector3(0f, 0.047f, 0.02f), new Vector3(0.012f, 0.004f, 0.24f), Color.white, collider: false, unlit: true),
+                Greybox.Prim(PrimitiveType.Cube, "MuzzleRing", _glow.transform, new Vector3(0f, 0.015f, 0.455f), new Vector3(0.042f, 0.042f, 0.014f), Color.white, collider: false, unlit: true),
+                Greybox.Prim(PrimitiveType.Cube, "MagCell", _glow.transform, new Vector3(0f, -0.1f, 0.096f), new Vector3(0.047f, 0.1f, 0.004f), Color.white, collider: false, unlit: true),
+            };
+            _glowParts = new Renderer[glowParts.Length];
+            for (int i = 0; i < glowParts.Length; i++) _glowParts[i] = glowParts[i].GetComponent<Renderer>();
+            _glowParts[4].transform.localRotation = Quaternion.Euler(12f, 0f, 0f);
+            _glowLight = _glow.AddComponent<Light>();
+            _glowLight.type = LightType.Point;
+            _glowLight.range = 1.4f;
+            _glowLight.shadows = LightShadows.None;
+            _glow.SetActive(false);
+
             Greybox.DisableShadows(_model.gameObject);
 
             // The melee knife, held in the off hand and only shown mid-swing.
@@ -100,6 +124,28 @@ namespace ZombiesFPS.Weapons
             Greybox.Box("Grip", _knife, new Vector3(0f, 0f, -0.04f), new Vector3(0.024f, 0.032f, 0.09f), new Color(0.1f, 0.09f, 0.08f), collider: false);
             Greybox.DisableShadows(_knife.gameObject);
             _knife.gameObject.SetActive(false);
+        }
+
+        /// <summary>Lights the upgrade glow in the tier's colour, gently pulsing and flaring with each shot.</summary>
+        void UpdateGlow()
+        {
+            int tier = _gun.UpgradeTier;
+            if (tier != _glowTier)
+            {
+                _glowTier = tier;
+                _glow.SetActive(tier > 0);
+                if (tier > 0)
+                {
+                    var color = UpgradeData.TierGlow(tier);
+                    var mat = Greybox.Unlit(color);
+                    foreach (var r in _glowParts) r.sharedMaterial = mat;
+                    _glowLight.color = color;
+                }
+            }
+            if (tier <= 0) return;
+            float sinceShot = Time.time - _gun.LastShotTime;
+            float flare = sinceShot < 0.15f ? 1f - sinceShot / 0.15f : 0f;
+            _glowLight.intensity = 0.9f + 0.35f * Mathf.Sin(Time.time * (2.5f + tier)) + 1.6f * flare;
         }
 
         /// <summary>A knife slash across the screen; the gun ducks out of the way.</summary>
@@ -127,6 +173,7 @@ namespace ZombiesFPS.Weapons
             float aimEased = aim * aim * (3f - 2f * aim);
 
             if (_flash.activeSelf && Time.time >= _flashUntil) _flash.SetActive(false);
+            UpdateGlow();
 
             // Bob from movement.
             float speed01 = _motor.IsGrounded ? Mathf.Clamp01(_motor.PlanarSpeed / _motor.sprintSpeed) : 0f;

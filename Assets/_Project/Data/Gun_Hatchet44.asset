@@ -15,6 +15,8 @@ MonoBehaviour:
   displayName: Hatchet .44
   damage: 160
   headshotMultiplier: 3
+  pierce: 1
+  pierceDamageKept: 0.7
   automatic: 0
   roundsPerMinute: 220
   magazineSize: 6

@@ -371,7 +371,7 @@ namespace ZombiesFPS.Net
         void OnZombieDied(NetZombie zombie, DamageInfo info)
         {
             Forget(zombie);
-            if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnKill(zombie, info.IsHeadshot);
+            if (MissionBoard.Instance != null) MissionBoard.Instance.ServerOnKill(zombie, info.IsHeadshot, info.Pierced > 0);
             if (zombie.Kind == ZombieKind.Boss)
             {
                 long bonus = GameConfig.Round.bossBonus;

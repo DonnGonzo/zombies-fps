@@ -15,12 +15,13 @@ MonoBehaviour:
   displayName: Ion Lance
   damage: 260
   headshotMultiplier: 2
+  pierce: 3
+  pierceDamageKept: 0.85
   range: 150
   automatic: 1
   roundsPerMinute: 480
   pellets: 1
   pelletSpread: 0
-  pierce: 2
   explosiveRounds: 1
   magazineSize: 40
   startingReserve: 200

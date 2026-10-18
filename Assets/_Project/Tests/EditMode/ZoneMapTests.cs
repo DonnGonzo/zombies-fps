@@ -40,11 +40,70 @@ namespace ZombiesFPS.Tests
         {
             for (int d = 0; d < ZoneMap.DoorLinks.Length; d++)
             {
-                var a = ZoneMap.ZoneCenter(ZoneMap.DoorLinks[d].x);
-                var b = ZoneMap.ZoneCenter(ZoneMap.DoorLinks[d].y);
-                Assert.AreEqual(ZoneMap.ZoneHalfSize * 2f, Vector3.Distance(a, b), 0.01f, "door " + d + " joins zones that aren't neighbours");
+                var link = ZoneMap.DoorLinks[d];
+                var c = ZoneMap.DoorCenter(d);
+                var across = ZoneMap.DoorInWallAlongZ(d) ? new Vector3(0.5f, 0f, 0f) : new Vector3(0f, 0f, 0.5f);
+                var along = ZoneMap.DoorInWallAlongZ(d) ? new Vector3(0f, 0f, 1f) : new Vector3(1f, 0f, 0f);
+                // Both ends of the gap, not just the middle, open from one zone into the other.
+                foreach (float t in new[] { -ZoneMap.GapWidth / 2f, 0f, ZoneMap.GapWidth / 2f })
+                {
+                    var sides = new HashSet<int> { ZoneMap.ZoneOfPoint(c + along * t - across), ZoneMap.ZoneOfPoint(c + along * t + across) };
+                    Assert.IsTrue(sides.SetEquals(new[] { link.x, link.y }), "door " + d + " isn't on the wall between " + ZoneMap.ZoneNames[link.x] + " and " + ZoneMap.ZoneNames[link.y]);
+                }
             }
             Assert.Less(ZoneMap.DoorLinks.Length, 31, "open doors are a bitmask");
+        }
+
+        [Test]
+        public void Zones_ComeInDifferentShapesAndSizes()
+        {
+            var areas = new HashSet<int>();
+            int shaped = 0;
+            for (int z = 0; z < ZoneMap.ZoneCount; z++)
+            {
+                int area = 0;
+                foreach (var r in ZoneMap.ZoneRects(z)) area += r.width * r.height;
+                areas.Add(area);
+                if (ZoneMap.ZoneRects(z).Length > 1) shaped++;
+                // Every zone's anchor (where its name goes) is on its own floor.
+                Assert.AreEqual(z, ZoneMap.ZoneOfPoint(ZoneMap.ZoneCenter(z)), ZoneMap.ZoneNames[z]);
+            }
+            Assert.Greater(areas.Count, 8, "zones should vary in size");
+            Assert.GreaterOrEqual(shaped, 6, "at least half the zones should be more than a plain rectangle");
+        }
+
+        [Test]
+        public void WallThings_StandAgainstARealWall_ClearOfDoors()
+        {
+            var spots = new List<ZoneMap.WallSpot>();
+            spots.AddRange(ZoneMap.WallBuySpots);
+            spots.AddRange(ZoneMap.PerkSpots);
+            spots.Add(ZoneMap.ArmorSpot);
+            spots.Add(ZoneMap.RerollSpot);
+            spots.AddRange(ZoneMap.WindowSpots);
+            spots.AddRange(ZoneMap.GeneratorSpots);
+            foreach (var spot in spots)
+            {
+                var (face, inward) = spot.Resolve();
+                string what = ZoneMap.ZoneNames[spot.Zone] + " " + spot.Side + " " + spot.Along;
+                Assert.AreEqual(spot.Zone, ZoneMap.ZoneOfPoint(face + inward * 0.5f), what + " isn't inside its zone");
+                Assert.AreNotEqual(spot.Zone, ZoneMap.ZoneOfPoint(face - inward * 0.8f), what + " has no wall behind it");
+                for (int d = 0; d < ZoneMap.DoorLinks.Length; d++)
+                    Assert.Greater(Vector3.Distance(face - inward * ZoneMap.WallThickness / 2f, ZoneMap.DoorCenter(d)), 3f, what + " is in door " + d);
+            }
+            Assert.AreEqual(ZoneMap.ZoneCount, ZoneMap.GeneratorSpots.Length);
+            Assert.AreEqual(ZoneMap.WallBuyZones.Length, ZoneMap.WallBuySpots.Length);
+            for (int i = 0; i < ZoneMap.WallBuySpots.Length; i++) Assert.AreEqual(ZoneMap.WallBuyZones[i], ZoneMap.WallBuySpots[i].Zone);
+        }
+
+        [Test]
+        public void Walls_CloseOffTheMap()
+        {
+            Assert.Greater(ZoneMap.Walls.Count, 40);
+            int lintels = 0;
+            foreach (var piece in ZoneMap.Walls)
+                if (piece.Bottom > 0f) lintels++;
+            Assert.AreEqual(ZoneMap.DoorLinks.Length, lintels, "one lintel over every door");
         }
 
         [Test]
@@ -66,6 +125,9 @@ namespace ZombiesFPS.Tests
                 Assert.AreEqual(ZoneMap.SpotsPerPart, zones.Count, "part " + part);
             }
             for (int b = 0; b < ZoneMap.BenchCount; b++) Assert.GreaterOrEqual(ZoneMap.ZoneOfPoint(ZoneMap.BenchPosition(b)), 0);
+            Assert.AreEqual(ZoneMap.StartZone, ZoneMap.ZoneOfPoint(ZoneMap.StartPosition));
+            Assert.AreEqual(ZoneMap.StartZone, ZoneMap.ZoneOfPoint(ZoneMap.ShopWorldPosition));
+            Assert.AreEqual(9, ZoneMap.ZoneOfPoint(ZoneMap.MachineWorldPosition), "the upgrade machine is in the Lantern Core");
         }
 
         [Test]

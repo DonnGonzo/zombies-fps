@@ -15,12 +15,13 @@ MonoBehaviour:
   displayName: Vanta .50 Sniper
   damage: 650
   headshotMultiplier: 4
+  pierce: 5
+  pierceDamageKept: 0.9
   range: 200
   automatic: 0
   roundsPerMinute: 45
   pellets: 1
   pelletSpread: 0
-  pierce: 3
   explosiveRounds: 0
   magazineSize: 5
   startingReserve: 30

@@ -87,6 +87,10 @@ namespace ZombiesFPS.Net
         Transform _remoteMuzzle;
         Renderer _remoteGun;
         Color _remoteGunColor = RemoteGunColor;
+        GameObject _remoteGlow;
+        Renderer[] _remoteGlowParts;
+        Light _remoteGlowLight;
+        int _remoteGlowTier = -1;
         static readonly Color RemoteGunColor = new Color(0.16f, 0.17f, 0.18f);
         AudioSource _remoteAudio;
 
@@ -227,6 +231,20 @@ namespace ZombiesFPS.Net
             var gun = Greybox.Empty("Gun", _body, new Vector3(0.22f, 1.3f, 0.35f));
             _remoteGun = Greybox.Box("Receiver", gun, Vector3.zero, new Vector3(0.08f, 0.1f, 0.6f), RemoteGunColor, collider: false).GetComponent<Renderer>();
             _remoteMuzzle = Greybox.Empty("Muzzle", gun, new Vector3(0f, 0f, 0.32f));
+            // An upgraded gun glows in its tier's colour, so teammates can see it too.
+            _remoteGlow = Greybox.Empty("Upgrade Glow", gun, Vector3.zero).gameObject;
+            _remoteGlowParts = new[]
+            {
+                Greybox.Prim(PrimitiveType.Cube, "StripL", _remoteGlow.transform, new Vector3(-0.042f, 0f, 0.05f), new Vector3(0.006f, 0.03f, 0.45f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
+                Greybox.Prim(PrimitiveType.Cube, "StripR", _remoteGlow.transform, new Vector3(0.042f, 0f, 0.05f), new Vector3(0.006f, 0.03f, 0.45f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
+                Greybox.Prim(PrimitiveType.Cube, "MuzzleRing", _remoteGlow.transform, new Vector3(0f, 0f, 0.3f), new Vector3(0.1f, 0.11f, 0.02f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
+            };
+            _remoteGlowLight = _remoteGlow.AddComponent<Light>();
+            _remoteGlowLight.type = LightType.Point;
+            _remoteGlowLight.range = 2.5f;
+            _remoteGlowLight.intensity = 1.2f;
+            _remoteGlowLight.shadows = LightShadows.None;
+            _remoteGlow.SetActive(false);
 
             _remoteAudio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
             _remoteAudio.spatialBlend = 1f;
@@ -283,6 +301,19 @@ namespace ZombiesFPS.Net
         void UpdateRemoteGun()
         {
             if (_remoteGun == null) return;
+            int tier = TierInSlot(ActiveSlot.Value);
+            if (tier != _remoteGlowTier && _remoteGlow != null)
+            {
+                _remoteGlowTier = tier;
+                _remoteGlow.SetActive(tier > 0);
+                if (tier > 0)
+                {
+                    var glow = UpgradeData.TierGlow(tier);
+                    var mat = Greybox.Unlit(glow);
+                    foreach (var r in _remoteGlowParts) r.sharedMaterial = mat;
+                    _remoteGlowLight.color = glow;
+                }
+            }
             var color = CamoColorFor(ActiveSlot.Value) ?? RemoteGunColor;
             if (color == _remoteGunColor) return;
             _remoteGunColor = color;
@@ -378,6 +409,8 @@ namespace ZombiesFPS.Net
             ActiveSlot.Value = slot;
             var tier = GameConfig.Upgrades.Tier(TierInSlot(slot));
             _gun.ExplosiveRounds = (tier != null && tier.explosive) || data.explosiveRounds;
+            _gun.UpgradeTier = TierInSlot(slot);
+            _gun.Pierce = data.PierceWith(tier);
             _gun.Camo = CamoColorFor(slot);
             _gun.ReloadSpeed = ReloadSpeedNow;
             _gun.Equip(data, _slotMagazine[slot], _slotReserve[slot], CapacityScale(slot), GunName(slot));
@@ -611,12 +644,16 @@ namespace ZombiesFPS.Net
             Vector3 normal = -direction;
             bool flesh = false;
             NetZombie primaryZombie = null;
+            var tier = GameConfig.Upgrades.Tier(TierInSlot(ActiveSlot.Value));
             double baseDamage = gun.damage * (double)GunDamageMultiplier(ActiveSlot.Value);
             int count = Physics.RaycastNonAlloc(origin, direction, _hits, gun.range, ~0, QueryTriggerInteraction.Ignore);
-            // Nearest first, so a bullet stops at the first wall and pierces zombies in order.
+            // Nearest first, so a bullet stops at the first wall and goes through zombies in order.
             System.Array.Sort(_hits, 0, count, HitDistanceComparer.Instance);
             _pierced.Clear();
-            int pierceLeft = Mathf.Max(0, gun.pierce);
+            // Bullet penetration: the bullet carries on through zombies while it has pierce left, losing some of
+            // its damage in each body, until it runs out or meets a wall or prop.
+            int pierceLeft = gun.PierceWith(tier);
+            double carried = 1.0;
             for (int i = 0; i < count; i++)
             {
                 var hit = _hits[i];
@@ -631,33 +668,37 @@ namespace ZombiesFPS.Net
                     normal = hit.normal;
                     if (primaryZombie == null) primaryZombie = zombie;
                     float mult = hitbox.isHead ? gun.headshotMultiplier * (1f + Bonus(PowerStat.HeadshotDamage)) : hitbox.multiplier;
-                    // Each zombie pierced takes a little less.
-                    double falloff = System.Math.Pow(0.8, _pierced.Count - 1);
-                    long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * mult * falloff));
-                    var result = zombie.TakeDamage(new DamageInfo(damage, hit.point, direction, hitbox.isHead, OwnerClientId));
+                    long damage = System.Math.Max(1L, (long)System.Math.Round(baseDamage * mult * carried));
+                    var result = zombie.TakeDamage(new DamageInfo(damage, hit.point, direction, hitbox.isHead, OwnerClientId, _pierced.Count - 1));
                     AwardPoints(zombie, result, hitbox.isHead);
                     OnServerKillHeal(result);
                     HitConfirmRpc(result.Killed, hitbox.isHead);
-                    if (pierceLeft-- <= 0) break;
+                    pierceLeft -= zombie.PenetrationCost;
+                    if (pierceLeft < 0) break;
+                    carried *= gun.pierceDamageKept;
+                    // Through and out the other side: unless something else is hit, it flies on to full range.
+                    end = origin + direction * gun.range;
+                    normal = -direction;
+                    flesh = false;
                     continue;
                 }
                 // A wall or prop: the bullet stops here.
                 end = hit.point;
                 normal = hit.normal;
+                flesh = false;
                 break;
             }
 
             if (primary)
             {
-                var tier = GameConfig.Upgrades.Tier(TierInSlot(ActiveSlot.Value));
                 if (tier != null && tier.chain && primaryZombie != null) ServerChain(primaryZombie, end, baseDamage, direction);
                 bool explosive = (tier != null && tier.explosive) || gun.explosiveRounds;
                 if (explosive) ServerExplode(primaryZombie, end, baseDamage, direction);
-                ShotFxRpc(end, normal, flesh, explosive, true);
+                ShotFxRpc(end, normal, flesh, explosive, true, _pierced.Count);
             }
             else
             {
-                ShotFxRpc(end, normal, flesh, false, false);
+                ShotFxRpc(end, normal, flesh, false, false, _pierced.Count);
             }
         }
 
@@ -693,15 +734,16 @@ namespace ZombiesFPS.Net
 
         /// <summary>Everyone but the shooter sees and hears the shot.</summary>
         [Rpc(SendTo.NotOwner)]
-        void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive, bool withSound)
+        void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive, bool withSound, int pierced)
         {
             if (_remoteMuzzle == null) return;
-            FxSystem.Instance?.ShowTracer(_remoteMuzzle.position, end);
+            int tier = TierInSlot(ActiveSlot.Value);
+            FxSystem.Instance?.ShowTracer(_remoteMuzzle.position, end, UpgradeData.TierGlow(tier), pierced > 1);
             FxSystem.Instance?.Impact(end, normal, flesh ? FxSystem.Blood : FxSystem.Dust, flesh ? 5 : 3, 3f, 0.06f);
             if (explosive) FxSystem.Instance?.Impact(end, normal, FxSystem.Blast, 16, 6f, 0.09f);
             if (!withSound) return;
             _remoteAudio.pitch = Random.Range(0.94f, 1.06f);
-            _remoteAudio.PlayOneShot(ProceduralAudio.Gunshot, 0.8f);
+            _remoteAudio.PlayOneShot(ProceduralAudio.GunshotFor(tier), 0.8f);
         }
 
         [Rpc(SendTo.Owner)]

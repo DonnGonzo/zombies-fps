@@ -21,8 +21,10 @@ namespace ZombiesFPS.Data
         [Min(1)] public int pellets = 1;
         [Tooltip("Extra spread for each pellet, in degrees.")]
         public float pelletSpread;
-        [Tooltip("How many zombies a bullet goes through after the first.")]
+        [Tooltip("How many zombies a bullet goes through after the first (a brute counts as two; bosses stop it). Walls always stop it.")]
         [Min(0)] public int pierce;
+        [Tooltip("Share of its damage a bullet keeps each time it passes through a zombie.")]
+        [Range(0.3f, 1f)] public float pierceDamageKept = 0.8f;
         [Tooltip("Every shot explodes on impact (the rare Ion Lance), like an upgrade machine Mk IV.")]
         public bool explosiveRounds;
 
@@ -61,5 +63,8 @@ namespace ZombiesFPS.Data
         public Color accent = new Color(0.42f, 0.36f, 0.27f);
 
         public float SecondsPerShot => 60f / roundsPerMinute;
+
+        /// <summary>How many zombies a bullet goes through after the first, with any upgrade machine tier's bonus.</summary>
+        public int PierceWith(MachineTier tier) => Mathf.Max(0, pierce) + (tier != null ? Mathf.Max(0, tier.extraPierce) : 0);
     }
 }

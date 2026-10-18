@@ -63,16 +63,19 @@ namespace ZombiesFPS.Data
         public bool chain;
         [Tooltip("Shots burst on impact and hurt zombies around it.")]
         public bool explosive;
+        [Tooltip("Extra zombies every bullet goes through, on top of the gun's own pierce.")]
+        public int extraPierce;
 
         public MachineTier() { }
 
-        public MachineTier(string suffix, float damage, float capacity, bool chain, bool explosive)
+        public MachineTier(string suffix, float damage, float capacity, bool chain, bool explosive, int extraPierce = 0)
         {
             this.suffix = suffix;
             damageMultiplier = damage;
             capacityMultiplier = capacity;
             this.chain = chain;
             this.explosive = explosive;
+            this.extraPierce = extraPierce;
         }
     }
 
@@ -109,9 +112,9 @@ namespace ZombiesFPS.Data
         [Header("Upgrade machine")]
         public List<MachineTier> machineTiers = new List<MachineTier>
         {
-            new MachineTier("Mk II", 2f, 1.5f, false, false),
-            new MachineTier("Mk III", 2.6f, 1.75f, true, false),
-            new MachineTier("Mk IV", 3.3f, 2f, true, true),
+            new MachineTier("Mk II", 2f, 1.5f, false, false, 1),
+            new MachineTier("Mk III", 2.6f, 1.75f, true, false, 1),
+            new MachineTier("Mk IV", 3.3f, 2f, true, true, 2),
         };
         [Tooltip("Each player can use the machine once per power-up window (every powerUpEveryRounds rounds).")]
         public bool machineOncePerWindow = true;
@@ -124,6 +127,20 @@ namespace ZombiesFPS.Data
         public int MaxTier => machineTiers != null ? machineTiers.Count : 0;
 
         public PowerUp PowerUpAt(int index) => index >= 0 && index < PowerUpCount ? powerUps[index] : null;
+
+        /// <summary>
+        /// The glow an upgraded gun gives off, by machine tier (index 0 is unused: a plain gun doesn't glow).
+        /// Tiers past the last colour use the last one.
+        /// </summary>
+        public static readonly Color[] TierGlowColors =
+        {
+            Color.clear,
+            new Color(0.3f, 0.85f, 1f),   // Mk II: ice blue
+            new Color(0.78f, 0.4f, 1f),   // Mk III: violet
+            new Color(1f, 0.42f, 0.12f),  // Mk IV: molten orange
+        };
+
+        public static Color TierGlow(int tier) => tier <= 0 ? Color.clear : TierGlowColors[Mathf.Min(tier, TierGlowColors.Length - 1)];
 
         /// <summary>Tier 0 is the gun as it comes off the wall.</summary>
         public MachineTier Tier(int tier) => tier >= 1 && tier <= MaxTier ? machineTiers[tier - 1] : null;

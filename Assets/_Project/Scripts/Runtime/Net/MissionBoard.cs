@@ -239,6 +239,18 @@ namespace ZombiesFPS.Net
                 int j = UnityEngine.Random.Range(0, i + 1);
                 (_pool[i], _pool[j]) = (_pool[j], _pool[i]);
             }
+            // After the story, two of the three jobs are the Trader's bounties.
+            if (round >= MissionData.PostStoryRound)
+            {
+                int moved = 0;
+                for (int i = 0; i < _pool.Count && moved < 2; i++)
+                {
+                    if (Data.At(_pool[i]).minRound < MissionData.PostStoryRound) continue;
+                    int id = _pool[i];
+                    _pool.RemoveAt(i);
+                    _pool.Insert(moved++, id);
+                }
+            }
 
             int openMask = MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0;
             int next = 0;
@@ -282,7 +294,7 @@ namespace ZombiesFPS.Net
         }
 
         /// <summary>Host only. A zombie died to a player.</summary>
-        public void ServerOnKill(NetZombie zombie, bool headshot)
+        public void ServerOnKill(NetZombie zombie, bool headshot, bool throughAnother = false)
         {
             if (!IsServer || Data == null) return;
             for (int i = 0; i < MissionData.SlotCount; i++)
@@ -291,7 +303,8 @@ namespace ZombiesFPS.Net
                 if (def == null) continue;
                 bool counts = def.objective == MissionObjective.Kills
                     || (def.objective == MissionObjective.HeadshotKills && headshot)
-                    || (def.objective == MissionObjective.KillType && zombie.Kind == def.zombieKind);
+                    || (def.objective == MissionObjective.KillType && zombie.Kind == def.zombieKind)
+                    || (def.objective == MissionObjective.PierceKills && throughAnother);
                 if (counts) Advance(i, 1);
             }
         }

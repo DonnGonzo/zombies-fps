@@ -39,6 +39,11 @@ namespace ZombiesFPS.Zombies
         const float ClimbRise = 1.6f;
         // A player more than this far above or below can't be hit (on a ledge over the zombie's head).
         const float AttackHeight = 1.9f;
+        // Scrambling: a zombie right under a player it has no path up to hauls itself up the side instead.
+        const float ScrambleMinRise = 1.2f;
+        const float ScrambleMaxRise = 6.5f;
+        const float ScrambleReach = 4f;
+        const float ScrambleDelay = 0.8f;
 
         static readonly Color[] SkinTones =
         {
@@ -104,9 +109,15 @@ namespace ZombiesFPS.Zombies
         bool _onLink, _linkClimb;
         Vector3 _linkStart, _linkEnd;
         float _linkTime, _linkDuration;
+        bool _scrambling;
+        Vector3 _scrambleStart, _scrambleEnd;
+        float _scrambleTime, _scrambleDuration;
+        float _belowSince = -1f;
         readonly RaycastHit[] _sightHits = new RaycastHit[8];
 
         public bool IsAlive => _mode.Value != ZombieMode.Dead;
+        /// <summary>How much of a bullet's pierce this body uses up: a brute's bulk counts double and a boss stops it dead.</summary>
+        public int PenetrationCost => Data.IsBoss ? 1000 : Kind == ZombieKind.Brute ? 2 : 1;
         public long Health => _health;
         public ZombieKind Kind => _kind.Value;
         public ZombieData Data => _data != null ? _data : GameConfig.ZombieType(_kind.Value);
@@ -179,6 +190,9 @@ namespace ZombiesFPS.Zombies
                 _offMeshSince = -1f;
                 _spitAt = -1f;
                 _onLink = false;
+                _scrambling = false;
+                _belowSince = -1f;
+                _agent.updatePosition = true;
                 _nextSpitTime = Time.time + UnityEngine.Random.Range(1f, _data.spitCooldown);
             }
         }
@@ -328,6 +342,13 @@ namespace ZombiesFPS.Zombies
                     _onLink = false;
                     transform.position = _linkStart.y <= _linkEnd.y ? _linkStart : _linkEnd;
                 }
+                if (_scrambling)
+                {
+                    // Killed mid-scramble: fall back to the foot of the climb.
+                    _scrambling = false;
+                    _agent.updatePosition = true;
+                    transform.position = _scrambleStart;
+                }
                 if (_agent.isOnNavMesh) _agent.isStopped = true;
                 _agent.enabled = false;
                 _despawnAt = Time.time + DeathFallTime + CorpseTime + SinkTime;
@@ -444,6 +465,11 @@ namespace ZombiesFPS.Zombies
             _offMeshSince = -1f;
 
             float dt = Time.deltaTime;
+            if (_scrambling)
+            {
+                UpdateScramble(dt);
+                return;
+            }
             if (_agent.isOnOffMeshLink)
             {
                 TraverseLink(dt);
@@ -473,9 +499,11 @@ namespace ZombiesFPS.Zombies
             }
 
             Vector3 toTarget = _target.transform.position - transform.position;
-            bool level = Mathf.Abs(toTarget.y) < AttackHeight;
+            float rise = toTarget.y;
+            bool level = Mathf.Abs(rise) < AttackHeight;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
+            if (_mode.Value == ZombieMode.Chasing && TryStartScramble(rise, distance)) return;
 
             // Zombies crowding a protect-mission survivor are where they should be, not stuck.
             var lured = MissionBoard.Lure;
@@ -605,6 +633,92 @@ namespace ZombiesFPS.Zombies
         }
 
         /// <summary>
+        /// Host: a zombie under a player standing on something it has no path up to (a crate, a parkour block,
+        /// a ledge whose way up is shut off) scrambles up the side to get at them, after a moment's pause. A
+        /// player on a high spot with a ladder or a jump up is still reached the long way, by the path map.
+        /// </summary>
+        bool TryStartScramble(float rise, float distance)
+        {
+            if (rise < ScrambleMinRise || rise > ScrambleMaxRise || distance > ScrambleReach || _agent.pathPending)
+            {
+                _belowSince = -1f;
+                return false;
+            }
+            Vector3 target = _target.transform.position;
+            bool noWayUp = _agent.pathStatus != NavMeshPathStatus.PathComplete || _agent.pathEndPosition.y < target.y - 1f;
+            if (!noWayUp)
+            {
+                _belowSince = -1f;
+                return false;
+            }
+            if (_belowSince < 0f) _belowSince = Time.time;
+            if (Time.time - _belowSince < ScrambleDelay) return false;
+
+            // Land beside the player, on the side of them we're climbing from.
+            Vector3 back = transform.position - target;
+            back.y = 0f;
+            back = back.sqrMagnitude > 0.01f ? back.normalized : -transform.forward;
+            Vector3 land = Vector3.zero;
+            bool found = false;
+            foreach (float off in new[] { 0.7f, 0f })
+            {
+                if (NavMesh.SamplePosition(target + back * off, out var hit, 1.2f, NavMesh.AllAreas) && Mathf.Abs(hit.position.y - target.y) < 0.6f)
+                {
+                    land = hit.position;
+                    found = true;
+                    break;
+                }
+            }
+            Vector3 start = transform.position;
+            Vector3 top = new Vector3(start.x, land.y + 0.6f, start.z);
+            // Nothing overhead on the way up, and nothing between the top of the climb and the landing.
+            if (!found || !Clear(start + Vector3.up * 1f, top + Vector3.up * 1.2f) || !Clear(top + Vector3.up * 1.2f, land + Vector3.up * 1f))
+            {
+                _belowSince = Time.time;
+                return false;
+            }
+
+            _scrambling = true;
+            _belowSince = -1f;
+            _scrambleStart = start;
+            _scrambleEnd = land;
+            _scrambleTime = 0f;
+            float across = Vector3.Distance(new Vector3(start.x, 0f, start.z), new Vector3(land.x, 0f, land.z));
+            _scrambleDuration = (land.y - start.y) / ClimbSpeed + across / Mathf.Max(1.5f, _moveSpeed) + 0.2f;
+            _agent.isStopped = true;
+            _agent.updatePosition = false;
+            Vector3 face = land - start;
+            face.y = 0f;
+            if (face.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(face.normalized, Vector3.up);
+            return true;
+        }
+
+        /// <summary>Host: hand over hand up the side, then over the edge onto the player's level.</summary>
+        void UpdateScramble(float dt)
+        {
+            _scrambleTime += dt;
+            float t = Mathf.Clamp01(_scrambleTime / _scrambleDuration);
+            float rise = _scrambleEnd.y - _scrambleStart.y;
+            float climbShare = Mathf.Clamp01(rise / ClimbSpeed / _scrambleDuration);
+            float vertical = Mathf.Clamp01(t / Mathf.Max(0.01f, climbShare));
+            float across = Mathf.Clamp01((t - climbShare) / Mathf.Max(0.01f, 1f - climbShare));
+            Vector3 flat = _scrambleEnd - _scrambleStart;
+            flat.y = 0f;
+            // A little extra height at the lip, so the body clears the edge.
+            float lip = 0.35f * Mathf.Sin(across * Mathf.PI);
+            transform.position = _scrambleStart + flat * across + Vector3.up * (rise * vertical + lip);
+            if (t < 1f) return;
+
+            _scrambling = false;
+            _agent.updatePosition = true;
+            _agent.Warp(_scrambleEnd);
+            _agent.isStopped = false;
+            _stuckAnchor = transform.position;
+            _stuckSince = Time.time;
+            _repathTimer = 0f;
+        }
+
+        /// <summary>
         /// Host: spitters stop to lob acid at a player they can see. The acid lands where the player stood,
         /// so standing still gets you burned. Returns true while the spit holds the zombie in place.
         /// </summary>
@@ -636,10 +750,11 @@ namespace ZombiesFPS.Zombies
         }
 
         /// <summary>Nothing but zombies and players between this zombie's head and the player's chest.</summary>
-        bool CanSee(NetPlayer player)
+        bool CanSee(NetPlayer player) => Clear(_head.position, player.transform.position + Vector3.up * 1.2f);
+
+        /// <summary>Nothing but zombies and players on the straight line between two points.</summary>
+        bool Clear(Vector3 from, Vector3 to)
         {
-            Vector3 from = _head.position;
-            Vector3 to = player.transform.position + Vector3.up * 1.2f;
             Vector3 dir = to - from;
             float dist = dir.magnitude;
             if (dist < 0.01f) return true;
