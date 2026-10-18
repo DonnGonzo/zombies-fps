@@ -188,6 +188,12 @@ namespace ZombiesFPS.Zombies
         Vector3 _scrambleStart, _scrambleEnd;
         float _scrambleTime, _scrambleDuration;
         float _belowSince = -1f;
+        // Pose smoothing and body lean (see SmoothPose and AnimateBody).
+        Transform[] _joints;
+        float[] _jointRates;
+        Quaternion[] _jointPrev;
+        bool _jointsWarm;
+        float _lastYaw, _lastSpeed, _turnLean, _accelLean;
         float _aboveSince = -1f;
         readonly RaycastHit[] _sightHits = new RaycastHit[8];
 
@@ -226,6 +232,10 @@ namespace ZombiesFPS.Zombies
             _lastPosition = transform.position;
             _nextGroan = Time.time + UnityEngine.Random.Range(0.5f, 3f);
             _walkPhase = UnityEngine.Random.Range(0f, 10f);
+            // A fresh life starts from its new pose, not eased from the last one.
+            _jointsWarm = false;
+            _lastYaw = transform.eulerAngles.y;
+            _turnLean = _accelLean = 0f;
             _mode.OnValueChanged += OnModeChanged;
             if (_mode.Value == ZombieMode.Dead) EnterDeadVisual(-transform.forward, false);
 
@@ -237,8 +247,11 @@ namespace ZombiesFPS.Zombies
                 if (_agent == null)
                 {
                     _agent = gameObject.AddComponent<NavMeshAgent>();
-                    _agent.acceleration = 14f;
+                    // Gentler starts and stops than the default, and turning is done by hand (SteerFacing) so
+                    // zombies swing round with some weight instead of snapping to face each new path corner.
+                    _agent.acceleration = 9f;
                     _agent.angularSpeed = 540f;
+                    _agent.updateRotation = false;
                     _agent.autoBraking = true;
                     _agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
                     // Ladders and jumps are moved by hand (TraverseLink) so they look like climbing and leaping.
@@ -866,6 +879,7 @@ namespace ZombiesFPS.Zombies
                     _agent.SetDestination(dest);
                     _repathTimer = RepathInterval;
                 }
+                SteerFacing(dt, toTarget, distance);
                 if (distance <= _data.attackRange && level)
                 {
                     _mode.Value = ZombieMode.Attacking;
@@ -1303,9 +1317,50 @@ namespace ZombiesFPS.Zombies
             if (d.crawls) AnimateCrawl(now, gait, atk, atkLean, heave);
             else AnimateUpright(now, gait, run, stunned, d.armored || d.IsBoss, atk, atkPitch, atkElbow, atkLean, atkTwist, heave);
 
+            SmoothPose(dt);
+
+            // Weight: lean into speeding up, rock back when stopping, bank into turns. Measured from how the body
+            // actually moves, so it's the same on every machine.
+            float yaw = transform.eulerAngles.y;
+            if (dt > 0f)
+            {
+                float yawRate = Mathf.DeltaAngle(_lastYaw, yaw) / dt;
+                _turnLean = Mathf.Lerp(_turnLean, Mathf.Clamp(-yawRate * 0.045f, -9f, 9f), 1f - Mathf.Exp(-5f * dt));
+                float accel = (speed - _lastSpeed) / dt;
+                _accelLean = Mathf.Lerp(_accelLean, Mathf.Clamp(accel * 2.2f, -7f, 7f), 1f - Mathf.Exp(-4f * dt));
+            }
+            _lastYaw = yaw;
+            _lastSpeed = speed;
+
             // Whole-body reactions: a jolt back when shot, a drunken wobble when stunned.
             float wobble = stunned ? Mathf.Sin(now * 9f) * 8f : 0f;
-            _visual.localRotation = Quaternion.Euler(-_flinch * 8f + (stunned ? 10f : 0f), 0f, wobble);
+            _visual.localRotation = Quaternion.Euler(-_flinch * 8f + (stunned ? 10f : 0f) + (d.crawls ? 0f : _accelLean), 0f, wobble + _turnLean);
+        }
+
+        /// <summary>
+        /// Follow-through: each joint eases toward the pose just computed instead of jumping to it, heavier parts
+        /// (spine, head) more slowly than the limbs. Smooths every switch between walking, reaching, striking and
+        /// flinching, and gives the body a little lag and weight.
+        /// </summary>
+        void SmoothPose(float dt)
+        {
+            if (_joints == null)
+            {
+                _joints = new[] { _hips, _spine, _head, _jaw, _armL, _elbowL, _armR, _elbowR, _legL, _kneeL, _footL, _legR, _kneeR, _footR };
+                _jointRates = new[] { 18f, 9f, 8f, 22f, 13f, 15f, 13f, 15f, 24f, 26f, 26f, 24f, 26f, 26f };
+                _jointPrev = new Quaternion[_joints.Length];
+                _jointsWarm = false;
+            }
+            for (int i = 0; i < _joints.Length; i++)
+            {
+                var j = _joints[i];
+                if (j == null) continue;
+                var target = j.localRotation;
+                if (_jointsWarm && dt > 0f)
+                    j.localRotation = Quaternion.Slerp(_jointPrev[i], target, 1f - Mathf.Exp(-_jointRates[i] * dt));
+                _jointPrev[i] = j.localRotation;
+            }
+            _jointsWarm = true;
         }
 
         void AnimateUpright(float now, float gait, float run, bool stunned, bool bothHands,
@@ -1453,6 +1508,26 @@ namespace ZombiesFPS.Zombies
                 + _near * 14f * Mathf.Max(0f, Mathf.Sin(now * 6f + _noise))
                 + atk * 22f + heave * 40f;
             _jaw.localRotation = Quaternion.Euler(open, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Host: turns the body toward where it's walking at a limited, speed-dependent rate (slow shuffling turns,
+        /// quicker when moving), and toward the player once it's close and slowing down.
+        /// </summary>
+        void SteerFacing(float dt, Vector3 toTarget, float distance)
+        {
+            Vector3 v = _agent.velocity;
+            v.y = 0f;
+            float speed = v.magnitude;
+            Vector3 dir = speed > 0.25f ? v / speed : distance > 0.01f ? toTarget / distance : Vector3.zero;
+            if (distance < 2.5f && distance > 0.01f) dir = Vector3.Slerp(dir.sqrMagnitude > 0f ? dir : toTarget / distance, toTarget / distance, 0.7f);
+            if (dir.sqrMagnitude < 0.01f) return;
+            float rate = Mathf.Lerp(150f, _data.kind == ZombieKind.Runner ? 420f : 300f, Mathf.Clamp01(speed / 3f));
+            var want = Quaternion.LookRotation(dir, Vector3.up);
+            // Ease into the turn: fast while far off the heading, slowing as it lines up.
+            float angle = Quaternion.Angle(transform.rotation, want);
+            float step = Mathf.Min(rate * dt, angle * (1f - Mathf.Exp(-6f * dt)) + 20f * dt);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, want, step);
         }
 
         /// <summary>Tracks the nearest living player (rescanned a few times a second) for the head and arms.</summary>
