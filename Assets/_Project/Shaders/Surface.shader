@@ -19,7 +19,8 @@ Shader "ZombiesFPS/Surface"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        // Object-space projection needs each object's own transform; batching would merge them into world space.
+        Tags { "RenderType"="Opaque" "DisableBatching"="True" }
         LOD 300
 
         CGPROGRAM

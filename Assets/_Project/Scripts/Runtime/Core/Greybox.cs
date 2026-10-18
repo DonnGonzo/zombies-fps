@@ -49,6 +49,8 @@ namespace ZombiesFPS.Core
             mat.SetFloat("_Metallic", look.Metallic);
             mat.SetFloat("_Grime", moving ? look.Grime * 0.7f : look.Grime);
             mat.SetFloat("_ObjectSpace", moving ? 1f : 0f);
+            // Hundreds of zombie parts share these; instancing draws each set in one go.
+            mat.enableInstancing = true;
             s_Surfaces[key] = mat;
             return mat;
         }

@@ -100,7 +100,13 @@ Shader "Hidden/ZombiesFPS/Post"
     half4 FragComposite(v2f i) : SV_Target
     {
         half3 c = ToLinear(tex2D(_MainTex, i.uv).rgb);
-        c += tex2D(_BloomTex, i.uv).rgb * _BloomIntensity;
+        // With anti-aliasing on Direct3D the source arrives upside down relative to the bloom chain; Blit only
+        // fixes _MainTex, so flip the bloom lookup to match.
+        float2 buv = i.uv;
+    #if UNITY_UV_STARTS_AT_TOP
+        if (_MainTex_TexelSize.y < 0) buv.y = 1 - buv.y;
+    #endif
+        c += tex2D(_BloomTex, buv).rgb * _BloomIntensity;
         c *= _Exposure;
         c = Aces(c);
 

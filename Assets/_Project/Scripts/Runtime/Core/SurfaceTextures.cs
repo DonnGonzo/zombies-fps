@@ -92,7 +92,7 @@ namespace ZombiesFPS.Core
                 tint[y * Size + x] = c;
             }
 
-            var detail = new Texture2D(Size, Size, TextureFormat.RGBA32, true, false) { name = s + " Detail", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
+            var detail = new Texture2D(Size, Size, TextureFormat.RGBA32, true, true) { name = s + " Detail", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
             var normal = new Texture2D(Size, Size, TextureFormat.RGBA32, true, true) { name = s + " Normal", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
             var dp = new Color32[Size * Size];
             var np = new Color32[Size * Size];

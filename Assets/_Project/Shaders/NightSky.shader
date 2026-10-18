@@ -93,7 +93,7 @@ Shader "ZombiesFPS/NightSky"
                 col += _MoonColor.rgb * pow(saturate(md), 8) * 0.06;
 
                 // Clouds on a flat layer overhead, drifting.
-                float2 uv = d.xz / (d.y + 0.25) * 1.6 + _Time.y * float2(0.012, 0.004);
+                float2 uv = d.xz / (max(d.y, 0) + 0.25) * 1.6 + _Time.y * float2(0.012, 0.004);
                 float c = smoothstep(0.45, 0.8, Fbm(uv));
                 half3 cloud = _CloudColor.rgb + _MoonColor.rgb * pow(saturate(md), 6) * 0.12;
                 col = lerp(col, cloud, c * smoothstep(0.0, 0.25, d.y) * 0.85);

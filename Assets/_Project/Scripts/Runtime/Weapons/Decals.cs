@@ -127,8 +127,11 @@ namespace ZombiesFPS.Weapons
 
             Vector3 side = Vector3.Cross(normal, Mathf.Abs(normal.y) > 0.9f ? Vector3.forward : Vector3.up).normalized;
             var rot = Quaternion.AngleAxis(Random.Range(0f, 360f), normal) * Quaternion.LookRotation(side, normal);
-            // A few millimetres off the surface, staggered so overlapping marks don't flicker against each other.
-            d.T.SetPositionAndRotation(point + normal * (0.004f + (index % 6) * 0.0008f), rot);
+            // Off the surface, staggered so overlapping marks don't flicker against each other. The hit point is on
+            // a wall's collider, but the map dresses walls with colliderless skins, bands and trim up to 4 cm in front
+            // of it (and floors with stains a few mm thick), so lift past those or the mark is hidden behind them.
+            float lift = Mathf.Abs(normal.y) < 0.7f ? 0.045f : 0.009f;
+            d.T.SetPositionAndRotation(point + normal * (lift + (index % 6) * 0.0008f), rot);
 
             int variant = Random.Range(0, 4);
             int cell = kind switch

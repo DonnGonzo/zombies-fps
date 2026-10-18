@@ -17,6 +17,7 @@ namespace ZombiesFPS.Core
         static Light s_Moon;
         static Material s_Sky;
         static ReflectionProbe s_Probe;
+        static bool s_ProbeRendered;
         static bool s_Hooked;
 
         /// <summary>Sky, moon, fog and ambient light. Called once at start-up, before the map is built.</summary>
@@ -45,7 +46,7 @@ namespace ZombiesFPS.Core
             var skyBase = Resources.Load<Material>("Materials/NightSky");
             if (skyBase != null && skyBase.shader != null && skyBase.shader.isSupported)
             {
-                s_Sky = new Material(skyBase);
+                if (s_Sky == null) s_Sky = new Material(skyBase);
                 s_Sky.SetVector("_MoonDir", -s_Moon.transform.forward);
                 RenderSettings.skybox = s_Sky;
             }
@@ -73,11 +74,18 @@ namespace ZombiesFPS.Core
             QualitySettings.shadowCascades = q == 0 ? 1 : q == 1 ? 2 : 4;
             QualitySettings.shadowResolution = q == 0 ? ShadowResolution.Low : q == 1 ? ShadowResolution.Medium : ShadowResolution.High;
             QualitySettings.antiAliasing = q == 0 ? 0 : q == 1 ? 2 : 4;
-            QualitySettings.pixelLightCount = q == 0 ? 3 : q == 1 ? 5 : 8;
+            // Every extra per-pixel light is another draw for each lit part, and zombies have dozens of parts.
+            QualitySettings.pixelLightCount = q == 0 ? 2 : q == 1 ? 3 : 4;
             QualitySettings.anisotropicFiltering = q == 0 ? AnisotropicFiltering.Enable : AnisotropicFiltering.ForceEnable;
             QualitySettings.softParticles = false;
             if (s_Moon != null) s_Moon.shadows = q == 0 ? LightShadows.Hard : LightShadows.Soft;
-            if (s_Probe != null) s_Probe.enabled = q >= 2;
+            if (s_Probe != null)
+            {
+                bool wasOn = s_Probe.enabled;
+                s_Probe.enabled = q >= 2;
+                // Starting below High never rendered it; render now or metal reflects black.
+                if (s_Probe.enabled && (!wasOn || !s_ProbeRendered)) RenderProbe();
+            }
             foreach (var cam in Camera.allCameras) ConfigureCamera(cam);
         }
 
@@ -115,7 +123,13 @@ namespace ZombiesFPS.Core
             s_Probe.transform.position = bounds.center + Vector3.up * 3f;
             s_Probe.size = bounds.size + Vector3.up * 20f;
             s_Probe.enabled = GameSettings.Quality >= 2;
+            if (s_Probe.enabled) RenderProbe();
+        }
+
+        static void RenderProbe()
+        {
             s_Probe.RenderProbe();
+            s_ProbeRendered = true;
         }
 
         /// <summary>Darkens the sky and the ambient light during a blackout round (0 normal, 1 full blackout).</summary>
