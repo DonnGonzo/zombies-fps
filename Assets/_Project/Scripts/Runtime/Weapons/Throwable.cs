@@ -84,18 +84,44 @@ namespace ZombiesFPS.Weapons
         void BuildVisual()
         {
             _spin = Greybox.Empty("Spin", transform, Vector3.zero);
+            var steel = new Color(0.36f, 0.37f, 0.39f);
             switch (Kind)
             {
                 case ThrowableKind.Grenade:
-                    Greybox.Prim(PrimitiveType.Sphere, "Body", _spin, Vector3.zero, new Vector3(0.11f, 0.13f, 0.11f), new Color(0.25f, 0.3f, 0.2f), collider: false);
-                    Greybox.Box("Spoon", _spin, new Vector3(0.03f, 0.06f, 0f), new Vector3(0.02f, 0.08f, 0.03f), new Color(0.5f, 0.5f, 0.5f), collider: false);
+                    Greybox.Prim(PrimitiveType.Sphere, "Body", _spin, Vector3.zero, new Vector3(0.11f, 0.13f, 0.11f), new Color(0.24f, 0.28f, 0.18f), collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Prim(PrimitiveType.Cylinder, "Band", _spin, Vector3.zero, new Vector3(0.113f, 0.004f, 0.113f), new Color(0.12f, 0.14f, 0.09f), collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Prim(PrimitiveType.Cylinder, "Fuse", _spin, new Vector3(0f, 0.068f, 0f), new Vector3(0.036f, 0.014f, 0.036f), steel, collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Box("Spoon", _spin, new Vector3(0.03f, 0.05f, 0f), new Vector3(0.012f, 0.08f, 0.026f), steel, collider: false,
+                        surface: Surface.Metal, moving: true).transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
+                    Greybox.Prim(PrimitiveType.Cylinder, "PinRing", _spin, new Vector3(-0.028f, 0.075f, 0f), new Vector3(0.026f, 0.002f, 0.026f), new Color(0.6f, 0.6f, 0.62f), collider: false,
+                        surface: Surface.Metal, moving: true).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                     break;
                 case ThrowableKind.Knife:
-                    Greybox.Box("Blade", _spin, new Vector3(0f, 0f, 0.06f), new Vector3(0.015f, 0.04f, 0.16f), new Color(0.8f, 0.82f, 0.85f), collider: false);
-                    Greybox.Box("Grip", _spin, new Vector3(0f, 0f, -0.06f), new Vector3(0.025f, 0.035f, 0.09f), new Color(0.12f, 0.1f, 0.08f), collider: false);
+                    Greybox.Box("Blade", _spin, new Vector3(0f, 0f, 0.06f), new Vector3(0.012f, 0.04f, 0.16f), new Color(0.78f, 0.8f, 0.83f), collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Box("Spine", _spin, new Vector3(0f, 0.018f, 0.05f), new Vector3(0.013f, 0.006f, 0.13f), new Color(0.3f, 0.31f, 0.33f), collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Box("Guard", _spin, new Vector3(0f, 0f, -0.017f), new Vector3(0.016f, 0.055f, 0.01f), new Color(0.15f, 0.15f, 0.16f), collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Box("Grip", _spin, new Vector3(0f, 0f, -0.065f), new Vector3(0.025f, 0.035f, 0.09f), new Color(0.12f, 0.1f, 0.08f), collider: false,
+                        surface: Surface.Rubber, moving: true);
                     break;
                 default:
-                    Greybox.Prim(PrimitiveType.Cylinder, "Body", _spin, Vector3.zero, new Vector3(0.08f, 0.07f, 0.08f), new Color(0.2f, 0.25f, 0.35f), collider: false);
+                    Greybox.Prim(PrimitiveType.Cylinder, "Body", _spin, Vector3.zero, new Vector3(0.08f, 0.07f, 0.08f), new Color(0.2f, 0.25f, 0.35f), collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Prim(PrimitiveType.Cylinder, "CapTop", _spin, new Vector3(0f, 0.06f, 0f), new Vector3(0.084f, 0.012f, 0.084f), steel, collider: false,
+                        surface: Surface.Metal, moving: true);
+                    Greybox.Prim(PrimitiveType.Cylinder, "CapBottom", _spin, new Vector3(0f, -0.065f, 0f), new Vector3(0.084f, 0.008f, 0.084f), steel, collider: false,
+                        surface: Surface.Metal, moving: true);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * 60f * Mathf.Deg2Rad;
+                        Greybox.Box("Port", _spin, new Vector3(Mathf.Cos(a) * 0.04f, 0.015f, Mathf.Sin(a) * 0.04f), new Vector3(0.012f, 0.03f, 0.012f), new Color(0.03f, 0.03f, 0.035f),
+                            collider: false, surface: Surface.Rubber, moving: true);
+                    }
                     Greybox.Prim(PrimitiveType.Sphere, "Light", _spin, new Vector3(0f, 0.075f, 0f), Vector3.one * 0.04f, new Color(0.5f, 0.8f, 1f), collider: false, unlit: true);
                     break;
             }

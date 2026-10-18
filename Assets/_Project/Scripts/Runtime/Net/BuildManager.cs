@@ -217,10 +217,10 @@ namespace ZombiesFPS.Net
                 int item = ItemOf(part);
                 var color = BuildableColors[item];
                 var root = Greybox.Empty("Part " + PartNames[part], null, ZoneMap.PartSpot(s));
-                var shape = item == Cannon ? PrimitiveType.Cylinder : item == Shield ? PrimitiveType.Cube : PrimitiveType.Sphere;
-                var scale = item == Cannon ? new Vector3(0.18f, 0.28f, 0.18f) : item == Shield ? new Vector3(0.45f, 0.5f, 0.08f) : Vector3.one * 0.32f;
-                var body = Greybox.Prim(shape, "Part", root, new Vector3(0f, 0.75f, 0f), scale, color, collider: false, unlit: true);
-                body.AddComponent<Spin>();
+                var pivot = Greybox.Empty("Part", root, new Vector3(0f, 0.75f, 0f));
+                BuildPartModel(part, pivot, color);
+                pivot.gameObject.AddComponent<Spin>();
+                Greybox.DisableShadows(pivot.gameObject);
                 Greybox.Prim(PrimitiveType.Cylinder, "Glow", root, new Vector3(0f, 0.02f, 0f), new Vector3(0.9f, 0.01f, 0.9f), color * 0.6f, collider: false, unlit: true);
                 var light = new GameObject("Part Light").AddComponent<Light>();
                 light.transform.SetParent(root, false);
@@ -233,15 +233,37 @@ namespace ZombiesFPS.Net
                 _partProps[s] = root.gameObject;
             }
 
-            // The Buddy Bot: a hovering drone with a rotor and a glowing eye.
+            // The Buddy Bot: a hovering drone with a rotor, a glowing eye and a thruster underneath.
             _robot = Greybox.Empty("Buddy Bot", null, Vector3.zero);
             var botColor = new Color(0.55f, 0.6f, 0.55f);
-            Greybox.Prim(PrimitiveType.Sphere, "Body", _robot, Vector3.zero, new Vector3(0.55f, 0.4f, 0.55f), botColor, collider: false);
-            Greybox.Prim(PrimitiveType.Cube, "Eye", _robot, new Vector3(0f, 0.02f, 0.26f), new Vector3(0.22f, 0.08f, 0.05f), BuildableColors[Bot], collider: false, unlit: true);
-            Greybox.Box("Gun", _robot, new Vector3(0f, -0.2f, 0.22f), new Vector3(0.07f, 0.07f, 0.35f), new Color(0.15f, 0.15f, 0.15f), collider: false);
+            var botTrim = new Color(0.44f, 0.48f, 0.44f);
+            var dark = new Color(0.15f, 0.15f, 0.16f);
+            var glow = BuildableColors[Bot];
+            Greybox.Prim(PrimitiveType.Sphere, "Body", _robot, Vector3.zero, new Vector3(0.55f, 0.4f, 0.55f), botColor, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Prim(PrimitiveType.Cylinder, "Seam", _robot, Vector3.zero, new Vector3(0.56f, 0.012f, 0.56f), dark, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Prim(PrimitiveType.Cylinder, "SeamGlow", _robot, new Vector3(0f, -0.03f, 0f), new Vector3(0.545f, 0.006f, 0.545f), new Color(glow.r * 0.8f, glow.g * 0.8f, glow.b * 0.8f), collider: false, unlit: true);
+            Greybox.Box("Visor", _robot, new Vector3(0f, 0.03f, 0.26f), new Vector3(0.3f, 0.13f, 0.06f), dark, collider: false, surface: Surface.Rubber, moving: true);
+            Greybox.Prim(PrimitiveType.Cube, "Eye", _robot, new Vector3(0f, 0.03f, 0.29f), new Vector3(0.22f, 0.06f, 0.02f), glow, collider: false, unlit: true);
+            Greybox.Box("PodL", _robot, new Vector3(-0.29f, -0.02f, 0f), new Vector3(0.08f, 0.16f, 0.22f), botTrim, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Box("PodR", _robot, new Vector3(0.29f, -0.02f, 0f), new Vector3(0.08f, 0.16f, 0.22f), botTrim, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Box("GunMount", _robot, new Vector3(0f, -0.17f, 0.1f), new Vector3(0.12f, 0.06f, 0.14f), dark, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Box("Gun", _robot, new Vector3(0f, -0.2f, 0.22f), new Vector3(0.07f, 0.07f, 0.35f), dark, collider: false, surface: Surface.Metal, moving: true);
+            var muzzle = Greybox.Prim(PrimitiveType.Cylinder, "Muzzle", _robot, new Vector3(0f, -0.2f, 0.4f), new Vector3(0.05f, 0.02f, 0.05f), new Color(0.35f, 0.36f, 0.38f),
+                collider: false, surface: Surface.Metal, moving: true);
+            muzzle.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Greybox.Prim(PrimitiveType.Cylinder, "Thruster", _robot, new Vector3(0f, -0.19f, -0.06f), new Vector3(0.16f, 0.03f, 0.16f), dark, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Prim(PrimitiveType.Cylinder, "ThrusterGlow", _robot, new Vector3(0f, -0.22f, -0.06f), new Vector3(0.11f, 0.005f, 0.11f), new Color(0.6f, 0.9f, 1f), collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Cylinder, "Antenna", _robot, new Vector3(-0.12f, 0.24f, -0.08f), new Vector3(0.012f, 0.08f, 0.012f), dark, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Prim(PrimitiveType.Sphere, "AntennaTip", _robot, new Vector3(-0.12f, 0.33f, -0.08f), Vector3.one * 0.03f, glow, collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Cylinder, "Mast", _robot, new Vector3(0f, 0.22f, 0f), new Vector3(0.05f, 0.05f, 0.05f), dark, collider: false, surface: Surface.Metal, moving: true);
             _robotRotor = Greybox.Empty("Rotor", _robot, new Vector3(0f, 0.28f, 0f));
-            Greybox.Box("Blade", _robotRotor, Vector3.zero, new Vector3(0.9f, 0.02f, 0.08f), new Color(0.2f, 0.2f, 0.2f), collider: false);
-            Greybox.Box("Blade", _robotRotor, Vector3.zero, new Vector3(0.08f, 0.02f, 0.9f), new Color(0.2f, 0.2f, 0.2f), collider: false);
+            Greybox.Prim(PrimitiveType.Cylinder, "Hub", _robotRotor, Vector3.zero, new Vector3(0.1f, 0.02f, 0.1f), new Color(0.35f, 0.36f, 0.38f), collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Box("Blade", _robotRotor, Vector3.zero, new Vector3(0.9f, 0.015f, 0.08f), new Color(0.12f, 0.12f, 0.12f), collider: false, surface: Surface.Rubber, moving: true);
+            Greybox.Box("Blade", _robotRotor, Vector3.zero, new Vector3(0.08f, 0.015f, 0.9f), new Color(0.12f, 0.12f, 0.12f), collider: false, surface: Surface.Rubber, moving: true);
+            // Tip markers make the spin readable.
+            Greybox.Box("BladeTip", _robotRotor, new Vector3(0.42f, 0f, 0f), new Vector3(0.06f, 0.017f, 0.082f), new Color(0.85f, 0.6f, 0.15f), collider: false, surface: Surface.Rubber, moving: true);
+            Greybox.Box("BladeTip", _robotRotor, new Vector3(-0.42f, 0f, 0f), new Vector3(0.06f, 0.017f, 0.082f), new Color(0.85f, 0.6f, 0.15f), collider: false, surface: Surface.Rubber, moving: true);
+            Greybox.DisableShadows(_robot.gameObject);
             _robotLight = new GameObject("Bot Light").AddComponent<Light>();
             _robotLight.transform.SetParent(_robot, false);
             _robotLight.type = LightType.Point;
@@ -255,6 +277,93 @@ namespace ZombiesFPS.Net
             _robotAudio.maxDistance = 40f;
             _robotAudio.playOnAwake = false;
             _robot.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// A recognisable little model for each part: real materials with glowing bits in its buildable's colour,
+        /// so it catches the eye while still looking like salvage.
+        /// </summary>
+        static void BuildPartModel(int part, Transform t, Color color)
+        {
+            var metal = new Color(0.42f, 0.43f, 0.45f);
+            var dark = new Color(0.14f, 0.14f, 0.15f);
+            var rust = new Color(0.45f, 0.28f, 0.17f);
+            var copper = new Color(0.72f, 0.4f, 0.2f);
+            GameObject P(PrimitiveType type, string name, Vector3 pos, Vector3 scale, Color c, Surface surface, float rx = 0f, float rz = 0f)
+            {
+                var go = Greybox.Prim(type, name, t, pos, scale, c, collider: false, surface: surface, moving: true);
+                go.transform.localRotation = Quaternion.Euler(rx, 0f, rz);
+                return go;
+            }
+            GameObject G(PrimitiveType type, string name, Vector3 pos, Vector3 scale, float rx = 0f, float rz = 0f)
+            {
+                var go = Greybox.Prim(type, name, t, pos, scale, color, collider: false, unlit: true);
+                go.transform.localRotation = Quaternion.Euler(rx, 0f, rz);
+                return go;
+            }
+            switch (part)
+            {
+                case 0: // Cannon Barrel
+                    P(PrimitiveType.Cylinder, "Barrel", Vector3.zero, new Vector3(0.15f, 0.26f, 0.15f), rust, Surface.Rust, 0f, 90f);
+                    P(PrimitiveType.Cylinder, "Band", new Vector3(-0.16f, 0f, 0f), new Vector3(0.165f, 0.02f, 0.165f), dark, Surface.Metal, 0f, 90f);
+                    P(PrimitiveType.Cylinder, "Band", new Vector3(0.12f, 0f, 0f), new Vector3(0.165f, 0.02f, 0.165f), dark, Surface.Metal, 0f, 90f);
+                    G(PrimitiveType.Cylinder, "Bore", new Vector3(0.262f, 0f, 0f), new Vector3(0.11f, 0.004f, 0.11f), 0f, 90f);
+                    break;
+                case 1: // Cannon Coil
+                    P(PrimitiveType.Cylinder, "Core", Vector3.zero, new Vector3(0.1f, 0.16f, 0.1f), dark, Surface.Metal);
+                    for (int i = 0; i < 4; i++)
+                        P(PrimitiveType.Cylinder, "Winding", new Vector3(0f, -0.1f + i * 0.066f, 0f), new Vector3(0.17f, 0.022f, 0.17f), copper, Surface.Metal);
+                    G(PrimitiveType.Cylinder, "CapGlow", new Vector3(0f, 0.165f, 0f), new Vector3(0.08f, 0.008f, 0.08f));
+                    G(PrimitiveType.Cylinder, "CapGlow", new Vector3(0f, -0.165f, 0f), new Vector3(0.08f, 0.008f, 0.08f));
+                    break;
+                case 2: // Cannon Grip
+                    P(PrimitiveType.Cube, "Grip", new Vector3(0f, -0.06f, 0f), new Vector3(0.07f, 0.2f, 0.09f), dark, Surface.Rubber, -15f);
+                    P(PrimitiveType.Cube, "Housing", new Vector3(0f, 0.07f, 0.04f), new Vector3(0.09f, 0.08f, 0.22f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "Trigger", new Vector3(0f, 0.01f, 0.07f), new Vector3(0.015f, 0.05f, 0.015f), metal, Surface.Metal, 15f);
+                    G(PrimitiveType.Cube, "Strip", new Vector3(0.047f, 0.07f, 0.04f), new Vector3(0.004f, 0.02f, 0.18f));
+                    break;
+                case 3: // Shield Frame
+                    P(PrimitiveType.Cube, "FrameTop", new Vector3(0f, 0.25f, 0f), new Vector3(0.44f, 0.04f, 0.04f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "FrameBottom", new Vector3(0f, -0.25f, 0f), new Vector3(0.44f, 0.04f, 0.04f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "FrameLeft", new Vector3(-0.2f, 0f, 0f), new Vector3(0.04f, 0.54f, 0.04f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "FrameRight", new Vector3(0.2f, 0f, 0f), new Vector3(0.04f, 0.54f, 0.04f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "Brace", Vector3.zero, new Vector3(0.03f, 0.6f, 0.03f), dark, Surface.Metal, 0f, 38f);
+                    for (int i = 0; i < 4; i++)
+                        G(PrimitiveType.Cube, "Corner", new Vector3(i % 2 == 0 ? -0.2f : 0.2f, i < 2 ? 0.25f : -0.25f, 0.022f), new Vector3(0.05f, 0.05f, 0.006f));
+                    break;
+                case 4: // Shield Plate
+                    P(PrimitiveType.Cube, "Plate", Vector3.zero, new Vector3(0.4f, 0.5f, 0.035f), new Color(0.4f, 0.36f, 0.32f), Surface.Rust);
+                    for (int i = 0; i < 4; i++)
+                        P(PrimitiveType.Sphere, "Rivet", new Vector3(i % 2 == 0 ? -0.16f : 0.16f, i < 2 ? 0.21f : -0.21f, 0.02f), Vector3.one * 0.03f, metal, Surface.Metal);
+                    G(PrimitiveType.Cube, "Stripe", new Vector3(0f, 0f, 0.019f), new Vector3(0.32f, 0.03f, 0.004f));
+                    break;
+                case 5: // Shield Strap
+                    P(PrimitiveType.Cube, "Strap", new Vector3(0f, 0.06f, 0f), new Vector3(0.36f, 0.06f, 0.015f), new Color(0.24f, 0.2f, 0.14f), Surface.Fabric);
+                    P(PrimitiveType.Cube, "Strap", new Vector3(0f, -0.06f, 0f), new Vector3(0.36f, 0.06f, 0.015f), new Color(0.24f, 0.2f, 0.14f), Surface.Fabric);
+                    P(PrimitiveType.Cube, "Handle", new Vector3(0f, 0f, 0.04f), new Vector3(0.06f, 0.2f, 0.04f), dark, Surface.Rubber);
+                    P(PrimitiveType.Cube, "Buckle", new Vector3(-0.18f, 0.06f, 0f), new Vector3(0.03f, 0.075f, 0.025f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "Buckle", new Vector3(0.18f, -0.06f, 0f), new Vector3(0.03f, 0.075f, 0.025f), metal, Surface.Metal);
+                    G(PrimitiveType.Cube, "Tag", new Vector3(0f, 0f, 0.062f), new Vector3(0.03f, 0.08f, 0.004f));
+                    break;
+                case 6: // Bot Chassis
+                    P(PrimitiveType.Sphere, "Shell", Vector3.zero, new Vector3(0.34f, 0.26f, 0.34f), new Color(0.55f, 0.6f, 0.55f), Surface.Metal);
+                    P(PrimitiveType.Cylinder, "Seam", Vector3.zero, new Vector3(0.35f, 0.01f, 0.35f), dark, Surface.Metal);
+                    G(PrimitiveType.Cylinder, "SeamGlow", new Vector3(0f, -0.025f, 0f), new Vector3(0.335f, 0.006f, 0.335f));
+                    break;
+                case 7: // Bot Rotor
+                    P(PrimitiveType.Cylinder, "Hub", Vector3.zero, new Vector3(0.09f, 0.03f, 0.09f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "Blade", Vector3.zero, new Vector3(0.5f, 0.015f, 0.06f), dark, Surface.Rubber);
+                    P(PrimitiveType.Cube, "Blade", Vector3.zero, new Vector3(0.06f, 0.015f, 0.5f), dark, Surface.Rubber);
+                    G(PrimitiveType.Cylinder, "HubGlow", new Vector3(0f, 0.032f, 0f), new Vector3(0.05f, 0.004f, 0.05f));
+                    break;
+                default: // Bot Brain
+                    P(PrimitiveType.Cube, "Case", Vector3.zero, new Vector3(0.22f, 0.14f, 0.18f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "Board", new Vector3(0f, 0.08f, 0f), new Vector3(0.18f, 0.02f, 0.15f), new Color(0.1f, 0.3f, 0.15f), Surface.Plain);
+                    G(PrimitiveType.Sphere, "Core", new Vector3(0f, 0.12f, 0f), Vector3.one * 0.08f);
+                    P(PrimitiveType.Cylinder, "Antenna", new Vector3(0.07f, 0.15f, -0.05f), new Vector3(0.01f, 0.07f, 0.01f), dark, Surface.Metal);
+                    G(PrimitiveType.Sphere, "AntennaTip", new Vector3(0.07f, 0.225f, -0.05f), Vector3.one * 0.02f);
+                    break;
+            }
         }
 
         void Update()
