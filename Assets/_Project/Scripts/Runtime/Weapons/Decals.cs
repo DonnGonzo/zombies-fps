@@ -103,7 +103,7 @@ namespace ZombiesFPS.Weapons
         public static bool FindSurface(Vector3 origin, Vector3 dir, float distance, out RaycastHit hit)
         {
             hit = default;
-            int n = Physics.RaycastNonAlloc(origin, dir, s_Hits, distance, ~0, QueryTriggerInteraction.Ignore);
+            int n = Physics.RaycastNonAlloc(origin, dir, s_Hits, distance, ZoneMap.ShotMask, QueryTriggerInteraction.Ignore);
             float best = float.MaxValue;
             bool found = false;
             for (int i = 0; i < n; i++)

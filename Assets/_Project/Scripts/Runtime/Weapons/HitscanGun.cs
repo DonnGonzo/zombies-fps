@@ -7,6 +7,7 @@ using ZombiesFPS.Data;
 using ZombiesFPS.Net;
 using ZombiesFPS.Player;
 using ZombiesFPS.Zombies;
+using ZombiesFPS.World;
 
 namespace ZombiesFPS.Weapons
 {
@@ -192,7 +193,7 @@ namespace ZombiesFPS.Weapons
         {
             passed = 0;
             Vector3 end = origin + dir * _data.range;
-            int count = Physics.RaycastNonAlloc(origin, dir, _traceHits, _data.range, ~0, QueryTriggerInteraction.Ignore);
+            int count = Physics.RaycastNonAlloc(origin, dir, _traceHits, _data.range, ZoneMap.ShotMask, QueryTriggerInteraction.Ignore);
             Array.Sort(_traceHits, 0, count, NearestFirst.Instance);
             _traced.Clear();
             int pierceLeft = Pierce;

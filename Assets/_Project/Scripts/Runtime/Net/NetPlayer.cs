@@ -864,7 +864,7 @@ namespace ZombiesFPS.Net
             Vector3 impact = end, impactNormal = normal;
             var tier = GameConfig.Upgrades.Tier(TierInSlot(ActiveSlot.Value));
             double baseDamage = gun.damage * (double)GunDamageMultiplier(ActiveSlot.Value);
-            int count = Physics.RaycastNonAlloc(origin, direction, _hits, gun.range, ~0, QueryTriggerInteraction.Ignore);
+            int count = Physics.RaycastNonAlloc(origin, direction, _hits, gun.range, ZoneMap.ShotMask, QueryTriggerInteraction.Ignore);
             // Nearest first, so a bullet stops at the first wall and goes through zombies in order.
             System.Array.Sort(_hits, 0, count, HitDistanceComparer.Instance);
             _pierced.Clear();

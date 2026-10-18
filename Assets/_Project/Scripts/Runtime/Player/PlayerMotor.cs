@@ -45,6 +45,11 @@ namespace ZombiesFPS.Player
 
         Ladder _ladder;
         float _noGrabUntil;
+        Vector3 _lastSafe;
+        bool _haveSafe;
+
+        /// <summary>Below this the player has fallen out of the map and is put back where they last stood.</summary>
+        const float FallOutHeight = -8f;
         public float PlanarSpeed => new Vector2(_velocity.x, _velocity.z).magnitude;
 
         void Awake()
@@ -60,10 +65,28 @@ namespace ZombiesFPS.Player
             _controller.enabled = true;
             _velocity = Vector3.zero;
             _ladder = null;
+            _haveSafe = false;
+        }
+
+        /// <summary>
+        /// Remembers the last place the player stood on the map, and puts them back there if they ever fall out of
+        /// it (a backstop: the walls are sealed above, but a gap anywhere would otherwise mean falling forever).
+        /// </summary>
+        void GuardFallOut()
+        {
+            Vector3 p = transform.position;
+            if (_controller.isGrounded && p.y > -1f && ZoneMap.ZoneOfPoint(p) >= 0)
+            {
+                _lastSafe = p;
+                _haveSafe = true;
+            }
+            if (p.y >= FallOutHeight) return;
+            Teleport((_haveSafe ? _lastSafe : ZoneMap.StartPosition) + Vector3.up * 0.3f);
         }
 
         void Update()
         {
+            GuardFallOut();
             float dt = Time.deltaTime;
             Vector2 input = InputLocked ? Vector2.zero : GameInput.Move;
             bool aiming = !InputLocked && GameInput.AimHeld;

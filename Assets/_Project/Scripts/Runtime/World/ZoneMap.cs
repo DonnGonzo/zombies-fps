@@ -239,6 +239,7 @@ namespace ZombiesFPS.World
             surface.minRegionArea = 0.5f;
             surface.BuildNavMesh();
             AddNavLinks();
+            SealWallTops();
 
             // Doors and wall-buy panels go in after the bake: closed doors carve the NavMesh instead.
             var buyables = new List<Buyable>();
@@ -270,6 +271,32 @@ namespace ZombiesFPS.World
                 var size = piece.AlongX ? new Vector3(piece.Length, height, WallThickness) : new Vector3(WallThickness, height, piece.Length);
                 Greybox.Box(piece.Bottom > 0f ? "Lintel" : "Wall", Root, new Vector3(mid.x, piece.Bottom + height / 2f, mid.y), size, Wall, surface: Surface.Concrete);
                 SkinWall(piece);
+            }
+        }
+
+        /// <summary>Layer for invisible blockers: bullets, decals and sight lines pass through it, bodies don't.</summary>
+        public const int BlockerLayer = 2; // Unity's built-in "Ignore Raycast" layer
+        /// <summary>Raycast mask for shots and effects: everything except the invisible blockers.</summary>
+        public const int ShotMask = ~(1 << BlockerLayer);
+
+        /// <summary>
+        /// Invisible walls from the top of every full-height wall up into the sky, so nobody can jump from a high
+        /// spot over a wall, walk along the wall tops, or drop into the sealed-off gaps between zones and fall
+        /// forever. Added after the NavMesh bake so they don't change any paths.
+        /// </summary>
+        void SealWallTops()
+        {
+            const float sealHeight = 60f;
+            var seals = Greybox.Empty("Wall Seals", Root, Vector3.zero);
+            foreach (var piece in Walls)
+            {
+                if (piece.Top < WallHeight - 0.01f) continue;
+                var mid = (piece.A + piece.B) / 2f;
+                var size = piece.AlongX ? new Vector3(piece.Length, sealHeight, WallThickness) : new Vector3(WallThickness, sealHeight, piece.Length);
+                var go = new GameObject("Seal") { layer = BlockerLayer };
+                go.transform.SetParent(seals, false);
+                go.transform.localPosition = new Vector3(mid.x, piece.Top + sealHeight / 2f, mid.y);
+                go.AddComponent<BoxCollider>().size = size;
             }
         }
 

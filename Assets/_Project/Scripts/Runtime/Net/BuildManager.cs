@@ -539,7 +539,7 @@ namespace ZombiesFPS.Net
             Vector3 d = to - _robotTarget;
             float dist = d.magnitude;
             if (dist < 0.01f) return true;
-            int count = Physics.RaycastNonAlloc(_robotTarget, d / dist, _sight, dist, ~0, QueryTriggerInteraction.Ignore);
+            int count = Physics.RaycastNonAlloc(_robotTarget, d / dist, _sight, dist, ZoneMap.ShotMask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count; i++)
             {
                 var c = _sight[i].collider;

@@ -962,11 +962,15 @@ namespace ZombiesFPS.Zombies
         /// </summary>
         bool TryStartScramble(float rise, float distance)
         {
-            if (rise < ScrambleMinRise || rise > ScrambleMaxRise || distance > ScrambleReach || _agent.pathPending)
+            if (rise < ScrambleMinRise || rise > ScrambleMaxRise || distance > ScrambleReach)
             {
                 _belowSince = -1f;
                 return false;
             }
+            // Zombies re-path five times a second, so a path is often still being worked out. Wait for it, but keep
+            // the timer running: resetting it here meant the pause before climbing never finished, and zombies
+            // stood under players on crates and containers forever.
+            if (_agent.pathPending) return false;
             Vector3 target = _target.transform.position;
             bool noWayUp = _agent.pathStatus != NavMeshPathStatus.PathComplete || _agent.pathEndPosition.y < target.y - 1f;
             if (!noWayUp)
@@ -1022,11 +1026,12 @@ namespace ZombiesFPS.Zombies
         /// </summary>
         bool TryStartDrop(float rise)
         {
-            if (rise > -ScrambleMinRise || _agent.pathPending)
+            if (rise > -ScrambleMinRise)
             {
                 _aboveSince = -1f;
                 return false;
             }
+            if (_agent.pathPending) return false;
             Vector3 target = _target.transform.position;
             bool noWayDown = _agent.pathStatus != NavMeshPathStatus.PathComplete || _agent.pathEndPosition.y > target.y + 1f;
             if (!noWayDown)
