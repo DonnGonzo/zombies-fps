@@ -50,7 +50,59 @@ namespace ZombiesFPS.Zombies
             new Color(0.42f, 0.5f, 0.36f),
             new Color(0.5f, 0.52f, 0.42f),
             new Color(0.38f, 0.44f, 0.4f),
+            new Color(0.52f, 0.47f, 0.45f),
+            new Color(0.34f, 0.36f, 0.3f),
         };
+
+        // Clothes the dead were wearing when they turned. Picked per life, so the horde isn't a row of clones.
+        static readonly Color[] ShirtColors =
+        {
+            new Color(0.55f, 0.52f, 0.45f),
+            new Color(0.25f, 0.3f, 0.42f),
+            new Color(0.42f, 0.15f, 0.13f),
+            new Color(0.3f, 0.32f, 0.22f),
+            new Color(0.4f, 0.34f, 0.25f),
+            new Color(0.18f, 0.18f, 0.2f),
+            new Color(0.45f, 0.4f, 0.18f),
+        };
+        static readonly Color[] PantsColors =
+        {
+            new Color(0.18f, 0.22f, 0.32f),
+            new Color(0.3f, 0.27f, 0.2f),
+            new Color(0.12f, 0.12f, 0.13f),
+            new Color(0.26f, 0.25f, 0.23f),
+        };
+        static readonly Color[] HairColors =
+        {
+            new Color(0.12f, 0.1f, 0.08f),
+            new Color(0.3f, 0.22f, 0.14f),
+            new Color(0.45f, 0.43f, 0.4f),
+            new Color(0.5f, 0.38f, 0.2f),
+        };
+        static readonly Color[] ShoeColors =
+        {
+            new Color(0.12f, 0.1f, 0.09f),
+            new Color(0.25f, 0.18f, 0.12f),
+            new Color(0.32f, 0.32f, 0.34f),
+        };
+        static readonly Color Bone = new Color(0.78f, 0.74f, 0.62f);
+        static readonly Color Flesh = new Color(0.36f, 0.07f, 0.06f);
+        static readonly Color Gore = new Color(0.16f, 0.02f, 0.02f);
+        static readonly Color Plate = new Color(0.32f, 0.33f, 0.36f);
+        static readonly Color EyeGlow = new Color(1f, 0.85f, 0.2f);
+
+        // Rig layout (pose space, metres, before the type's body scale): hip pivot height, then the spine above it.
+        const float HipHeight = 0.95f;
+        const float TwoPi = Mathf.PI * 2f;
+
+        // Where a dead body's joints settle: limp arms flung out, knees buckled, jaw hanging open.
+        static readonly Quaternion DeadArmL = Quaternion.Euler(-35f, 0f, -55f);
+        static readonly Quaternion DeadArmR = Quaternion.Euler(-35f, 0f, 55f);
+        static readonly Quaternion DeadElbow = Quaternion.Euler(-30f, 0f, 0f);
+        static readonly Quaternion DeadKnee = Quaternion.Euler(28f, 0f, 0f);
+        static readonly Quaternion DeadLegL = Quaternion.Euler(-12f, 0f, -6f);
+        static readonly Quaternion DeadLegR = Quaternion.Euler(-4f, 0f, 8f);
+        static readonly Quaternion DeadJaw = Quaternion.Euler(32f, 0f, 0f);
 
         static readonly List<NetZombie> s_Bosses = new List<NetZombie>();
         /// <summary>Bosses currently spawned, on every machine (for the HUD's health bars).</summary>
@@ -67,12 +119,35 @@ namespace ZombiesFPS.Zombies
         Renderer[] _renderers;
         Material[] _baseMaterials;
         Transform _visual, _pose, _head, _armL, _armR;
+        // The rest of the rig, animated procedurally: hips carry the legs and spine; the spine carries arms and head.
+        Transform _hips, _spine, _chest, _jaw, _elbowL, _elbowR, _legL, _legR, _kneeL, _kneeR, _footL, _footR;
         GameObject _armor, _sac, _core;
+        // Optional parts switched per life (variation) or per type.
+        GameObject _hair, _gore, _flaps, _jawWound;
+        GameObject[] _armorPads, _bossParts;
         CapsuleCollider _bodyCollider;
         Hitbox _bodyHitbox, _coreHitbox;
-        Renderer[] _skinRenderers, _clothRenderers;
+        // Renderers by what they're made of, recoloured per life.
+        Renderer[] _skinRenderers, _shirtRenderers, _pantsRenderers, _shoeRenderers, _hairRenderers, _forearmRenderers, _shinRenderers;
+        // Parts that thicken on bulky types, with their built size.
+        Transform[] _bulkParts;
+        Vector3[] _bulkScales;
         Color _skin;
         bool _built;
+
+        // Per-life look and gait (seeded from the network id, so every machine sees the same zombie).
+        uint _seed;
+        float _limp;
+        int _limpSide;
+        int _reachStyle;
+        float _hunch, _tilt, _strideMul, _noise;
+        bool _swingRight;
+        float _spitStart = -100f;
+        // Where it's looking (the nearest player), smoothed.
+        NetPlayer _lookAt;
+        float _nextLookScan;
+        float _lookYaw, _lookPitch, _near;
+        float _vSpeed, _climb;
 
         // Visual state (every machine).
         float _flashUntil;
@@ -216,7 +291,14 @@ namespace ZombiesFPS.Zombies
             _flashUntil = 0f;
             _flinch = 0f;
             _swingStart = -100f;
+            _spitStart = -100f;
             _speedEstimate = 0f;
+            _vSpeed = 0f;
+            _climb = 0f;
+            _lastPosition = transform.position;
+            _lookAt = null;
+            _nextLookScan = 0f;
+            _lookYaw = _lookPitch = _near = 0f;
             SetFlash(false);
             foreach (var c in _colliders) c.enabled = true;
             _head.gameObject.SetActive(true);
@@ -244,46 +326,224 @@ namespace ZombiesFPS.Zombies
             _audio.rolloffMode = AudioRolloffMode.Linear;
             _audio.playOnAwake = false;
 
-            var cloth = new Color(0.22f, 0.2f, 0.18f);
+            // Placeholder colours: ApplyKind gives every part its real material for each life.
+            var skinList = new List<Renderer>();
+            var shirt = new List<Renderer>();
+            var pants = new List<Renderer>();
+            var shoes = new List<Renderer>();
+            var hair = new List<Renderer>();
+            var forearms = new List<Renderer>();
+            var shins = new List<Renderer>();
+            var bulk = new List<Transform>();
+            var flesh = Greybox.Lit(Flesh, Surface.Skin, true);
+            var gore = Greybox.Lit(Gore, Surface.Skin, true);
+            var bone = Greybox.Lit(Bone, Surface.Plain, true);
+
             _visual = Greybox.Empty("Visual", transform, Vector3.zero);
             // The pose sits under the animated visual so a type can crouch, crawl or grow without fighting the animation.
             _pose = Greybox.Empty("Pose", _visual, Vector3.zero);
-            var torso = Greybox.Prim(PrimitiveType.Capsule, "Torso", _pose, new Vector3(0f, 0.95f, 0f), new Vector3(0.55f, 0.5f, 0.38f), cloth, collider: false);
-            var legL = Greybox.Prim(PrimitiveType.Capsule, "LegL", _pose, new Vector3(-0.13f, 0.4f, 0f), new Vector3(0.2f, 0.4f, 0.2f), cloth, collider: false);
-            var legR = Greybox.Prim(PrimitiveType.Capsule, "LegR", _pose, new Vector3(0.13f, 0.4f, 0f), new Vector3(0.2f, 0.4f, 0.2f), cloth, collider: false);
+            _hips = Greybox.Empty("Hips", _pose, new Vector3(0f, HipHeight, 0f));
+            Part(pants, PrimitiveType.Cube, "Pelvis", _hips, new Vector3(0f, 0f, 0f), new Vector3(0.33f, 0.2f, 0.22f));
 
-            var headGo = Greybox.Prim(PrimitiveType.Sphere, "Head", _pose, new Vector3(0f, 1.62f, 0.04f), Vector3.one * 0.34f, skin);
-            headGo.AddComponent<Hitbox>().Init(this, head: true);
-            _head = headGo.transform;
-            var eye = new Color(1f, 0.85f, 0.2f);
-            Greybox.Prim(PrimitiveType.Cube, "EyeL", _head, new Vector3(-0.17f, 0.08f, 0.44f), new Vector3(0.12f, 0.06f, 0.06f), eye, collider: false, unlit: true);
-            Greybox.Prim(PrimitiveType.Cube, "EyeR", _head, new Vector3(0.17f, 0.08f, 0.44f), new Vector3(0.12f, 0.06f, 0.06f), eye, collider: false, unlit: true);
+            // Legs: hip, knee and ankle pivots, so the walk can bend the knee and keep the foot flat.
+            BuildLeg(-1, pants, shins, shoes, bulk, out _legL, out _kneeL, out _footL);
+            BuildLeg(1, pants, shins, shoes, bulk, out _legR, out _kneeR, out _footR);
 
-            _armL = Greybox.Empty("ArmL", _pose, new Vector3(-0.32f, 1.32f, 0f));
-            _armR = Greybox.Empty("ArmR", _pose, new Vector3(0.32f, 1.32f, 0f));
-            var foreL = Greybox.Box("ForearmL", _armL, new Vector3(0f, 0f, 0.3f), new Vector3(0.12f, 0.12f, 0.6f), skin, collider: false);
-            var foreR = Greybox.Box("ForearmR", _armR, new Vector3(0f, 0f, 0.3f), new Vector3(0.12f, 0.12f, 0.6f), skin, collider: false);
-            _skinRenderers = new[] { headGo.GetComponent<Renderer>(), foreL.GetComponent<Renderer>(), foreR.GetComponent<Renderer>() };
-            _clothRenderers = new[] { torso.GetComponent<Renderer>(), legL.GetComponent<Renderer>(), legR.GetComponent<Renderer>() };
+            // Torso: belly, chest and a rounded shoulder yoke, slouched by the spine pivot.
+            _spine = Greybox.Empty("Spine", _hips, new Vector3(0f, 0.06f, 0f));
+            bulk.Add(Part(shirt, PrimitiveType.Cube, "Belly", _spine, new Vector3(0f, 0.12f, 0.005f), new Vector3(0.31f, 0.24f, 0.2f)).transform);
+            _chest = Part(shirt, PrimitiveType.Cube, "Chest", _spine, new Vector3(0f, 0.36f, 0f), new Vector3(0.42f, 0.28f, 0.25f)).transform;
+            bulk.Add(_chest);
+            var yoke = Part(shirt, PrimitiveType.Capsule, "Shoulders", _spine, new Vector3(0f, 0.46f, -0.01f), new Vector3(0.17f, 0.24f, 0.17f)).transform;
+            yoke.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            bulk.Add(yoke);
+
+            // Torn shirt hanging off the belly, and (some lives) a wound with ribs showing through.
+            _flaps = Greybox.Empty("Flaps", _spine, Vector3.zero).gameObject;
+            Part(shirt, PrimitiveType.Cube, "FlapA", _flaps.transform, new Vector3(0.09f, -0.03f, 0.09f), new Vector3(0.1f, 0.13f, 0.012f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(8f, 0f, 6f);
+            Part(shirt, PrimitiveType.Cube, "FlapB", _flaps.transform, new Vector3(-0.1f, -0.02f, 0.095f), new Vector3(0.08f, 0.1f, 0.012f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(5f, 0f, -12f);
+            _gore = Greybox.Empty("Wound", _spine, Vector3.zero).gameObject;
+            Fixed(flesh, PrimitiveType.Cube, "Flesh", _gore.transform, new Vector3(0.06f, 0.3f, 0.127f), new Vector3(0.17f, 0.16f, 0.02f));
+            for (int i = 0; i < 3; i++)
+                Fixed(bone, PrimitiveType.Cube, "Rib", _gore.transform, new Vector3(0.06f, 0.25f + 0.05f * i, 0.138f), new Vector3(0.15f, 0.017f, 0.02f), shadow: false);
+            Fixed(gore, PrimitiveType.Cube, "Gut", _gore.transform, new Vector3(-0.07f, 0.1f, 0.102f), new Vector3(0.1f, 0.08f, 0.02f), shadow: false);
+
+            // Neck, with a bloody stump on top that shows once a headshot takes the head off.
+            var neck = Greybox.Empty("Neck", _spine, new Vector3(0f, 0.53f, 0.01f));
+            Part(skinList, PrimitiveType.Cylinder, "Neck", neck, new Vector3(0f, 0.03f, 0f), new Vector3(0.11f, 0.06f, 0.11f));
+            Fixed(gore, PrimitiveType.Cylinder, "Stump", neck, new Vector3(0f, 0.09f, 0f), new Vector3(0.1f, 0.01f, 0.1f), shadow: false);
+
+            BuildHead(skinList, hair, flesh, gore, bone);
+
+            BuildArm(-1, shirt, forearms, skinList, bulk, out _armL, out _elbowL);
+            BuildArm(1, shirt, forearms, skinList, bulk, out _armR, out _elbowR);
 
             // Optional parts, switched on per type.
-            var plate = new Color(0.32f, 0.33f, 0.36f);
-            _armor = Greybox.Empty("Armor", _pose, Vector3.zero).gameObject;
-            Greybox.Box("Chest", _armor.transform, new Vector3(0f, 1.05f, 0.2f), new Vector3(0.5f, 0.5f, 0.08f), plate, collider: false);
-            Greybox.Box("ShoulderL", _armor.transform, new Vector3(-0.33f, 1.38f, 0f), new Vector3(0.26f, 0.1f, 0.3f), plate, collider: false);
-            Greybox.Box("ShoulderR", _armor.transform, new Vector3(0.33f, 1.38f, 0f), new Vector3(0.26f, 0.1f, 0.3f), plate, collider: false);
+            var plate = Greybox.Lit(Plate, Surface.Metal, true);
+            _armor = Greybox.Empty("Armor", _spine, Vector3.zero).gameObject;
+            Fixed(plate, PrimitiveType.Cube, "Chest", _armor.transform, new Vector3(0f, 0.36f, 0.14f), new Vector3(0.46f, 0.3f, 0.05f));
+            Fixed(plate, PrimitiveType.Cube, "Belly", _armor.transform, new Vector3(0f, 0.13f, 0.115f), new Vector3(0.34f, 0.15f, 0.045f));
+            Fixed(plate, PrimitiveType.Cube, "Back", _armor.transform, new Vector3(0f, 0.37f, -0.14f), new Vector3(0.44f, 0.28f, 0.04f));
+            _armorPads = new[]
+            {
+                Fixed(plate, PrimitiveType.Cube, "ShoulderL", _armL, new Vector3(-0.02f, 0.02f, 0f), new Vector3(0.2f, 0.07f, 0.22f)).gameObject,
+                Fixed(plate, PrimitiveType.Cube, "ShoulderR", _armR, new Vector3(0.02f, 0.02f, 0f), new Vector3(0.2f, 0.07f, 0.22f)).gameObject,
+            };
+            _armorPads[0].transform.localRotation = Quaternion.Euler(0f, 0f, 14f);
+            _armorPads[1].transform.localRotation = Quaternion.Euler(0f, 0f, -14f);
 
-            _sac = Greybox.Prim(PrimitiveType.Sphere, "AcidSac", _pose, new Vector3(0f, 1.1f, -0.26f), new Vector3(0.42f, 0.5f, 0.32f), FxSystem.Acid, collider: false, unlit: true);
+            // Spitters carry a swollen, glowing acid sac on the back and a bulging throat to spit through.
+            _sac = Greybox.Empty("AcidSac", _spine, Vector3.zero).gameObject;
+            Greybox.Prim(PrimitiveType.Sphere, "Sac", _sac.transform, new Vector3(0f, 0.12f, -0.22f), new Vector3(0.38f, 0.46f, 0.3f), FxSystem.Acid, collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Sphere, "Blister", _sac.transform, new Vector3(0.14f, 0.3f, -0.17f), Vector3.one * 0.12f, FxSystem.Acid, collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Sphere, "Throat", _sac.transform, new Vector3(0f, 0.55f, 0.075f), new Vector3(0.11f, 0.09f, 0.09f), FxSystem.Acid, collider: false, unlit: true);
 
-            // Sticks out of the back past the body collider, so shots from behind reach it.
-            _core = Greybox.Prim(PrimitiveType.Sphere, "WeakPoint", _pose, new Vector3(0f, 1.1f, -0.36f), Vector3.one * 0.26f, new Color(1f, 0.55f, 0.1f), collider: true, unlit: true);
+            // Sticks out of the back past the body collider, so shots from behind reach it. Rides the spine so
+            // it stays where the glow is drawn; its size (and so the hitbox) is the same as ever.
+            _core = Greybox.Prim(PrimitiveType.Sphere, "WeakPoint", _spine, new Vector3(0f, 0.09f, -0.36f), Vector3.one * 0.26f, new Color(1f, 0.55f, 0.1f), collider: true, unlit: true);
             _coreHitbox = _core.AddComponent<Hitbox>();
             _coreHitbox.Init(this, head: false);
+            // A raw, fleshy rim around the weak point (in the core's own scale: 0.26).
+            var rim = Fixed(gore, PrimitiveType.Cylinder, "Rim", _core.transform, new Vector3(0f, 0f, 0.25f), new Vector3(1.4f, 0.1f, 1.4f), shadow: false);
+            rim.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+
+            // The Warden: bone spurs out of its back and broken shackles on its wrists.
+            var rust = Greybox.Lit(new Color(0.36f, 0.24f, 0.17f), Surface.Rust, true);
+            _bossParts = new[]
+            {
+                Spur(bone, _spine, new Vector3(-0.12f, 0.47f, -0.13f), new Vector3(-50f, 0f, 20f), 0.22f),
+                Spur(bone, _spine, new Vector3(0.12f, 0.47f, -0.13f), new Vector3(-50f, 0f, -20f), 0.22f),
+                Spur(bone, _spine, new Vector3(0f, 0.28f, -0.14f), new Vector3(-60f, 0f, 0f), 0.16f),
+                Spur(bone, _armL, new Vector3(-0.06f, 0.04f, -0.04f), new Vector3(-30f, 0f, 40f), 0.14f),
+                Spur(bone, _armR, new Vector3(0.06f, 0.04f, -0.04f), new Vector3(-30f, 0f, -40f), 0.14f),
+                Fixed(rust, PrimitiveType.Cylinder, "ShackleL", _elbowL, new Vector3(0f, -0.22f, 0f), new Vector3(0.13f, 0.035f, 0.13f)).gameObject,
+                Fixed(rust, PrimitiveType.Cylinder, "ShackleR", _elbowR, new Vector3(0f, -0.22f, 0f), new Vector3(0.13f, 0.035f, 0.13f)).gameObject,
+            };
+
+            _skinRenderers = skinList.ToArray();
+            _shirtRenderers = shirt.ToArray();
+            _pantsRenderers = pants.ToArray();
+            _shoeRenderers = shoes.ToArray();
+            _hairRenderers = hair.ToArray();
+            _forearmRenderers = forearms.ToArray();
+            _shinRenderers = shins.ToArray();
+            _bulkParts = bulk.ToArray();
+            _bulkScales = new Vector3[_bulkParts.Length];
+            for (int i = 0; i < _bulkParts.Length; i++) _bulkScales[i] = _bulkParts[i].localScale;
 
             _colliders = GetComponentsInChildren<Collider>(true);
             _renderers = _visual.GetComponentsInChildren<Renderer>(true);
             _baseMaterials = new Material[_renderers.Length];
         }
+
+        /// <summary>
+        /// The head: the hitbox sphere is the same size as the old head (radius 0.17) and pivots at its centre, so
+        /// turning and tilting the head never moves what you're aiming at. Skull, brow, jaw and eyes hang off it.
+        /// </summary>
+        void BuildHead(List<Renderer> skin, List<Renderer> hair, Material flesh, Material gore, Material bone)
+        {
+            _head = Greybox.Empty("Head", _spine, new Vector3(0f, 0.61f, 0.04f));
+            var hit = _head.gameObject.AddComponent<SphereCollider>();
+            hit.radius = 0.17f;
+            _head.gameObject.AddComponent<Hitbox>().Init(this, head: true);
+
+            Part(skin, PrimitiveType.Sphere, "Skull", _head, new Vector3(0f, 0.03f, 0f), new Vector3(0.27f, 0.31f, 0.29f));
+            Part(skin, PrimitiveType.Cube, "Brow", _head, new Vector3(0f, 0.065f, 0.115f), new Vector3(0.24f, 0.05f, 0.07f))
+                .transform.localRotation = Quaternion.Euler(-12f, 0f, 0f);
+            Part(skin, PrimitiveType.Cube, "Nose", _head, new Vector3(0f, 0f, 0.145f), new Vector3(0.035f, 0.055f, 0.04f), shadow: false);
+            // Glowing eyes sunk under the brow; they bloom in the dark.
+            Greybox.Prim(PrimitiveType.Cube, "EyeL", _head, new Vector3(-0.055f, 0.032f, 0.128f), new Vector3(0.05f, 0.025f, 0.02f), EyeGlow, collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Cube, "EyeR", _head, new Vector3(0.055f, 0.032f, 0.128f), new Vector3(0.05f, 0.025f, 0.02f), EyeGlow, collider: false, unlit: true);
+
+            // Mouth: dark inside, upper teeth, and a hinged jaw that chomps. Some lives have lost the jaw.
+            Fixed(gore, PrimitiveType.Cube, "Mouth", _head, new Vector3(0f, -0.075f, 0.09f), new Vector3(0.12f, 0.05f, 0.06f), shadow: false);
+            Fixed(bone, PrimitiveType.Cube, "TeethTop", _head, new Vector3(0f, -0.062f, 0.128f), new Vector3(0.11f, 0.022f, 0.02f), shadow: false);
+            _jaw = Greybox.Empty("Jaw", _head, new Vector3(0f, -0.06f, 0.02f));
+            Part(skin, PrimitiveType.Cube, "Jaw", _jaw, new Vector3(0f, -0.04f, 0.055f), new Vector3(0.17f, 0.06f, 0.14f));
+            Fixed(bone, PrimitiveType.Cube, "TeethBottom", _jaw, new Vector3(0f, -0.012f, 0.112f), new Vector3(0.1f, 0.02f, 0.02f), shadow: false);
+            _jawWound = Greybox.Empty("JawWound", _head, Vector3.zero).gameObject;
+            Fixed(flesh, PrimitiveType.Cube, "Raw", _jawWound.transform, new Vector3(0f, -0.1f, 0.06f), new Vector3(0.13f, 0.05f, 0.09f), shadow: false);
+            Fixed(flesh, PrimitiveType.Cube, "Tongue", _jawWound.transform, new Vector3(0f, -0.125f, 0.1f), new Vector3(0.04f, 0.015f, 0.08f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(30f, 0f, 0f);
+
+            // Patchy tufts of what hair is left.
+            _hair = Greybox.Empty("Hair", _head, Vector3.zero).gameObject;
+            Part(hair, PrimitiveType.Cube, "TuftA", _hair.transform, new Vector3(-0.05f, 0.165f, 0.01f), new Vector3(0.1f, 0.04f, 0.13f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(0f, 20f, 14f);
+            Part(hair, PrimitiveType.Cube, "TuftB", _hair.transform, new Vector3(0.06f, 0.155f, -0.04f), new Vector3(0.07f, 0.035f, 0.11f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(10f, -30f, -22f);
+            Part(hair, PrimitiveType.Cube, "Back", _hair.transform, new Vector3(0f, 0.08f, -0.125f), new Vector3(0.18f, 0.12f, 0.05f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(-20f, 0f, 0f);
+        }
+
+        /// <summary>Shoulder pivot (hangs straight down at rest), upper arm, elbow, forearm and a clawed hand.</summary>
+        void BuildArm(int side, List<Renderer> sleeves, List<Renderer> forearms, List<Renderer> skin, List<Transform> bulk,
+            out Transform shoulder, out Transform elbow)
+        {
+            string s = side < 0 ? "L" : "R";
+            shoulder = Greybox.Empty("Arm" + s, _spine, new Vector3(0.25f * side, 0.47f, 0f));
+            bulk.Add(Part(sleeves, PrimitiveType.Capsule, "UpperArm" + s, shoulder, new Vector3(0f, -0.15f, 0f), new Vector3(0.12f, 0.16f, 0.12f)).transform);
+            elbow = Greybox.Empty("Elbow" + s, shoulder, new Vector3(0f, -0.3f, 0f));
+            bulk.Add(Part(forearms, PrimitiveType.Capsule, "Forearm" + s, elbow, new Vector3(0f, -0.13f, 0f), new Vector3(0.1f, 0.14f, 0.1f)).transform);
+            var hand = Greybox.Empty("Hand" + s, elbow, new Vector3(0f, -0.27f, 0f));
+            Part(skin, PrimitiveType.Cube, "Palm" + s, hand, new Vector3(0f, -0.04f, 0f), new Vector3(0.05f, 0.09f, 0.09f));
+            // Curled toward the back of the hand at rest, so a reaching arm claws downward.
+            for (int i = 0; i < 2; i++)
+                Part(skin, PrimitiveType.Cube, "Fingers" + s + i, hand, new Vector3(0.012f * side, -0.115f, 0.042f * i - 0.021f), new Vector3(0.018f, 0.08f, 0.034f), shadow: false)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, -22f * side);
+        }
+
+        /// <summary>Hip pivot, thigh, knee, shin, ankle and a shoe (or a bare foot).</summary>
+        void BuildLeg(int side, List<Renderer> pants, List<Renderer> shins, List<Renderer> shoes, List<Transform> bulk,
+            out Transform hip, out Transform knee, out Transform foot)
+        {
+            string s = side < 0 ? "L" : "R";
+            hip = Greybox.Empty("Leg" + s, _hips, new Vector3(0.1f * side, -0.03f, 0f));
+            bulk.Add(Part(pants, PrimitiveType.Capsule, "Thigh" + s, hip, new Vector3(0f, -0.21f, 0f), new Vector3(0.16f, 0.23f, 0.17f)).transform);
+            knee = Greybox.Empty("Knee" + s, hip, new Vector3(0f, -0.44f, 0f));
+            bulk.Add(Part(shins, PrimitiveType.Capsule, "Shin" + s, knee, new Vector3(0f, -0.2f, 0f), new Vector3(0.13f, 0.22f, 0.13f)).transform);
+            foot = Greybox.Empty("Foot" + s, knee, new Vector3(0f, -0.42f, 0f));
+            Part(shoes, PrimitiveType.Cube, "Shoe" + s, foot, new Vector3(0f, -0.015f, 0.06f), new Vector3(0.12f, 0.09f, 0.27f));
+        }
+
+        /// <summary>A decorative textured part whose material is set per life, listed under its material group.</summary>
+        Renderer Part(List<Renderer> group, PrimitiveType type, string name, Transform parent, Vector3 pos, Vector3 scale, bool shadow = true)
+        {
+            var r = Greybox.Prim(type, name, parent, pos, scale, Color.grey, collider: false, surface: Surface.Fabric, moving: true).GetComponent<Renderer>();
+            // Tiny parts cast next to no visible shadow; skipping them keeps 40 zombies cheap in the shadow pass.
+            if (!shadow) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            group.Add(r);
+            return r;
+        }
+
+        /// <summary>A decorative part with a fixed material (bone, gore, armour).</summary>
+        static Renderer Fixed(Material material, PrimitiveType type, string name, Transform parent, Vector3 pos, Vector3 scale, bool shadow = true)
+        {
+            var r = Greybox.Prim(type, name, parent, pos, scale, Color.grey, collider: false).GetComponent<Renderer>();
+            r.sharedMaterial = material;
+            if (!shadow) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return r;
+        }
+
+        static GameObject Spur(Material bone, Transform parent, Vector3 pos, Vector3 euler, float length)
+        {
+            var r = Fixed(bone, PrimitiveType.Cube, "Spur", parent, pos, new Vector3(0.05f, length, 0.05f));
+            r.transform.localRotation = Quaternion.Euler(euler);
+            return r.gameObject;
+        }
+
+        /// <summary>A small deterministic random stream (xorshift), seeded per life from the network id.</summary>
+        float Rand()
+        {
+            _seed ^= _seed << 13;
+            _seed ^= _seed >> 17;
+            _seed ^= _seed << 5;
+            return (_seed & 0xFFFFFF) / 16777216f;
+        }
+
+        int RandIndex(int count) => Mathf.Min((int)(Rand() * count), count - 1);
 
         /// <summary>Shapes and colours the body for this life's type, and sets its hitbox multipliers.</summary>
         void ApplyKind()
@@ -292,10 +552,31 @@ namespace ZombiesFPS.Zombies
             SetFlash(false);
             _visual.localScale = d.bodyScale;
             _armor.SetActive(d.armored);
+            foreach (var pad in _armorPads) pad.SetActive(d.armored);
             _sac.SetActive(d.spitRange > 0f);
             _core.SetActive(d.weakPointMultiplier > 0f);
+            foreach (var part in _bossParts) part.SetActive(d.IsBoss);
             _bodyHitbox.multiplier = d.bodyMultiplier;
             _coreHitbox.multiplier = d.weakPointMultiplier;
+
+            // Seeded from the network id, which every machine shares, so everyone sees the same corpse.
+            _seed = (uint)(NetworkObjectId * 2654435761UL) ^ 0x9E3779B9u;
+            if (_seed == 0) _seed = 1;
+            Rand();
+            _skin = SkinTones[RandIndex(SkinTones.Length)];
+            bool bulky = d.armored || d.IsBoss;
+
+            // Height and build vary a little; brutes and the Warden are thick through the chest and arms.
+            float height = Mathf.Lerp(0.95f, 1.05f, Rand());
+            float bulk = (d.kind == ZombieKind.Brute ? 1.3f : d.IsBoss ? 1.15f : d.kind == ZombieKind.Runner ? 0.9f : 1f) * Mathf.Lerp(0.94f, 1.08f, Rand());
+            for (int i = 0; i < _bulkParts.Length; i++)
+            {
+                var b = _bulkScales[i];
+                _bulkParts[i].localScale = new Vector3(b.x * bulk, b.y, b.z * Mathf.Lerp(1f, bulk, 0.6f));
+            }
+            _armL.localPosition = new Vector3(-0.21f * bulk - 0.04f, 0.47f, 0f);
+            _armR.localPosition = new Vector3(0.21f * bulk + 0.04f, 0.47f, 0f);
+            _armor.transform.localScale = new Vector3(bulk, 1f, Mathf.Lerp(1f, bulk, 0.6f));
 
             if (d.crawls)
             {
@@ -316,11 +597,46 @@ namespace ZombiesFPS.Zombies
                 _bodyCollider.height = 1.5f * d.bodyScale.y;
                 _bodyCollider.radius = 0.3f * Mathf.Max(d.bodyScale.x, d.bodyScale.z);
             }
+            // Crawlers keep their exact size: their pose is fitted to the low body collider.
+            _pose.localScale = Vector3.one * (d.crawls ? 1f : height);
 
-            var skin = Greybox.Lit(_skin * d.skinTint);
-            var cloth = Greybox.Lit(d.clothColor);
-            foreach (var r in _skinRenderers) r.sharedMaterial = skin;
-            foreach (var r in _clothRenderers) r.sharedMaterial = cloth;
+            // Clothes: walkers wear anything; the other types lean toward their own colour so they read at a glance.
+            float kindTint = d.kind == ZombieKind.Walker ? 0f : bulky ? 0.85f : 0.5f;
+            var shirtColor = Color.Lerp(ShirtColors[RandIndex(ShirtColors.Length)], d.clothColor, kindTint);
+            var pantsColor = Color.Lerp(PantsColors[RandIndex(PantsColors.Length)], d.clothColor * 0.8f, kindTint * 0.6f);
+            var skinMat = Greybox.Lit(_skin * d.skinTint, Surface.Skin, true);
+            var shirtMat = Greybox.Lit(shirtColor, Surface.Fabric, true);
+            var pantsMat = Greybox.Lit(pantsColor, Surface.Fabric, true);
+            bool barefoot = !bulky && Rand() < 0.25f;
+            var shoeMat = barefoot ? skinMat : Greybox.Lit(ShoeColors[RandIndex(ShoeColors.Length)], Surface.Rubber, true);
+            bool longSleeves = Rand() < 0.5f;
+            bool tornPants = Rand() < 0.2f;
+            foreach (var r in _skinRenderers) r.sharedMaterial = skinMat;
+            foreach (var r in _shirtRenderers) r.sharedMaterial = shirtMat;
+            foreach (var r in _pantsRenderers) r.sharedMaterial = pantsMat;
+            foreach (var r in _shoeRenderers) r.sharedMaterial = shoeMat;
+            foreach (var r in _forearmRenderers) r.sharedMaterial = longSleeves ? shirtMat : skinMat;
+            foreach (var r in _shinRenderers) r.sharedMaterial = tornPants ? skinMat : pantsMat;
+            var hairMat = Greybox.Lit(HairColors[RandIndex(HairColors.Length)], Surface.Fabric, true);
+            foreach (var r in _hairRenderers) r.sharedMaterial = hairMat;
+
+            _hair.SetActive(!d.IsBoss && Rand() < 0.55f);
+            // Spitters keep their jaw: they need a mouth to spit with.
+            bool noJaw = d.spitRange <= 0f && Rand() < 0.2f;
+            _jaw.gameObject.SetActive(!noJaw);
+            _jawWound.SetActive(noJaw);
+            _gore.SetActive(!d.armored && Rand() < 0.4f);
+            _flaps.SetActive(Rand() < 0.55f);
+
+            // Gait: a limp on some, a hunch, a broken-neck tilt, and how they hold their arms.
+            _limp = !bulky && !d.crawls && Rand() < 0.3f ? Mathf.Lerp(0.5f, 1f, Rand()) : 0f;
+            _limpSide = Rand() < 0.5f ? -1 : 1;
+            _reachStyle = RandIndex(3);
+            _hunch = Mathf.Lerp(6f, 18f, Rand()) + (bulky ? 6f : 0f);
+            _tilt = Mathf.Lerp(-14f, 14f, Rand());
+            _strideMul = Mathf.Lerp(0.9f, 1.1f, Rand());
+            _noise = Rand() * 10f;
+
             for (int i = 0; i < _renderers.Length; i++) _baseMaterials[i] = _renderers[i].sharedMaterial;
         }
 
@@ -401,6 +717,8 @@ namespace ZombiesFPS.Zombies
         void SwingRpc()
         {
             _swingStart = Time.time;
+            // Alternate hands, so a zombie mauling you doesn't look like a loop.
+            _swingRight = !_swingRight;
             _audio.PlayOneShot(ProceduralAudio.ZombieSwipe, 0.6f);
         }
 
@@ -413,7 +731,8 @@ namespace ZombiesFPS.Zombies
         [Rpc(SendTo.ClientsAndHost)]
         void SpitRpc(Vector3 from, Vector3 to, float flightTime)
         {
-            _swingStart = Time.time;
+            // A heave of the whole upper body and a gaping jaw, rather than a swipe.
+            _spitStart = Time.time;
             _audio.PlayOneShot(ProceduralAudio.ZombieSwipe, 0.5f);
             AcidSpit.Launch(from, to, flightTime, _data, IsServer);
         }
@@ -881,6 +1200,8 @@ namespace ZombiesFPS.Zombies
                 _visual.localRotation = Quaternion.AngleAxis(fall * fall * 88f, _fallAxis);
                 float sink = Mathf.Clamp01((t - DeathFallTime - CorpseTime) / SinkTime);
                 _visual.localPosition = new Vector3(0f, -0.6f * sink, 0f);
+                // The limbs go slack as it drops, then stay put (no need to keep animating a lying corpse).
+                if (t < DeathFallTime + 0.8f) RelaxCorpse(dt);
                 return;
             }
 
@@ -890,6 +1211,8 @@ namespace ZombiesFPS.Zombies
             if (dt > 0f)
             {
                 Vector3 delta = transform.position - _lastPosition;
+                // Rising fast means climbing a ladder or scrambling up a ledge: the arms claw overhead.
+                _vSpeed = Mathf.Lerp(_vSpeed, delta.y / dt, 1f - Mathf.Exp(-8f * dt));
                 delta.y = 0f;
                 _speedEstimate = Mathf.Lerp(_speedEstimate, delta.magnitude / dt, 1f - Mathf.Exp(-10f * dt));
             }
@@ -907,7 +1230,7 @@ namespace ZombiesFPS.Zombies
             float swing = 0f;
             if (swingT < total)
                 swing = swingT < _data.attackWindup ? swingT / _data.attackWindup : 1f + (swingT - _data.attackWindup) / _data.attackRecovery;
-            AnimateBody(Mathf.Clamp01(_speedEstimate / Mathf.Max(0.5f, _data.jogSpeed)), swing);
+            AnimateBody(swing);
         }
 
         void SetFlash(bool flashing)
@@ -918,21 +1241,269 @@ namespace ZombiesFPS.Zombies
             for (int i = 0; i < _renderers.Length; i++) _renderers[i].sharedMaterial = flashing ? white : _baseMaterials[i];
         }
 
-        /// <param name="move01">Walk cycle strength.</param>
+        /// <summary>
+        /// Procedural animation for the whole rig, every machine, from the observed speed and the attack/spit events.
+        /// Allocation-free: it only writes local rotations, so 40 zombies cost next to nothing.
+        /// </summary>
         /// <param name="swing">0 none, 0..1 wind-up, 1..2 strike and recover.</param>
-        void AnimateBody(float move01, float swing)
+        void AnimateBody(float swing)
         {
-            _walkPhase += Time.deltaTime * (2f + 6f * move01);
-            float sway = Mathf.Sin(_walkPhase) * 6f * Mathf.Clamp01(move01 + 0.2f);
-            if (IsStunned) sway += Mathf.Sin(Time.time * 9f) * 14f;
-            _visual.localRotation = Quaternion.Euler(8f - _flinch * 18f + (IsStunned ? 12f : 0f), 0f, sway);
+            var d = _data;
+            float dt = Time.deltaTime;
+            float now = Time.time;
+            float speed = _speedEstimate;
+            bool stunned = IsStunned;
+            bool runner = d.kind == ZombieKind.Runner;
 
-            float armPitch;
-            if (swing <= 0f) armPitch = 8f + Mathf.Sin(_walkPhase * 0.5f) * 6f;
-            else if (swing < 1f) armPitch = Mathf.Lerp(8f, -70f, swing * swing);
-            else armPitch = Mathf.Lerp(-70f, 25f, Mathf.Clamp01((swing - 1f) * 4f)) + Mathf.Lerp(0f, -17f, Mathf.Clamp01(swing - 1.25f));
-            _armL.localRotation = Quaternion.Euler(armPitch + Mathf.Sin(_walkPhase) * 5f, -6f, 0f);
-            _armR.localRotation = Quaternion.Euler(armPitch - Mathf.Sin(_walkPhase) * 5f, 6f, 0f);
+            // Stride length sets the cadence, so the feet keep roughly in step with the ground instead of skating.
+            float stride = (runner ? 2f : d.crawls ? 0.9f : 1.25f) * d.bodyScale.y * _strideMul;
+            _walkPhase += dt * Mathf.Min(speed / stride, 3f) * TwoPi;
+            if (_walkPhase > 1000f) _walkPhase -= 100f * TwoPi;
+            float gait = Mathf.Clamp01(speed / Mathf.Max(0.3f, d.walkSpeed * 0.7f));
+            if (stunned) gait *= 0.2f;
+            float run = runner ? Mathf.Clamp01((speed - 1f) / 2.5f) : 0f;
+
+            UpdateLook(dt, now);
+            _climb = Mathf.MoveTowards(_climb, _vSpeed > 0.8f ? 1f : 0f, dt * 4f);
+
+            // Attack: arm(s) wound up overhead with the torso twisted away, then a lunging downward rake.
+            float atk = 0f, atkPitch = 0f, atkElbow = 0f, atkLean = 0f, atkTwist = 0f;
+            if (swing > 0f)
+            {
+                if (swing < 1f)
+                {
+                    float e = swing * swing * (3f - 2f * swing);
+                    atk = Mathf.Clamp01(swing * 4f);
+                    atkPitch = Mathf.Lerp(-70f, -160f, e);
+                    atkElbow = Mathf.Lerp(-30f, -80f, e);
+                    atkLean = Mathf.Lerp(0f, -10f, e);
+                    atkTwist = Mathf.Lerp(0f, 18f, e);
+                }
+                else
+                {
+                    float s = swing - 1f;
+                    float k = Mathf.Clamp01(s * 5f);
+                    k = 1f - (1f - k) * (1f - k);
+                    atk = 1f - Mathf.Clamp01((s - 0.35f) / 0.65f);
+                    atkPitch = Mathf.Lerp(-160f, -30f, k);
+                    atkElbow = Mathf.Lerp(-80f, -8f, k);
+                    atkLean = Mathf.Lerp(-10f, 22f, k);
+                    atkTwist = Mathf.Lerp(18f, -22f, k);
+                }
+            }
+            // Spit: a heave that peaks fast and settles.
+            float st = now - _spitStart;
+            float heave = st < 0.1f ? st / 0.1f : Mathf.Clamp01(1f - (st - 0.1f) / 0.6f);
+
+            if (d.crawls) AnimateCrawl(now, gait, atk, atkLean, heave);
+            else AnimateUpright(now, gait, run, stunned, d.armored || d.IsBoss, atk, atkPitch, atkElbow, atkLean, atkTwist, heave);
+
+            // Whole-body reactions: a jolt back when shot, a drunken wobble when stunned.
+            float wobble = stunned ? Mathf.Sin(now * 9f) * 8f : 0f;
+            _visual.localRotation = Quaternion.Euler(-_flinch * 8f + (stunned ? 10f : 0f), 0f, wobble);
+        }
+
+        void AnimateUpright(float now, float gait, float run, bool stunned, bool bothHands,
+            float atk, float atkPitch, float atkElbow, float atkLean, float atkTwist, float heave)
+        {
+            float p = _walkPhase;
+            float sinP = Mathf.Sin(p), cosP = Mathf.Cos(p);
+
+            // Legs: the left leg swings on the phase, the right half a cycle behind. A limping leg barely bends
+            // and scuffs its toe, and the body drops onto it each time it takes the weight.
+            float hipAmp = Mathf.Lerp(22f, 42f, run), kneeAmp = Mathf.Lerp(42f, 90f, run);
+            PoseLeg(_legL, _kneeL, _footL, p, -1, gait, hipAmp, kneeAmp, _limpSide < 0 ? _limp : 0f);
+            PoseLeg(_legR, _kneeR, _footR, p + Mathf.PI, 1, gait, hipAmp, kneeAmp, _limpSide > 0 ? _limp : 0f);
+
+            float badStance = Mathf.Max(0f, -Mathf.Cos(_limpSide < 0 ? p : p + Mathf.PI)) * _limp * gait;
+            float bob = Mathf.Lerp(0.03f, 0.06f, run) * gait * (Mathf.Abs(cosP) - 1f);
+            _hips.localPosition = new Vector3(0f, HipHeight + bob - 0.07f * badStance, 0f);
+            float hipYaw = 7f * gait * sinP;
+            float hipRoll = -_limpSide * 9f * badStance;
+            _hips.localRotation = Quaternion.Euler(run * 5f, hipYaw, hipRoll);
+
+            // Spine: a slouch, a slow drunken lurch, counter-twist against the hips, and the attack's lean.
+            float lurch = Mathf.Sin(now * 0.8f + _noise) * 5f * (1f - run);
+            float pitch = _hunch + run * 12f + atkLean * atk + heave * 25f - _flinch * 22f + _near * 4f;
+            float side = bothHands ? 0f : _swingRight ? 1f : -1f;
+            float yaw = -hipYaw * 1.4f + atkTwist * atk * side;
+            float roll = 4f * gait * sinP * (1f - run) + lurch - hipRoll * 0.6f;
+            _spine.localRotation = Quaternion.Euler(pitch, yaw, roll);
+
+            // Head: looks at the nearest player through the slouch, nods with the steps, lolls to one side.
+            float nod = 4f * gait * Mathf.Sin(2f * p);
+            float loll = _tilt + Mathf.Sin(now * 1.3f + _noise) * 4f + (stunned ? Mathf.Sin(now * 7f) * 20f : 0f);
+            _head.localRotation = Quaternion.Euler(-(pitch + run * 8f) * 0.6f, 0f, 0f)
+                * Quaternion.Euler(_lookPitch + nod - _flinch * 25f + heave * 20f, _lookYaw - hipYaw - yaw, loll);
+            PoseJaw(now, atk, heave);
+
+            // Arms: hanging and swinging against the legs, pumping on a runner, reaching for the player when close
+            // (some always reach out in front), clawing overhead while climbing, and the strike on top.
+            float reachL, reachR;
+            if (stunned) reachL = reachR = 0f;
+            else if (run > 0f || _data.kind == ZombieKind.Runner) reachL = reachR = _near * _near;
+            else if (_reachStyle == 0) reachL = reachR = Mathf.Max(0.65f, _near);
+            else if (_reachStyle == 1)
+            {
+                reachR = Mathf.Max(0.7f, _near);
+                reachL = _near * 0.6f;
+            }
+            else reachL = reachR = _near;
+            float atkL = bothHands || !_swingRight ? atk : atk * 0.25f;
+            float atkR = bothHands || _swingRight ? atk : atk * 0.25f;
+            PoseArm(_armL, _elbowL, -1, p, now, gait, run, reachL, atkL, atkPitch, atkElbow);
+            PoseArm(_armR, _elbowR, 1, p + Mathf.PI, now, gait, run, reachR, atkR, atkPitch, atkElbow);
+        }
+
+        /// <summary>On all fours: alternate arms claw forward and haul the body along while the legs drag behind.</summary>
+        void AnimateCrawl(float now, float gait, float atk, float atkLean, float heave)
+        {
+            // Pose space here: the body lies along +Y (forward) with its front facing the ground (+Z).
+            float p = _walkPhase;
+            float sinP = Mathf.Sin(p), cosP = Mathf.Cos(p);
+            _hips.localPosition = new Vector3(0f, HipHeight + 0.05f * gait * Mathf.Sin(2f * p), 0f);
+            _hips.localRotation = Quaternion.Euler(0f, 7f * gait * sinP, 0f);
+            PoseDragLeg(_legL, _kneeL, _footL, p, -1, gait);
+            PoseDragLeg(_legR, _kneeR, _footR, p + Mathf.PI, 1, gait);
+
+            // A lunge rears the chest up off the ground, then slams it down.
+            float pitch = atkLean * atk * 1.2f - 8f * heave - _flinch * 15f;
+            _spine.localRotation = Quaternion.Euler(pitch, -9f * gait * sinP, 6f * gait * cosP + Mathf.Sin(now * 0.8f + _noise) * 3f);
+            // Head craned back to face forward rather than at the floor.
+            _head.localRotation = Quaternion.Euler(-70f, 0f, 0f)
+                * Quaternion.Euler(_lookPitch * 0.6f + 6f * gait * Mathf.Sin(2f * p) - _flinch * 20f, _lookYaw * 0.7f, _tilt * 0.5f);
+            PoseJaw(now, atk, heave);
+
+            PoseCrawlArm(_armL, _elbowL, -1, p, gait, atk);
+            PoseCrawlArm(_armR, _elbowR, 1, p + Mathf.PI, gait, atk);
+        }
+
+        void PoseLeg(Transform hip, Transform knee, Transform foot, float phase, int side, float gait, float hipAmp, float kneeAmp, float limp)
+        {
+            float s = Mathf.Sin(phase), c = Mathf.Cos(phase);
+            // Negative pitch swings the leg forward; the knee bends most mid-swing (c > 0) and a little in stance.
+            float h = -hipAmp * gait * s * (1f - 0.4f * limp);
+            float k = 4f + (kneeAmp * Mathf.Max(0f, c) + 8f * Mathf.Max(0f, -c)) * gait * (1f - 0.7f * limp);
+            hip.localRotation = Quaternion.Euler(h, 0f, 2.5f * side);
+            knee.localRotation = Quaternion.Euler(k, 0f, 0f);
+            float scuff = limp * gait * 14f * Mathf.Max(0f, c);
+            foot.localRotation = Quaternion.Euler(-(h + k) * 0.85f + scuff, 0f, 0f);
+        }
+
+        void PoseDragLeg(Transform hip, Transform knee, Transform foot, float phase, int side, float gait)
+        {
+            float s = Mathf.Sin(phase);
+            hip.localRotation = Quaternion.Euler(-12f + 6f * gait * s, 0f, 6f * side);
+            knee.localRotation = Quaternion.Euler(18f + 20f * gait * Mathf.Max(0f, s), 0f, 0f);
+            foot.localRotation = Quaternion.Euler(10f, 0f, 0f);
+        }
+
+        void PoseArm(Transform shoulder, Transform elbow, int side, float phase, float now, float gait, float run,
+            float reach, float atk, float atkPitch, float atkElbow)
+        {
+            float s = Mathf.Sin(phase);
+            // Hanging (negative pitch raises the arm forward) or, on a runner, pumping with the elbow bent.
+            float pitch = Mathf.Lerp(6f + 16f * gait * s, -12f + 48f * gait * s, run);
+            float elbowAngle = Mathf.Lerp(-12f - 8f * gait, -88f + 10f * s, run);
+            float roll = Mathf.Lerp(6f, 10f, run);
+            // Reach: up toward the player's chest, the fingers clawing.
+            float reachPitch = -78f + 7f * Mathf.Sin(now * 1.7f + side * 1.3f + _noise) - _lookPitch * 0.5f + 5f * gait * s;
+            pitch = Mathf.Lerp(pitch, reachPitch, reach);
+            elbowAngle = Mathf.Lerp(elbowAngle, -18f + 9f * Mathf.Sin(now * 3.1f + side + _noise), reach);
+            float yaw = 9f * reach;
+            roll = Mathf.Lerp(roll, 3f, reach);
+            if (_climb > 0f)
+            {
+                pitch = Mathf.Lerp(pitch, -160f + 25f * Mathf.Sin(now * 9f + side * 1.57f), _climb);
+                elbowAngle = Mathf.Lerp(elbowAngle, -35f, _climb);
+            }
+            if (atk > 0f)
+            {
+                pitch = Mathf.Lerp(pitch, atkPitch, atk);
+                elbowAngle = Mathf.Lerp(elbowAngle, atkElbow, atk);
+                yaw = Mathf.Lerp(yaw, 14f, atk);
+            }
+            pitch -= _flinch * 25f;
+            // Yaw turns the arm in across the body; roll swings it out to the side.
+            shoulder.localRotation = Quaternion.Euler(pitch, -side * yaw, side * roll);
+            elbow.localRotation = Quaternion.Euler(elbowAngle, 0f, 0f);
+        }
+
+        void PoseCrawlArm(Transform shoulder, Transform elbow, int side, float phase, float gait, float atk)
+        {
+            float s = Mathf.Sin(phase), c = Mathf.Cos(phase);
+            // -100 is a hand planted under the shoulder, -165 reaching out ahead; the elbow lifts on the way forward.
+            float pitch = -132f - 33f * s * Mathf.Max(gait, 0.15f);
+            float elbowAngle = -10f - 50f * gait * Mathf.Max(0f, c);
+            pitch = Mathf.Lerp(pitch, -172f, atk) - _flinch * 15f;
+            elbowAngle = Mathf.Lerp(elbowAngle, -5f, atk);
+            shoulder.localRotation = Quaternion.Euler(pitch, 0f, side * 12f);
+            elbow.localRotation = Quaternion.Euler(elbowAngle, 0f, 0f);
+        }
+
+        void PoseJaw(float now, float atk, float heave)
+        {
+            // Idle working of the jaw, chomping when a player is close, wide open to bite or spit.
+            float open = 5f + 4f * Mathf.Sin(now * 2.3f + _noise)
+                + _near * 14f * Mathf.Max(0f, Mathf.Sin(now * 6f + _noise))
+                + atk * 22f + heave * 40f;
+            _jaw.localRotation = Quaternion.Euler(open, 0f, 0f);
+        }
+
+        /// <summary>Tracks the nearest living player (rescanned a few times a second) for the head and arms.</summary>
+        void UpdateLook(float dt, float now)
+        {
+            if (now >= _nextLookScan)
+            {
+                _nextLookScan = now + 0.4f;
+                _lookAt = null;
+                float best = float.MaxValue;
+                var players = NetPlayer.All;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var pl = players[i];
+                    if (pl == null || !pl.IsAlive) continue;
+                    float sqr = (pl.transform.position - transform.position).sqrMagnitude;
+                    if (sqr < best)
+                    {
+                        best = sqr;
+                        _lookAt = pl;
+                    }
+                }
+            }
+
+            float yaw = 0f, pitch = 0f, near = 0f;
+            if (_lookAt != null && _lookAt.IsSpawned && _lookAt.IsAlive)
+            {
+                Vector3 local = transform.InverseTransformPoint(_lookAt.transform.position + Vector3.up * 1.5f);
+                local.y -= (_data.crawls ? 0.6f : 1.6f) * _data.bodyScale.y;
+                float flat = Mathf.Sqrt(local.x * local.x + local.z * local.z);
+                yaw = Mathf.Clamp(Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg, -55f, 55f);
+                pitch = Mathf.Clamp(-Mathf.Atan2(local.y, Mathf.Max(0.1f, flat)) * Mathf.Rad2Deg, -35f, 35f);
+                near = 1f - Mathf.Clamp01((flat - 2.5f) / 6f);
+            }
+            float k = 1f - Mathf.Exp(-6f * dt);
+            _lookYaw = Mathf.Lerp(_lookYaw, yaw, k);
+            _lookPitch = Mathf.Lerp(_lookPitch, pitch, k);
+            _near = Mathf.Lerp(_near, near, 1f - Mathf.Exp(-3f * dt));
+        }
+
+        /// <summary>Eases every joint toward a slack corpse pose while the body falls.</summary>
+        void RelaxCorpse(float dt)
+        {
+            float k = 1f - Mathf.Exp(-7f * dt);
+            _armL.localRotation = Quaternion.Slerp(_armL.localRotation, DeadArmL, k);
+            _armR.localRotation = Quaternion.Slerp(_armR.localRotation, DeadArmR, k);
+            _elbowL.localRotation = Quaternion.Slerp(_elbowL.localRotation, DeadElbow, k);
+            _elbowR.localRotation = Quaternion.Slerp(_elbowR.localRotation, DeadElbow, k);
+            _legL.localRotation = Quaternion.Slerp(_legL.localRotation, DeadLegL, k);
+            _legR.localRotation = Quaternion.Slerp(_legR.localRotation, DeadLegR, k);
+            _kneeL.localRotation = Quaternion.Slerp(_kneeL.localRotation, DeadKnee, k);
+            _kneeR.localRotation = Quaternion.Slerp(_kneeR.localRotation, DeadKnee, k);
+            _jaw.localRotation = Quaternion.Slerp(_jaw.localRotation, DeadJaw, k);
+            _spine.localRotation = Quaternion.Slerp(_spine.localRotation, Quaternion.identity, k);
+            _hips.localRotation = Quaternion.Slerp(_hips.localRotation, Quaternion.identity, k);
+            _head.localRotation = Quaternion.Slerp(_head.localRotation, Quaternion.Euler(10f, 0f, _tilt >= 0f ? 30f : -30f), k);
         }
     }
 }

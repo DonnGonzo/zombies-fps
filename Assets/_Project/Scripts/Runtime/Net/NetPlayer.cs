@@ -93,6 +93,14 @@ namespace ZombiesFPS.Net
         int _remoteGlowTier = -1;
         static readonly Color RemoteGunColor = new Color(0.16f, 0.17f, 0.18f);
         AudioSource _remoteAudio;
+        // The remote body's rig and per-character dressing, animated by AnimateRemoteBody.
+        Transform _rHips, _rSpine, _rHead, _rLegL, _rLegR, _rKneeL, _rKneeR, _rFootL, _rFootR;
+        Renderer[] _rJacket, _rTrousers;
+        Renderer _rHair;
+        GameObject[] _rHeadgear;
+        int _rCharacter = -1;
+        Vector3 _rLastPos;
+        float _rSpeed, _rPhase, _rForward = 1f;
 
         // Server-only.
         float _lastDamageTime = -100f;
@@ -220,23 +228,101 @@ namespace ZombiesFPS.Net
 
         void BuildRemoteBody()
         {
-            var suit = SuitColor;
-            var skin = new Color(0.78f, 0.62f, 0.5f);
+            // A survivor built like the zombies (hip, knee and ankle pivots for the walk), but standing straight,
+            // dressed in the character's colours and holding the gun with both hands.
+            var skin = Greybox.Lit(new Color(0.78f, 0.62f, 0.5f));
+            var boots = Greybox.Lit(new Color(0.2f, 0.14f, 0.1f), Surface.Rubber, true);
+            var pack = Greybox.Lit(Color.Lerp(SuitColor, new Color(0.25f, 0.25f, 0.2f), 0.4f), Surface.Fabric, true);
+            var strap = Greybox.Lit(new Color(0.12f, 0.11f, 0.1f), Surface.Rubber, true);
+            var jacket = new List<Renderer>();
+            var trousers = new List<Renderer>();
+
             _body = Greybox.Empty("Body", transform, Vector3.zero);
-            Greybox.Prim(PrimitiveType.Capsule, "Torso", _body, new Vector3(0f, 1.05f, 0f), new Vector3(0.55f, 0.5f, 0.38f), suit, collider: false);
-            Greybox.Prim(PrimitiveType.Capsule, "LegL", _body, new Vector3(-0.13f, 0.42f, 0f), new Vector3(0.2f, 0.42f, 0.2f), suit * 0.7f, collider: false);
-            Greybox.Prim(PrimitiveType.Capsule, "LegR", _body, new Vector3(0.13f, 0.42f, 0f), new Vector3(0.2f, 0.42f, 0.2f), suit * 0.7f, collider: false);
-            Greybox.Prim(PrimitiveType.Sphere, "Head", _body, new Vector3(0f, 1.68f, 0f), Vector3.one * 0.32f, skin, collider: false);
-            var gun = Greybox.Empty("Gun", _body, new Vector3(0.22f, 1.3f, 0.35f));
+            _rHips = Greybox.Empty("Hips", _body, new Vector3(0f, 0.95f, 0f));
+            RemotePart(trousers, null, PrimitiveType.Cube, "Pelvis", _rHips, Vector3.zero, new Vector3(0.32f, 0.19f, 0.21f));
+            RemotePart(null, strap, PrimitiveType.Cube, "Belt", _rHips, new Vector3(0f, 0.08f, 0f), new Vector3(0.33f, 0.04f, 0.22f), shadow: false);
+            BuildRemoteLeg(-1, trousers, boots, out _rLegL, out _rKneeL, out _rFootL);
+            BuildRemoteLeg(1, trousers, boots, out _rLegR, out _rKneeR, out _rFootR);
+
+            _rSpine = Greybox.Empty("Spine", _rHips, new Vector3(0f, 0.06f, 0f));
+            RemotePart(jacket, null, PrimitiveType.Cube, "Belly", _rSpine, new Vector3(0f, 0.13f, 0f), new Vector3(0.33f, 0.25f, 0.22f));
+            RemotePart(jacket, null, PrimitiveType.Cube, "Chest", _rSpine, new Vector3(0f, 0.36f, 0f), new Vector3(0.42f, 0.28f, 0.26f));
+            RemotePart(jacket, null, PrimitiveType.Capsule, "Shoulders", _rSpine, new Vector3(0f, 0.46f, -0.01f), new Vector3(0.17f, 0.24f, 0.17f))
+                .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            RemotePart(jacket, null, PrimitiveType.Cube, "Collar", _rSpine, new Vector3(0f, 0.53f, -0.02f), new Vector3(0.22f, 0.07f, 0.2f));
+            RemotePart(null, strap, PrimitiveType.Cube, "Zip", _rSpine, new Vector3(0f, 0.25f, 0.131f), new Vector3(0.02f, 0.44f, 0.01f), shadow: false);
+            // Backpack in the player's suit colour, with a bedroll on top and straps over the shoulders.
+            RemotePart(null, pack, PrimitiveType.Cube, "Pack", _rSpine, new Vector3(0f, 0.3f, -0.22f), new Vector3(0.32f, 0.4f, 0.18f));
+            RemotePart(null, pack, PrimitiveType.Cube, "Pocket", _rSpine, new Vector3(0f, 0.18f, -0.32f), new Vector3(0.24f, 0.14f, 0.05f), shadow: false);
+            RemotePart(null, strap, PrimitiveType.Cylinder, "Bedroll", _rSpine, new Vector3(0f, 0.55f, -0.22f), new Vector3(0.12f, 0.17f, 0.12f))
+                .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            RemotePart(null, strap, PrimitiveType.Cube, "StrapL", _rSpine, new Vector3(-0.12f, 0.36f, 0.133f), new Vector3(0.04f, 0.3f, 0.01f), shadow: false);
+            RemotePart(null, strap, PrimitiveType.Cube, "StrapR", _rSpine, new Vector3(0.12f, 0.36f, 0.133f), new Vector3(0.04f, 0.3f, 0.01f), shadow: false);
+
+            // Head, a hair base, and one headgear per character (picked in ApplyRemoteCharacter).
+            RemotePart(null, skin, PrimitiveType.Cylinder, "Neck", _rSpine, new Vector3(0f, 0.57f, 0.01f), new Vector3(0.1f, 0.05f, 0.1f));
+            _rHead = Greybox.Empty("Head", _rSpine, new Vector3(0f, 0.68f, 0.02f));
+            RemotePart(null, skin, PrimitiveType.Sphere, "Skull", _rHead, Vector3.zero, new Vector3(0.24f, 0.28f, 0.26f));
+            RemotePart(null, skin, PrimitiveType.Cube, "Nose", _rHead, new Vector3(0f, -0.01f, 0.13f), new Vector3(0.035f, 0.05f, 0.04f), shadow: false);
+            var eye = Greybox.Lit(new Color(0.08f, 0.07f, 0.06f));
+            RemotePart(null, eye, PrimitiveType.Cube, "EyeL", _rHead, new Vector3(-0.05f, 0.03f, 0.125f), new Vector3(0.03f, 0.018f, 0.01f), shadow: false);
+            RemotePart(null, eye, PrimitiveType.Cube, "EyeR", _rHead, new Vector3(0.05f, 0.03f, 0.125f), new Vector3(0.03f, 0.018f, 0.01f), shadow: false);
+            _rHair = RemotePart(null, skin, PrimitiveType.Sphere, "Hair", _rHead, new Vector3(0f, 0.035f, -0.015f), new Vector3(0.255f, 0.27f, 0.25f));
+            _rHeadgear = new GameObject[4];
+            // Marlow: a peaked cop's cap.
+            var cap = Greybox.Empty("Cap", _rHead, Vector3.zero);
+            RemotePart(jacket, null, PrimitiveType.Cylinder, "Crown", cap, new Vector3(0f, 0.1f, 0f), new Vector3(0.26f, 0.05f, 0.27f));
+            RemotePart(null, strap, PrimitiveType.Cube, "Brim", cap, new Vector3(0f, 0.075f, 0.14f), new Vector3(0.2f, 0.015f, 0.1f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(12f, 0f, 0f);
+            _rHeadgear[0] = cap.gameObject;
+            // Dee: a knitted beanie.
+            var beanie = Greybox.Empty("Beanie", _rHead, Vector3.zero);
+            RemotePart(jacket, null, PrimitiveType.Sphere, "Knit", beanie, new Vector3(0f, 0.07f, -0.01f), new Vector3(0.26f, 0.2f, 0.27f));
+            RemotePart(jacket, null, PrimitiveType.Cylinder, "Cuff", beanie, new Vector3(0f, 0.045f, -0.01f), new Vector3(0.265f, 0.025f, 0.275f), shadow: false);
+            _rHeadgear[1] = beanie.gameObject;
+            // Dr. Hale: glasses (hair only, no hat).
+            var glasses = Greybox.Empty("Glasses", _rHead, Vector3.zero);
+            RemotePart(null, strap, PrimitiveType.Cube, "LensL", glasses, new Vector3(-0.05f, 0.03f, 0.134f), new Vector3(0.06f, 0.035f, 0.01f), shadow: false);
+            RemotePart(null, strap, PrimitiveType.Cube, "LensR", glasses, new Vector3(0.05f, 0.03f, 0.134f), new Vector3(0.06f, 0.035f, 0.01f), shadow: false);
+            RemotePart(null, strap, PrimitiveType.Cube, "Bridge", glasses, new Vector3(0f, 0.035f, 0.136f), new Vector3(0.05f, 0.01f, 0.01f), shadow: false);
+            _rHeadgear[2] = glasses.gameObject;
+            // Rook: a cap on backwards.
+            var back = Greybox.Empty("BackwardsCap", _rHead, Vector3.zero);
+            RemotePart(jacket, null, PrimitiveType.Sphere, "Crown", back, new Vector3(0f, 0.08f, -0.005f), new Vector3(0.26f, 0.17f, 0.27f));
+            RemotePart(jacket, null, PrimitiveType.Cube, "Brim", back, new Vector3(0f, 0.07f, -0.15f), new Vector3(0.18f, 0.015f, 0.1f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(-10f, 0f, 0f);
+            _rHeadgear[3] = back.gameObject;
+
+            // The gun rides the chest so it sways with the body; the arms are solved once to its grips.
+            var gun = Greybox.Empty("Gun", _rSpine, new Vector3(0.14f, 0.27f, 0.3f));
             _remoteGun = Greybox.Box("Receiver", gun, Vector3.zero, new Vector3(0.08f, 0.1f, 0.6f), RemoteGunColor, collider: false).GetComponent<Renderer>();
-            _remoteMuzzle = Greybox.Empty("Muzzle", gun, new Vector3(0f, 0f, 0.32f));
+            var metal = Greybox.Lit(new Color(0.1f, 0.1f, 0.11f), Surface.Metal, true);
+            RemotePart(null, metal, PrimitiveType.Cylinder, "Barrel", gun, new Vector3(0f, 0.015f, 0.38f), new Vector3(0.035f, 0.1f, 0.035f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            RemotePart(null, metal, PrimitiveType.Cube, "Grip", gun, new Vector3(0f, -0.09f, -0.1f), new Vector3(0.05f, 0.12f, 0.06f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(-15f, 0f, 0f);
+            RemotePart(null, metal, PrimitiveType.Cube, "Mag", gun, new Vector3(0f, -0.11f, 0.07f), new Vector3(0.05f, 0.15f, 0.08f), shadow: false)
+                .transform.localRotation = Quaternion.Euler(10f, 0f, 0f);
+            RemotePart(null, metal, PrimitiveType.Cube, "Stock", gun, new Vector3(0f, -0.02f, -0.38f), new Vector3(0.06f, 0.1f, 0.18f), shadow: false);
+            RemotePart(null, metal, PrimitiveType.Cube, "Sight", gun, new Vector3(0f, 0.07f, 0.02f), new Vector3(0.03f, 0.04f, 0.08f), shadow: false);
+            _remoteMuzzle = Greybox.Empty("Muzzle", gun, new Vector3(0f, 0.015f, 0.48f));
+            Vector3 g = gun.localPosition;
+            BuildRemoteArm(1, jacket, skin, new Vector3(0.24f, 0.46f, 0f), g + new Vector3(0f, -0.08f, -0.1f), new Vector3(0.6f, -1f, -0.3f));
+            // The support shoulder rolls forward a little, as in a real rifle stance, so the arm reaches the foregrip.
+            BuildRemoteArm(-1, jacket, skin, new Vector3(-0.22f, 0.46f, 0.06f), g + new Vector3(0f, -0.06f, 0.12f), new Vector3(-0.6f, -1f, 0f));
+            _rJacket = jacket.ToArray();
+            _rTrousers = trousers.ToArray();
+            _rCharacter = -1;
+            ApplyRemoteCharacter();
+            _rLastPos = transform.position;
+
             // An upgraded gun glows in its tier's colour, so teammates can see it too.
             _remoteGlow = Greybox.Empty("Upgrade Glow", gun, Vector3.zero).gameObject;
             _remoteGlowParts = new[]
             {
                 Greybox.Prim(PrimitiveType.Cube, "StripL", _remoteGlow.transform, new Vector3(-0.042f, 0f, 0.05f), new Vector3(0.006f, 0.03f, 0.45f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
                 Greybox.Prim(PrimitiveType.Cube, "StripR", _remoteGlow.transform, new Vector3(0.042f, 0f, 0.05f), new Vector3(0.006f, 0.03f, 0.45f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
-                Greybox.Prim(PrimitiveType.Cube, "MuzzleRing", _remoteGlow.transform, new Vector3(0f, 0f, 0.3f), new Vector3(0.1f, 0.11f, 0.02f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
+                Greybox.Prim(PrimitiveType.Cube, "MuzzleRing", _remoteGlow.transform, new Vector3(0f, 0.015f, 0.46f), new Vector3(0.1f, 0.11f, 0.02f), Color.white, collider: false, unlit: true).GetComponent<Renderer>(),
             };
             _remoteGlowLight = _remoteGlow.AddComponent<Light>();
             _remoteGlowLight.type = LightType.Point;
@@ -259,6 +345,133 @@ namespace ZombiesFPS.Net
             _body.gameObject.SetActive(state != LifeState.Dead);
             _body.localRotation = state == LifeState.Downed ? Quaternion.Euler(-70f, 0f, 0f) : Quaternion.identity;
             _body.localPosition = state == LifeState.Downed ? new Vector3(0f, 0.25f, -0.6f) : Vector3.zero;
+        }
+
+        void BuildRemoteLeg(int side, List<Renderer> trousers, Material boots, out Transform hip, out Transform knee, out Transform foot)
+        {
+            string s = side < 0 ? "L" : "R";
+            hip = Greybox.Empty("Leg" + s, _rHips, new Vector3(0.1f * side, -0.03f, 0f));
+            RemotePart(trousers, null, PrimitiveType.Capsule, "Thigh" + s, hip, new Vector3(0f, -0.21f, 0f), new Vector3(0.15f, 0.23f, 0.16f));
+            knee = Greybox.Empty("Knee" + s, hip, new Vector3(0f, -0.44f, 0f));
+            RemotePart(trousers, null, PrimitiveType.Capsule, "Shin" + s, knee, new Vector3(0f, -0.19f, 0f), new Vector3(0.13f, 0.21f, 0.13f));
+            foot = Greybox.Empty("Foot" + s, knee, new Vector3(0f, -0.42f, 0f));
+            RemotePart(null, boots, PrimitiveType.Cube, "Boot" + s, foot, new Vector3(0f, 0.01f, 0.05f), new Vector3(0.13f, 0.13f, 0.27f));
+        }
+
+        /// <summary>
+        /// An arm from the shoulder to a hand on the gun, all in chest space. Solved once here (two-bone IK with
+        /// the elbow toward <paramref name="pole"/>): the gun and both shoulders ride the chest, so it stays solved.
+        /// </summary>
+        void BuildRemoteArm(int side, List<Renderer> jacket, Material skin, Vector3 shoulder, Vector3 hand, Vector3 pole)
+        {
+            const float upper = 0.3f, lower = 0.29f;
+            string s = side < 0 ? "L" : "R";
+            Vector3 toHand = hand - shoulder;
+            float d = Mathf.Clamp(toHand.magnitude, 0.05f, (upper + lower) * 0.995f);
+            Vector3 dir = toHand.normalized;
+            hand = shoulder + dir * d;
+            // Law of cosines: how far along the shoulder-hand line the elbow sits, and how far off it.
+            float along = (upper * upper - lower * lower + d * d) / (2f * d);
+            float off = Mathf.Sqrt(Mathf.Max(0f, upper * upper - along * along));
+            Vector3 bend = Vector3.ProjectOnPlane(pole, dir).normalized;
+            Vector3 elbow = shoulder + dir * along + bend * off;
+
+            var upperT = Greybox.Empty("UpperArm" + s, _rSpine, shoulder);
+            upperT.localRotation = Quaternion.LookRotation(elbow - shoulder, Vector3.up);
+            RemotePart(jacket, null, PrimitiveType.Capsule, "Sleeve" + s, upperT, new Vector3(0f, 0f, upper * 0.5f), new Vector3(0.12f, upper * 0.55f, 0.12f))
+                .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            var lowerT = Greybox.Empty("Forearm" + s, _rSpine, elbow);
+            lowerT.localRotation = Quaternion.LookRotation(hand - elbow, Vector3.up);
+            RemotePart(jacket, null, PrimitiveType.Capsule, "Cuff" + s, lowerT, new Vector3(0f, 0f, lower * 0.45f), new Vector3(0.105f, lower * 0.5f, 0.105f))
+                .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            RemotePart(null, skin, PrimitiveType.Cube, "Hand" + s, lowerT, new Vector3(0f, -0.01f, lower + 0.02f), new Vector3(0.06f, 0.08f, 0.09f), shadow: false);
+        }
+
+        /// <summary>A part of the remote body: listed in <paramref name="group"/> to be recoloured, or given a fixed material.</summary>
+        static Renderer RemotePart(List<Renderer> group, Material material, PrimitiveType type, string name, Transform parent,
+            Vector3 pos, Vector3 scale, bool shadow = true)
+        {
+            var r = Greybox.Prim(type, name, parent, pos, scale, Color.grey, collider: false).GetComponent<Renderer>();
+            if (material != null) r.sharedMaterial = material;
+            if (!shadow) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            group?.Add(r);
+            return r;
+        }
+
+        // Trousers per character, and hair (shown where no hat covers it).
+        static readonly Color[] RemoteTrousers =
+        {
+            new Color(0.12f, 0.14f, 0.2f),
+            new Color(0.28f, 0.22f, 0.16f),
+            new Color(0.32f, 0.3f, 0.24f),
+            new Color(0.13f, 0.13f, 0.14f),
+        };
+        static readonly Color[] RemoteHair =
+        {
+            new Color(0.2f, 0.16f, 0.12f),
+            new Color(0.35f, 0.15f, 0.08f),
+            new Color(0.55f, 0.53f, 0.5f),
+            new Color(0.08f, 0.07f, 0.06f),
+        };
+
+        /// <summary>Dresses the body as the picked character. The pick can arrive after spawn, so it's re-checked each frame.</summary>
+        void ApplyRemoteCharacter()
+        {
+            int id = CharacterId.Value;
+            if (id == _rCharacter) return;
+            _rCharacter = id;
+            int look = Mathf.Abs(id) % _rHeadgear.Length;
+            // The character's colour, toned down to read as a worn jacket rather than a costume.
+            var jacket = Greybox.Lit(Color.Lerp(Character.color, new Color(0.22f, 0.22f, 0.2f), 0.4f) * 0.85f, Surface.Fabric, true);
+            foreach (var r in _rJacket) r.sharedMaterial = jacket;
+            var trousers = Greybox.Lit(RemoteTrousers[look], Surface.Fabric, true);
+            foreach (var r in _rTrousers) r.sharedMaterial = trousers;
+            _rHair.sharedMaterial = Greybox.Lit(RemoteHair[look], Surface.Fabric, true);
+            for (int i = 0; i < _rHeadgear.Length; i++) _rHeadgear[i].SetActive(i == look);
+        }
+
+        /// <summary>Walk cycle for a teammate's body, from how fast it's moving (positions come from the network).</summary>
+        void AnimateRemoteBody()
+        {
+            if (_body == null) return;
+            ApplyRemoteCharacter();
+            float dt = Time.deltaTime;
+            if (dt <= 0f) return;
+            Vector3 delta = transform.position - _rLastPos;
+            _rLastPos = transform.position;
+            delta.y = 0f;
+            float k = 1f - Mathf.Exp(-10f * dt);
+            _rSpeed = Mathf.Lerp(_rSpeed, delta.magnitude / dt, k);
+            // Walking backwards runs the cycle backwards; strafing still steps.
+            float forward = Vector3.Dot(delta, transform.forward);
+            _rForward = Mathf.Lerp(_rForward, forward < -0.001f ? -1f : 1f, k);
+            if (State.Value != LifeState.Alive) _rSpeed = 0f;
+
+            float gait = Mathf.Clamp01(_rSpeed / 2f);
+            float sprint = Mathf.Clamp01((_rSpeed - 4.5f) / 2f);
+            _rPhase += dt * Mathf.Min(_rSpeed / Mathf.Lerp(1.5f, 2.2f, sprint), 3f) * Mathf.PI * 2f * Mathf.Sign(_rForward);
+            if (_rPhase > 1000f || _rPhase < -1000f) _rPhase %= Mathf.PI * 2f;
+            float p = _rPhase;
+            float hipAmp = Mathf.Lerp(24f, 40f, sprint), kneeAmp = Mathf.Lerp(45f, 80f, sprint);
+            PoseRemoteLeg(_rLegL, _rKneeL, _rFootL, p, -1, gait, hipAmp, kneeAmp);
+            PoseRemoteLeg(_rLegR, _rKneeR, _rFootR, p + Mathf.PI, 1, gait, hipAmp, kneeAmp);
+            float sinP = Mathf.Sin(p);
+            _rHips.localPosition = new Vector3(0f, 0.95f + 0.035f * gait * (Mathf.Abs(Mathf.Cos(p)) - 1f), 0f);
+            _rHips.localRotation = Quaternion.Euler(0f, 6f * gait * sinP, 0f);
+            // The chest counter-twists and leans into a sprint; the gun rides it.
+            _rSpine.localRotation = Quaternion.Euler(3f + 10f * sprint, -6f * gait * sinP, 2f * gait * Mathf.Sin(p * 2f));
+            // A little breathing at rest, and the head keeps level with the gun.
+            _rHead.localRotation = Quaternion.Euler(-(3f + 10f * sprint) * 0.7f + Mathf.Sin(Time.time * 1.6f) * 1.5f * (1f - gait), 0f, 0f);
+        }
+
+        static void PoseRemoteLeg(Transform hip, Transform knee, Transform foot, float phase, int side, float gait, float hipAmp, float kneeAmp)
+        {
+            float s = Mathf.Sin(phase), c = Mathf.Cos(phase);
+            float h = -hipAmp * gait * s;
+            float bend = 3f + (kneeAmp * Mathf.Max(0f, c) + 6f * Mathf.Max(0f, -c)) * gait;
+            hip.localRotation = Quaternion.Euler(h, 0f, 2f * side);
+            knee.localRotation = Quaternion.Euler(bend, 0f, 0f);
+            foot.localRotation = Quaternion.Euler(-(h + bend) * 0.85f, 0f, 0f);
         }
 
         // ---------------------------------------------------------------- state changes
@@ -291,7 +504,11 @@ namespace ZombiesFPS.Net
                 OwnerTick();
                 OwnerVoiceTick();
             }
-            else UpdateRemoteGun();
+            else
+            {
+                UpdateRemoteGun();
+                AnimateRemoteBody();
+            }
             VoiceTick();
             UpdateShieldView();
         }
