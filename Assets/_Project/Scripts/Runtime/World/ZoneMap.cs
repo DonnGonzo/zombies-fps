@@ -67,24 +67,87 @@ namespace ZombiesFPS.World
         /// <summary>Parkour blocks are 3 m square: big enough that zombies keep a path map on top of them.</summary>
         const float HopSize = 3f;
 
-        static readonly Color[] FloorTints =
+        /// <summary>What a zone's floor and walls are made of. Walls get a lower band (wainscot, paint, tiles) when BandHeight > 0.</summary>
+        readonly struct ZoneLook
         {
-            new Color(0.33f, 0.34f, 0.33f), new Color(0.36f, 0.34f, 0.3f), new Color(0.3f, 0.31f, 0.33f),
-            new Color(0.34f, 0.3f, 0.3f), new Color(0.31f, 0.33f, 0.3f), new Color(0.36f, 0.36f, 0.33f),
-            new Color(0.32f, 0.33f, 0.36f), new Color(0.29f, 0.33f, 0.34f), new Color(0.35f, 0.33f, 0.28f),
-            new Color(0.3f, 0.28f, 0.34f), new Color(0.34f, 0.32f, 0.29f), new Color(0.28f, 0.34f, 0.28f),
+            public readonly Surface Floor, Wall, Band;
+            public readonly Color FloorColor, WallColor, BandColor;
+            public readonly float BandHeight;
+
+            public ZoneLook(Surface floor, Color floorColor, Surface wall, Color wallColor, Surface band = Surface.Plain, Color bandColor = default, float bandHeight = 0f)
+            {
+                Floor = floor; FloorColor = floorColor; Wall = wall; WallColor = wallColor;
+                Band = band; BandColor = bandColor; BandHeight = bandHeight;
+            }
+        }
+
+        /// <summary>Per zone (zone order), so each part of the facility reads as its own kind of place.</summary>
+        static readonly ZoneLook[] Looks =
+        {
+            // Gate Yard: an asphalt yard inside bare concrete walls, grimy at the foot.
+            new ZoneLook(Surface.Asphalt, new Color(0.2f, 0.2f, 0.21f), Surface.Concrete, new Color(0.42f, 0.41f, 0.38f), Surface.Concrete, new Color(0.28f, 0.28f, 0.27f), 0.9f),
+            // Depot: a concrete warehouse floor and old brick walls on a concrete plinth.
+            new ZoneLook(Surface.Concrete, new Color(0.4f, 0.39f, 0.36f), Surface.Brick, new Color(0.42f, 0.26f, 0.19f), Surface.Concrete, new Color(0.35f, 0.34f, 0.32f), 1f),
+            // Garage: darker, oil-soaked concrete; walls painted workshop green up to shoulder height.
+            new ZoneLook(Surface.Concrete, new Color(0.31f, 0.3f, 0.28f), Surface.Concrete, new Color(0.42f, 0.41f, 0.39f), Surface.Plaster, new Color(0.2f, 0.28f, 0.24f), 1.3f),
+            // Chapel: stone flags, limewashed plaster over dark wood panelling.
+            new ZoneLook(Surface.Tile, new Color(0.42f, 0.4f, 0.36f), Surface.Plaster, new Color(0.6f, 0.56f, 0.48f), Surface.Wood, new Color(0.28f, 0.19f, 0.11f), 1.1f),
+            // Barracks: worn floorboards, institutional pale green plaster, wood skirting.
+            new ZoneLook(Surface.Wood, new Color(0.36f, 0.26f, 0.17f), Surface.Plaster, new Color(0.47f, 0.5f, 0.42f), Surface.Wood, new Color(0.3f, 0.22f, 0.14f), 1f),
+            // Courtyard: stone paving and weathered brick.
+            new ZoneLook(Surface.Tile, new Color(0.4f, 0.38f, 0.34f), Surface.Brick, new Color(0.44f, 0.29f, 0.21f)),
+            // Loading Dock: asphalt, concrete walls with a faded yellow safety band.
+            new ZoneLook(Surface.Asphalt, new Color(0.22f, 0.22f, 0.23f), Surface.Concrete, new Color(0.4f, 0.4f, 0.39f), Surface.Plaster, new Color(0.42f, 0.35f, 0.13f), 0.8f),
+            // Pump Station: wet tiled floor, tiled lower walls, concrete above.
+            new ZoneLook(Surface.Tile, new Color(0.36f, 0.42f, 0.41f), Surface.Concrete, new Color(0.38f, 0.4f, 0.39f), Surface.Tile, new Color(0.4f, 0.5f, 0.48f), 1.6f),
+            // Crane Yard: packed dirt and gravel, raw concrete walls.
+            new ZoneLook(Surface.Dirt, new Color(0.3f, 0.26f, 0.2f), Surface.Concrete, new Color(0.36f, 0.35f, 0.33f)),
+            // Lantern Core: steel deck plate and steel wall panels.
+            new ZoneLook(Surface.Metal, new Color(0.3f, 0.32f, 0.35f), Surface.Metal, new Color(0.27f, 0.29f, 0.33f), Surface.Metal, new Color(0.15f, 0.16f, 0.19f), 1f),
+            // Archives: parquet, yellowed plaster, tall wood panelling.
+            new ZoneLook(Surface.Wood, new Color(0.38f, 0.27f, 0.17f), Surface.Plaster, new Color(0.52f, 0.47f, 0.38f), Surface.Wood, new Color(0.29f, 0.19f, 0.11f), 1.2f),
+            // Greenhouse: soil floor, brick walls on a low concrete kerb.
+            new ZoneLook(Surface.Dirt, new Color(0.27f, 0.21f, 0.15f), Surface.Brick, new Color(0.4f, 0.28f, 0.22f), Surface.Concrete, new Color(0.32f, 0.31f, 0.29f), 0.6f),
         };
-        static readonly Color Wall = new Color(0.46f, 0.45f, 0.42f);
+
+        /// <summary>The wall core: shows only on wall ends, tops and the outside, since every zone face gets its own skin.</summary>
+        static readonly Color Wall = new Color(0.36f, 0.35f, 0.33f);
         static readonly Color Cover = new Color(0.4f, 0.36f, 0.3f);
-        static readonly Color Concrete = new Color(0.55f, 0.55f, 0.53f);
-        static readonly Color Metal = new Color(0.36f, 0.38f, 0.4f);
-        static readonly Color Rust = new Color(0.45f, 0.28f, 0.18f);
-        static readonly Color Board = new Color(0.3f, 0.2f, 0.12f);
-        static readonly Color DoorWood = new Color(0.34f, 0.23f, 0.13f);
+        static readonly Color Concrete = new Color(0.44f, 0.43f, 0.4f);
+        static readonly Color Metal = new Color(0.3f, 0.32f, 0.34f);
+        static readonly Color Rust = new Color(0.52f, 0.26f, 0.13f);
+        static readonly Color Wood = new Color(0.4f, 0.29f, 0.17f);
+        static readonly Color DarkWood = new Color(0.28f, 0.19f, 0.11f);
+        static readonly Color Board = new Color(0.33f, 0.23f, 0.14f);
+        static readonly Color DoorWood = new Color(0.3f, 0.21f, 0.12f);
         static readonly Color Chalk = new Color(0.82f, 0.8f, 0.72f);
         static readonly Color Lamp = new Color(1f, 0.85f, 0.6f);
-        static readonly Color LadderColor = new Color(0.62f, 0.5f, 0.2f);
-        static readonly Color HopColor = new Color(0.5f, 0.42f, 0.34f);
+        static readonly Color LadderColor = new Color(0.55f, 0.44f, 0.14f);
+        static readonly Color ContainerBlue = new Color(0.14f, 0.3f, 0.48f);
+        static readonly Color ContainerGreen = new Color(0.18f, 0.38f, 0.22f);
+        static readonly Color CraneYellow = new Color(0.72f, 0.52f, 0.1f);
+        static readonly Color HazardYellow = new Color(0.62f, 0.5f, 0.1f);
+        static readonly Color Girder = new Color(0.22f, 0.2f, 0.19f);
+        static readonly Color BunkGreen = new Color(0.24f, 0.28f, 0.22f);
+        static readonly Color CoreGlow = new Color(0.5f, 0.85f, 1f);
+
+        /// <summary>Parkour blocks per zone: stacked steel crates in the Garage, broken masonry in the Courtyard, rusty crates in the Crane Yard.</summary>
+        static (Surface surface, Color color) HopLook(int zone) => zone switch
+        {
+            2 => (Surface.Metal, new Color(0.3f, 0.34f, 0.36f)),
+            5 => (Surface.Concrete, new Color(0.45f, 0.43f, 0.39f)),
+            8 => (Surface.Rust, new Color(0.45f, 0.26f, 0.15f)),
+            _ => (Surface.Wood, Wood),
+        };
+
+        /// <summary>Stairs match the room: wooden in the Chapel and Barracks, steel in the Lantern Core, concrete elsewhere.</summary>
+        static (Surface surface, Color color) StairLook(int zone) => zone switch
+        {
+            3 => (Surface.Wood, new Color(0.3f, 0.21f, 0.13f)),
+            4 => (Surface.Wood, new Color(0.33f, 0.24f, 0.15f)),
+            9 => (Surface.Metal, new Color(0.3f, 0.32f, 0.35f)),
+            _ => (Surface.Concrete, Concrete),
+        };
 
         public Transform Root { get; private set; }
         public Zone[] Zones { get; private set; }
@@ -97,6 +160,8 @@ namespace ZombiesFPS.World
         public Vector3 PlayerStart { get; private set; }
 
         readonly List<(Vector3 from, Vector3 to)> _links = new List<(Vector3, Vector3)>();
+        /// <summary>Where climbers stand at each ladder's foot, kept clear of floor clutter.</summary>
+        readonly List<Vector3> _ladderFeet = new List<Vector3>();
 
         // ---------------------------------------------------------------- queries
 
@@ -143,10 +208,14 @@ namespace ZombiesFPS.World
             Zones = new Zone[ZoneCount];
             for (int i = 0; i < ZoneCount; i++) Zones[i] = new Zone { Id = i, Name = ZoneNames[i], Center = ZoneAnchors[i] };
 
-            // Floors, one per rectangle, tinted per zone so each reads slightly differently.
+            // Colliderless dressing collects here as it's made and is merged into a few meshes at the end.
+            _decor = new DecorBatch();
+
+            // Floors, one per rectangle, in each zone's own material.
             for (int i = 0; i < ZoneCount; i++)
                 foreach (var r in ZoneRects(i))
-                    Greybox.Box("Floor " + ZoneNames[i], Root, new Vector3(r.center.x, -0.5f, r.center.y), new Vector3(r.width, 1f, r.height), FloorTints[i]);
+                    Greybox.Box("Floor " + ZoneNames[i], Root, new Vector3(r.center.x, -0.5f, r.center.y), new Vector3(r.width, 1f, r.height),
+                        Looks[i].FloorColor, surface: Looks[i].Floor);
 
             BuildWalls();
             foreach (var w in WindowSpots) AddWindow(w.Zone, w.Resolve());
@@ -157,6 +226,11 @@ namespace ZombiesFPS.World
             BuildShop();
             BuildStations();
             BuildBenches();
+            // Everything solid is in place now, so the dressing can keep clear of it.
+            DressZones();
+            BuildSkyline();
+            _decor.Build(Root);
+            _decor = null;
 
             var surface = Root.gameObject.AddComponent<NavMeshSurface>();
             surface.collectObjects = CollectObjects.Children;
@@ -194,7 +268,8 @@ namespace ZombiesFPS.World
                 var mid = (piece.A + piece.B) / 2f;
                 float height = piece.Top - piece.Bottom;
                 var size = piece.AlongX ? new Vector3(piece.Length, height, WallThickness) : new Vector3(WallThickness, height, piece.Length);
-                Greybox.Box(piece.Bottom > 0f ? "Lintel" : "Wall", Root, new Vector3(mid.x, piece.Bottom + height / 2f, mid.y), size, Wall);
+                Greybox.Box(piece.Bottom > 0f ? "Lintel" : "Wall", Root, new Vector3(mid.x, piece.Bottom + height / 2f, mid.y), size, Wall, surface: Surface.Concrete);
+                SkinWall(piece);
             }
         }
 
@@ -205,9 +280,10 @@ namespace ZombiesFPS.World
             Vector3 boards = wallFace + inward * 0.06f;
             for (int i = 0; i < 3; i++)
             {
-                var board = Greybox.Box("Board", Root, boards + Vector3.up * (1.1f + i * 0.45f), new Vector3(1.8f, 0.22f, 0.08f), Board, collider: false);
+                var board = Greybox.Box("Board", Root, boards + Vector3.up * (1.1f + i * 0.45f), new Vector3(1.8f, 0.22f, 0.08f), Board, collider: false, surface: Surface.Wood);
                 board.transform.localRotation = rot * Quaternion.Euler(0f, 0f, (i - 1) * 9f);
             }
+            WindowFrame(wallFace, inward);
             var point = Greybox.Empty("ZombieSpawn " + ZoneNames[zone], Root, wallFace + inward * 1.2f);
             point.localRotation = rot;
             Zones[zone].SpawnPoints.Add(point);
@@ -216,10 +292,10 @@ namespace ZombiesFPS.World
         // ---------------------------------------------------------------- level pieces (zone-local coordinates)
 
         /// <summary>A solid block from the floor up to a height, given by its corners.</summary>
-        Vector3 Block(string name, int zone, float x0, float z0, float x1, float z1, float height, Color color)
+        Vector3 Block(string name, int zone, float x0, float z0, float x1, float z1, float height, Color color, Surface surface = Surface.Concrete)
         {
             var center = L(zone, (x0 + x1) / 2f, height / 2f, (z0 + z1) / 2f);
-            Greybox.Box(name, Root, center, new Vector3(x1 - x0, height, z1 - z0), color);
+            Greybox.Box(name, Root, center, new Vector3(x1 - x0, height, z1 - z0), color, surface: surface);
             return center + Vector3.up * (height / 2f);
         }
 
@@ -227,7 +303,7 @@ namespace ZombiesFPS.World
         void Deck(string name, int zone, float x0, float z0, float x1, float z1, float top, Color color)
         {
             const float thick = 0.35f;
-            Greybox.Box(name, Root, L(zone, (x0 + x1) / 2f, top - thick / 2f, (z0 + z1) / 2f), new Vector3(x1 - x0, thick, z1 - z0), color);
+            Greybox.Box(name, Root, L(zone, (x0 + x1) / 2f, top - thick / 2f, (z0 + z1) / 2f), new Vector3(x1 - x0, thick, z1 - z0), color, surface: Surface.Metal);
             int nx = Mathf.Max(1, Mathf.CeilToInt((x1 - x0) / 5f));
             int nz = Mathf.Max(1, Mathf.CeilToInt((z1 - z0) / 5f));
             for (int i = 0; i <= nx; i++)
@@ -236,8 +312,10 @@ namespace ZombiesFPS.World
                     if (i != 0 && i != nx && j != 0 && j != nz) continue;
                     float px = Mathf.Lerp(x0 + 0.25f, x1 - 0.25f, (float)i / nx);
                     float pz = Mathf.Lerp(z0 + 0.25f, z1 - 0.25f, (float)j / nz);
-                    Greybox.Box("Post", Root, L(zone, px, (top - thick) / 2f, pz), new Vector3(0.3f, top - thick, 0.3f), Metal);
+                    Greybox.Box("Post", Root, L(zone, px, (top - thick) / 2f, pz), new Vector3(0.3f, top - thick, 0.3f), Metal, surface: Surface.Metal);
                 }
+            // A yellow band round the deck's edge so it reads from below.
+            Deco(L(zone, (x0 + x1) / 2f, top - thick / 2f, (z0 + z1) / 2f), new Vector3(x1 - x0 + 0.04f, 0.12f, z1 - z0 + 0.04f), LadderColor, Surface.Metal);
         }
 
         /// <summary>Stairs down from a ledge: edge is the middle of the ledge's side, down points away from it.</summary>
@@ -247,11 +325,18 @@ namespace ZombiesFPS.World
             float rise = height / n;
             Vector3 edge = L(zone, x, 0f, z);
             bool alongX = Mathf.Abs(down.x) > 0.5f;
+            var (surface, color) = StairLook(zone);
+            // Industrial stairs get a worn yellow nosing on each tread.
+            bool nosing = surface != Surface.Wood;
             for (int i = 0; i < n - 1; i++)
             {
                 float top = height - (i + 1) * rise;
                 var size = alongX ? new Vector3(StepRun, top, width) : new Vector3(width, top, StepRun);
-                Greybox.Box("Step", Root, edge + down * (StepRun * (i + 0.5f)) + Vector3.up * (top / 2f), size, Concrete);
+                var center = edge + down * (StepRun * (i + 0.5f));
+                Greybox.Box("Step", Root, center + Vector3.up * (top / 2f), size, color, surface: surface);
+                if (nosing)
+                    Deco(center + down * (StepRun / 2f - 0.05f) + Vector3.up * (top + 0.004f),
+                        alongX ? new Vector3(0.08f, 0.008f, width - 0.1f) : new Vector3(width - 0.1f, 0.008f, 0.08f), HazardYellow, Surface.Concrete);
             }
         }
 
@@ -265,18 +350,29 @@ namespace ZombiesFPS.World
             var root = Greybox.Empty("Ladder", Root, foot);
             root.localRotation = Quaternion.LookRotation(outward, Vector3.up);
             // A backing strip so the ladder always has something solid behind it.
-            Greybox.Box("Backing", root, new Vector3(0f, height / 2f, -0.05f), new Vector3(1f, height, 0.1f), Cover);
+            Greybox.Box("Backing", root, new Vector3(0f, height / 2f, -0.05f), new Vector3(1f, height, 0.1f), new Color(0.32f, 0.21f, 0.13f), surface: Surface.Rust);
             foreach (float side in new[] { -0.32f, 0.32f })
-                Greybox.Box("Rail", root, new Vector3(side, height / 2f + 0.3f, 0.09f), new Vector3(0.07f, height + 0.6f, 0.07f), LadderColor, collider: false);
+                Greybox.Box("Rail", root, new Vector3(side, height / 2f + 0.3f, 0.09f), new Vector3(0.07f, height + 0.6f, 0.07f), LadderColor, collider: false, surface: Surface.Metal);
             for (float y = 0.3f; y < height; y += 0.35f)
-                Greybox.Box("Rung", root, new Vector3(0f, y, 0.09f), new Vector3(0.64f, 0.05f, 0.05f), LadderColor, collider: false);
+                Greybox.Box("Rung", root, new Vector3(0f, y, 0.09f), new Vector3(0.64f, 0.05f, 0.05f), LadderColor, collider: false, surface: Surface.Rust);
             new Ladder(foot, outward, height);
+            _ladderFeet.Add(foot + outward * 0.6f);
             _links.Add((foot + outward * 0.7f, foot - outward * 0.9f + Vector3.up * height));
         }
 
         /// <summary>A parkour block, HopSize square, centred on x, z.</summary>
-        void Hop(int zone, float x, float z, float height) =>
-            Block("Hop", zone, x - HopSize / 2f, z - HopSize / 2f, x + HopSize / 2f, z + HopSize / 2f, height, HopColor);
+        void Hop(int zone, float x, float z, float height)
+        {
+            var (surface, color) = HopLook(zone);
+            Block("Hop", zone, x - HopSize / 2f, z - HopSize / 2f, x + HopSize / 2f, z + HopSize / 2f, height, color, surface);
+            // A painted edge on top, so the jump's landing reads in the dark.
+            var top = L(zone, x, height + 0.004f, z);
+            foreach (var d in new[] { Vector3.forward, Vector3.back, Vector3.left, Vector3.right })
+            {
+                bool alongX = Mathf.Abs(d.z) > 0.5f;
+                Deco(top + d * (HopSize / 2f - 0.06f), alongX ? new Vector3(HopSize, 0.008f, 0.1f) : new Vector3(0.1f, 0.008f, HopSize), Shade(HazardYellow, 0.8f), Surface.Concrete);
+            }
+        }
 
         /// <summary>A jump zombies can take (and players can make), between two zone-local points.</summary>
         void Jump(int zone, float ax, float ay, float az, float bx, float by, float bz) =>
@@ -284,8 +380,10 @@ namespace ZombiesFPS.World
 
         void Crates(Vector3 at)
         {
-            Greybox.Box("Crate", Root, at + new Vector3(0f, 0.6f, 0f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
-            Greybox.Box("Crate", Root, at + new Vector3(1.3f, 0.6f, 0.4f), new Vector3(1.2f, 1.2f, 1.2f), Cover);
+            Greybox.Box("Crate", Root, at + new Vector3(0f, 0.6f, 0f), new Vector3(1.2f, 1.2f, 1.2f), Wood, surface: Surface.Wood);
+            Greybox.Box("Crate", Root, at + new Vector3(1.3f, 0.6f, 0.4f), new Vector3(1.2f, 1.2f, 1.2f), Wood, surface: Surface.Wood);
+            CrateBands(at + new Vector3(0f, 0.6f, 0f), 1.2f);
+            CrateBands(at + new Vector3(1.3f, 0.6f, 0.4f), 1.2f);
         }
 
         /// <summary>
@@ -299,18 +397,19 @@ namespace ZombiesFPS.World
             // Gate Yard: a watch platform up a flight of stairs, a low wall, crates, and the fallen gate in the passage south.
             Block("Watch Platform", 0, -15.7f, 10f, -9.7f, 15.7f, 2.2f, Concrete);
             Stairs(0, -12.7f, 10f, Vector3.back, 2.2f, 2.4f);
-            Greybox.Box("Sandbags", Root, L(0, -9.95f, 2.45f, 12.85f), new Vector3(0.4f, 0.5f, 5.7f), Cover);
-            Greybox.Box("Low wall", Root, L(0, 0f, 0.55f, 4f), new Vector3(6f, 1.1f, 0.5f), Concrete);
-            Greybox.Box("Fallen Gate", Root, L(0, 0f, 0.12f, -18.5f), new Vector3(5f, 0.24f, 1.6f), Metal);
+            Greybox.Box("Sandbags", Root, L(0, -9.95f, 2.45f, 12.85f), new Vector3(0.4f, 0.5f, 5.7f), new Color(0.42f, 0.37f, 0.26f), surface: Surface.Fabric);
+            Greybox.Box("Low wall", Root, L(0, 0f, 0.55f, 4f), new Vector3(6f, 1.1f, 0.5f), Concrete, surface: Surface.Concrete);
+            Greybox.Box("Fallen Gate", Root, L(0, 0f, 0.12f, -18.5f), new Vector3(5f, 0.24f, 1.6f), new Color(0.42f, 0.25f, 0.15f), surface: Surface.Rust);
             Crates(L(0, -6f, 0f, -10f));
             Crates(L(0, 6f, 0f, 9f));
 
             // Depot: long shelving runs and a storage loft up a ladder in the north-east corner.
-            Block("Storage Loft", 1, 10f, 6f, 20.7f, 11.7f, 4f, Cover);
+            Block("Storage Loft", 1, 10f, 6f, 20.7f, 11.7f, 4f, new Color(0.3f, 0.32f, 0.31f), Surface.Metal);
             AddLadder(1, 15f, 6f, Vector3.back, 4f);
-            Greybox.Box("Shelf", Root, L(1, -10f, 1.2f, -5f), new Vector3(14f, 2.4f, 1f), Cover);
-            Greybox.Box("Shelf", Root, L(1, -10f, 1.2f, 4f), new Vector3(14f, 2.4f, 1f), Cover);
-            Greybox.Box("Shelf", Root, L(1, 8f, 1.2f, -6f), new Vector3(8f, 2.4f, 1f), Cover);
+            var shelf = new Color(0.24f, 0.26f, 0.28f);
+            Greybox.Box("Shelf", Root, L(1, -10f, 1.2f, -5f), new Vector3(14f, 2.4f, 1f), shelf, surface: Surface.Metal);
+            Greybox.Box("Shelf", Root, L(1, -10f, 1.2f, 4f), new Vector3(14f, 2.4f, 1f), shelf, surface: Surface.Metal);
+            Greybox.Box("Shelf", Root, L(1, 8f, 1.2f, -6f), new Vector3(8f, 2.4f, 1f), shelf, surface: Surface.Metal);
             Crates(L(1, -18f, 0f, 8f));
 
             // Garage: a roof reached by stairs to a landing and a parkour run; the first build station is up top.
@@ -322,37 +421,39 @@ namespace ZombiesFPS.World
             Jump(2, 3.9f, 2f, 4.5f, 6.1f, 2.8f, 4.5f);
             Jump(2, 7.7f, 2.8f, 4.5f, 9.9f, 3.6f, 4.5f);
             Jump(2, 10.8f, 3.6f, 5.4f, 10.8f, 4.5f, 7.7f);
-            Greybox.Box("Wreck", Root, L(2, -8f, 0.75f, -7f), new Vector3(2f, 1.5f, 4.2f), new Color(0.3f, 0.32f, 0.36f));
-            Greybox.Box("Wreck", Root, L(2, -6f, 0.75f, 6f), new Vector3(4.2f, 1.5f, 2f), new Color(0.34f, 0.3f, 0.3f));
+            Greybox.Box("Wreck", Root, L(2, -8f, 0.75f, -7f), new Vector3(2f, 1.5f, 4.2f), new Color(0.22f, 0.28f, 0.36f), surface: Surface.Metal);
+            Greybox.Box("Wreck", Root, L(2, -6f, 0.75f, 6f), new Vector3(4.2f, 1.5f, 2f), new Color(0.45f, 0.24f, 0.15f), surface: Surface.Rust);
 
             // Chapel: pews down the nave, a lectern at the crossing, and a choir loft up stairs at the north end.
-            Block("Choir Loft", 3, 2f, 13f, 7.7f, 20.7f, 2.6f, Cover);
+            Block("Choir Loft", 3, 2f, 13f, 7.7f, 20.7f, 2.6f, DarkWood, Surface.Wood);
             Stairs(3, 2f, 16f, Vector3.left, 2.6f, 2.4f);
+            var pew = new Color(0.3f, 0.19f, 0.11f);
             foreach (float z in new[] { -18f, -15f, -12f })
             {
-                Greybox.Box("Pew", Root, L(3, -4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), Cover);
-                Greybox.Box("Pew", Root, L(3, 4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), Cover);
+                Greybox.Box("Pew", Root, L(3, -4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood);
+                Greybox.Box("Pew", Root, L(3, 4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood);
             }
-            Greybox.Box("Lectern", Root, L(3, 0f, 0.6f, 10f), new Vector3(1f, 1.2f, 0.8f), Cover);
+            Greybox.Box("Lectern", Root, L(3, 0f, 0.6f, 10f), new Vector3(1f, 1.2f, 0.8f), pew, surface: Surface.Wood);
 
             // Barracks: two rows of bunks down the hall, and a mezzanine along the west wall with stairs and a ladder.
-            Block("Mezzanine", 4, -10.7f, -8f, -5.7f, 8f, 2.6f, Cover);
+            Block("Mezzanine", 4, -10.7f, -8f, -5.7f, 8f, 2.6f, new Color(0.34f, 0.25f, 0.16f), Surface.Wood);
             Stairs(4, -8.2f, 8f, Vector3.forward, 2.6f, 2.4f);
             AddLadder(4, -5.7f, -3f, Vector3.right, 2.6f);
             foreach (float z in new[] { -17f, -13f, -9f, 9f, 13f, 17f })
             {
-                Greybox.Box("Bunk", Root, L(4, 0f, 0.8f, z), new Vector3(2f, 1.6f, 1f), Cover);
-                Greybox.Box("Bunk", Root, L(4, 5f, 0.8f, z), new Vector3(2f, 1.6f, 1f), Cover);
+                Greybox.Box("Bunk", Root, L(4, 0f, 0.8f, z), new Vector3(2f, 1.6f, 1f), BunkGreen, surface: Surface.Metal);
+                Greybox.Box("Bunk", Root, L(4, 5f, 0.8f, z), new Vector3(2f, 1.6f, 1f), BunkGreen, surface: Surface.Metal);
             }
 
             // Courtyard: a fountain ringed by pillars, and a parkour run up to a ruined ledge in the south-west corner.
-            var fountain = Greybox.Prim(PrimitiveType.Cylinder, "Fountain", Root, L(5, 4f, 0.4f, -1f), new Vector3(5f, 0.4f, 5f), Concrete);
+            var stone = new Color(0.48f, 0.46f, 0.42f);
+            var fountain = Greybox.Prim(PrimitiveType.Cylinder, "Fountain", Root, L(5, 4f, 0.4f, -1f), new Vector3(5f, 0.4f, 5f), stone, surface: Surface.Concrete);
             Object.DestroyImmediate(fountain.GetComponent<Collider>());
             var fountainCollider = fountain.AddComponent<MeshCollider>();
             fountainCollider.convex = true;
             foreach (var p in new[] { new Vector2(-3f, -8f), new Vector2(11f, -8f), new Vector2(-3f, 6f), new Vector2(11f, 6f) })
-                Greybox.Box("Pillar", Root, L(5, p.x, WallHeight / 2f, p.y), new Vector3(1.4f, WallHeight, 1.4f), Concrete);
-            Block("Ruined Ledge", 5, -18.7f, -14.7f, -13.7f, -9.7f, 3.2f, Concrete);
+                Greybox.Box("Pillar", Root, L(5, p.x, WallHeight / 2f, p.y), new Vector3(1.4f, WallHeight, 1.4f), new Color(0.42f, 0.28f, 0.2f), surface: Surface.Brick);
+            Block("Ruined Ledge", 5, -18.7f, -14.7f, -13.7f, -9.7f, 3.2f, stone);
             Hop(5, -3.5f, -12.2f, 0.8f);
             Hop(5, -7.4f, -12.2f, 1.6f);
             Hop(5, -11.3f, -12.2f, 2.4f);
@@ -365,25 +466,26 @@ namespace ZombiesFPS.World
             Block("Dock", 6, 9f, -8f, 14.7f, 26f, 1.4f, Concrete);
             Stairs(6, 9f, -4f, Vector3.left, 1.4f, 2.4f);
             Stairs(6, 9f, 20f, Vector3.left, 1.4f, 2.4f);
-            Block("Truck", 6, -8f, -6f, -5f, 1f, 3f, new Color(0.3f, 0.34f, 0.4f));
-            Greybox.Box("Cab", Root, L(6, -6.5f, 1.2f, 2.2f), new Vector3(2.8f, 2.4f, 2.2f), new Color(0.5f, 0.2f, 0.18f));
+            Block("Truck", 6, -8f, -6f, -5f, 1f, 3f, new Color(0.46f, 0.47f, 0.47f), Surface.Metal);
+            Greybox.Box("Cab", Root, L(6, -6.5f, 1.2f, 2.2f), new Vector3(2.8f, 2.4f, 2.2f), new Color(0.48f, 0.12f, 0.09f), surface: Surface.Metal);
             AddLadder(6, -6.5f, -6f, Vector3.back, 3f);
             Jump(6, -6.5f, 3f, 0.3f, -6.5f, 2.4f, 2.2f);
-            Block("Container", 6, -10f, 6f, -4f, 8.6f, 2.6f, Rust);
-            Block("Container", 6, 1f, -7f, 7f, -4.4f, 2.6f, new Color(0.25f, 0.38f, 0.45f));
+            Block("Container", 6, -10f, 6f, -4f, 8.6f, 2.6f, Rust, Surface.Rust);
+            Block("Container", 6, 1f, -7f, 7f, -4.4f, 2.6f, ContainerBlue, Surface.Metal);
 
             // Pump Station: the pump hall with a pump house up stairs, and a water tower up a tall ladder in the north yard.
             Deck("Water Tower", 7, 1.7f, 14f, 6.7f, 19f, 6f, Metal);
-            var tank = Greybox.Prim(PrimitiveType.Cylinder, "Tank", Root, L(7, 4.2f, 4.1f, 16.5f), new Vector3(3.6f, 1.2f, 3.6f), Rust, collider: false);
+            var tank = Greybox.Prim(PrimitiveType.Cylinder, "Tank", Root, L(7, 4.2f, 4.1f, 16.5f), new Vector3(3.6f, 1.2f, 3.6f), new Color(0.44f, 0.27f, 0.16f), collider: false, surface: Surface.Rust);
             tank.name = "Tank";
             AddLadder(7, 4.2f, 14f, Vector3.back, 6f);
-            Block("Pump House", 7, 13f, 0f, 18.7f, 6.7f, 2.4f, Concrete);
+            Block("Pump House", 7, 13f, 0f, 18.7f, 6.7f, 2.4f, new Color(0.4f, 0.42f, 0.4f));
             Stairs(7, 13f, 3.35f, Vector3.left, 2.4f, 2.4f);
-            Greybox.Box("Pump", Root, L(7, -10f, 1f, -3f), new Vector3(4f, 2f, 3f), Metal);
-            Greybox.Box("Pipe", Root, L(7, 0f, 4.2f, -3f), new Vector3(12f, 0.5f, 0.5f), Rust, collider: false);
+            Greybox.Box("Pump", Root, L(7, -10f, 1f, -3f), new Vector3(4f, 2f, 3f), new Color(0.2f, 0.32f, 0.4f), surface: Surface.Metal);
+            Greybox.Prim(PrimitiveType.Cylinder, "Pipe", Root, L(7, 0f, 4.2f, -3f), new Vector3(0.5f, 6f, 0.5f), new Color(0.46f, 0.27f, 0.15f), collider: false, surface: Surface.Rust)
+                .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
 
             // Crane Yard: a parkour run up to the top of a container stack, the crane, and scattered containers.
-            Block("Container Stack", 8, 4f, 6f, 12f, 9f, 3.6f, Rust);
+            Block("Container Stack", 8, 4f, 6f, 12f, 9f, 3.6f, Rust, Surface.Rust);
             Hop(8, -6.2f, 7.5f, 0.9f);
             Hop(8, -2.3f, 7.5f, 1.8f);
             Hop(8, 1.6f, 7.5f, 2.7f);
@@ -391,53 +493,54 @@ namespace ZombiesFPS.World
             Jump(8, -5.4f, 0.9f, 7.5f, -3.1f, 1.8f, 7.5f);
             Jump(8, -1.5f, 1.8f, 7.5f, 0.8f, 2.7f, 7.5f);
             Jump(8, 2.4f, 2.7f, 7.5f, 4.7f, 3.6f, 7.5f);
-            Greybox.Box("Crane", Root, L(8, 12f, 4.5f, -10f), new Vector3(1.5f, 9f, 1.5f), new Color(0.75f, 0.6f, 0.15f));
-            Greybox.Box("Boom", Root, L(8, 7f, 8.8f, -10f), new Vector3(11f, 0.6f, 0.6f), new Color(0.75f, 0.6f, 0.15f), collider: false);
-            Greybox.Box("Cable", Root, L(8, 2.5f, 6.5f, -10f), new Vector3(0.05f, 4f, 0.05f), new Color(0.15f, 0.15f, 0.15f), collider: false);
-            Block("Container", 8, -11f, -9.3f, -5f, -6.7f, 2.6f, new Color(0.3f, 0.45f, 0.3f));
-            Block("Container", 8, 4.7f, -9f, 7.3f, -3f, 2.6f, Rust);
-            Block("Container", 8, -20f, 2f, -14f, 4.6f, 2.6f, new Color(0.25f, 0.38f, 0.45f));
+            Greybox.Box("Crane", Root, L(8, 12f, 4.5f, -10f), new Vector3(1.5f, 9f, 1.5f), CraneYellow, surface: Surface.Metal);
+            Greybox.Box("Boom", Root, L(8, 7f, 8.8f, -10f), new Vector3(11f, 0.6f, 0.6f), CraneYellow, collider: false, surface: Surface.Metal);
+            Greybox.Box("Cable", Root, L(8, 2.5f, 6.5f, -10f), new Vector3(0.05f, 4f, 0.05f), new Color(0.12f, 0.12f, 0.12f), collider: false, surface: Surface.Metal);
+            Block("Container", 8, -11f, -9.3f, -5f, -6.7f, 2.6f, ContainerGreen, Surface.Metal);
+            Block("Container", 8, 4.7f, -9f, 7.3f, -3f, 2.6f, Rust, Surface.Rust);
+            Block("Container", 8, -20f, 2f, -14f, 4.6f, 2.6f, ContainerBlue, Surface.Metal);
 
             // Lantern Core: the glowing core, consoles round it, and a catwalk at the north end with stairs and a ladder.
-            var core = Greybox.Prim(PrimitiveType.Cylinder, "Core", Root, L(9, 0f, 3f, 0f), new Vector3(3f, 3f, 3f), new Color(0.2f, 0.22f, 0.3f));
+            var core = Greybox.Prim(PrimitiveType.Cylinder, "Core", Root, L(9, 0f, 3f, 0f), new Vector3(3f, 3f, 3f), new Color(0.18f, 0.2f, 0.27f), surface: Surface.Metal);
             core.name = "Lantern Core";
-            Greybox.Prim(PrimitiveType.Cylinder, "Core Glow", Root, L(9, 0f, 3.5f, 0f), new Vector3(3.1f, 0.15f, 3.1f), new Color(0.5f, 0.85f, 1f), collider: false, unlit: true);
+            Greybox.Prim(PrimitiveType.Cylinder, "Core Glow", Root, L(9, 0f, 3.5f, 0f), new Vector3(3.1f, 0.15f, 3.1f), CoreGlow, collider: false, unlit: true);
             var coreLight = new GameObject("Core Light").AddComponent<Light>();
             coreLight.transform.SetParent(Root, false);
             coreLight.transform.localPosition = L(9, 0f, 4f, 0f);
             coreLight.type = LightType.Point;
-            coreLight.color = new Color(0.5f, 0.85f, 1f);
+            coreLight.color = CoreGlow;
             coreLight.range = 12f;
             coreLight.intensity = 1.8f;
             coreLight.shadows = LightShadows.None;
             foreach (var p in new[] { new Vector2(-7f, -7f), new Vector2(7f, -7f), new Vector2(-7f, 7f), new Vector2(7f, 7f) })
-                Greybox.Box("Console", Root, L(9, p.x, 0.5f, p.y), new Vector3(1.2f, 1f, 1.2f), Metal);
+                Greybox.Box("Console", Root, L(9, p.x, 0.5f, p.y), new Vector3(1.2f, 1f, 1.2f), new Color(0.2f, 0.22f, 0.25f), surface: Surface.Metal);
             Deck("Catwalk", 9, -7.7f, 16f, 7.7f, 19.7f, 3f, Metal);
             Stairs(9, -5.5f, 16f, Vector3.back, 3f, 2f);
             AddLadder(9, 5.5f, 16f, Vector3.back, 3f);
 
             // Archives: stacks either side of a central aisle, and a records loft up a ladder at the far end of the north wing.
-            Block("Records Loft", 10, 1.3f, 17f, 16.7f, 22.7f, 4f, Cover);
+            Block("Records Loft", 10, 1.3f, 17f, 16.7f, 22.7f, 4f, DarkWood, Surface.Wood);
             AddLadder(10, 9f, 17f, Vector3.back, 4f);
+            var bookcase = new Color(0.33f, 0.22f, 0.13f);
             foreach (float x in new[] { -10f, -1f })
-                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, 4.7f), new Vector3(0.8f, 2.2f, 4f), Cover);
+                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, 4.7f), new Vector3(0.8f, 2.2f, 4f), bookcase, surface: Surface.Wood);
             foreach (float x in new[] { -10f, 3f, 7f })
-                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, -4.7f), new Vector3(0.8f, 2.2f, 4f), Cover);
+                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, -4.7f), new Vector3(0.8f, 2.2f, 4f), bookcase, surface: Surface.Wood);
             foreach (float x in new[] { 5f, 13f })
-                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, 11.5f), new Vector3(0.8f, 2.2f, 5f), Cover);
+                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, 11.5f), new Vector3(0.8f, 2.2f, 5f), bookcase, surface: Surface.Wood);
 
             // Greenhouse: planters, glass frames, and a potting shed whose roof (up a ladder) holds the second build station.
-            Block("Potting Shed", 11, -14f, 1f, -5f, 10.7f, 4.5f, new Color(0.38f, 0.32f, 0.26f));
+            Block("Potting Shed", 11, -14f, 1f, -5f, 10.7f, 4.5f, new Color(0.36f, 0.27f, 0.18f), Surface.Wood);
             AddLadder(11, -5f, 6f, Vector3.right, 4.5f);
-            var soil = new Color(0.3f, 0.22f, 0.15f);
+            var planter = new Color(0.33f, 0.24f, 0.15f);
             foreach (float z in new[] { -8f, -4.5f })
-                Greybox.Box("Planter", Root, L(11, -9f, 0.4f, z), new Vector3(6f, 0.8f, 1.2f), soil);
+                Greybox.Box("Planter", Root, L(11, -9f, 0.4f, z), new Vector3(6f, 0.8f, 1.2f), planter, surface: Surface.Wood);
             foreach (float z in new[] { -8f, -4.5f, -1f, 2.5f })
-                Greybox.Box("Planter", Root, L(11, 9f, 0.4f, z), new Vector3(6f, 0.8f, 1.2f), soil);
-            var glass = new Color(0.55f, 0.75f, 0.7f);
+                Greybox.Box("Planter", Root, L(11, 9f, 0.4f, z), new Vector3(6f, 0.8f, 1.2f), planter, surface: Surface.Wood);
+            var frame = new Color(0.26f, 0.3f, 0.29f);
             foreach (float x in new[] { -12f, -4f, 4f, 12f })
-                Greybox.Box("Frame", Root, L(11, x, 3f, -9.5f), new Vector3(0.15f, 6f, 0.15f), glass, collider: false);
-            Greybox.Box("Frame", Root, L(11, 0f, 6f, -9.5f), new Vector3(24f, 0.15f, 0.15f), glass, collider: false);
+                Greybox.Box("Frame", Root, L(11, x, 3f, -9.5f), new Vector3(0.15f, 6f, 0.15f), frame, collider: false, surface: Surface.Metal);
+            Greybox.Box("Frame", Root, L(11, 0f, 6f, -9.5f), new Vector3(24f, 0.15f, 0.15f), frame, collider: false, surface: Surface.Metal);
 
             // Names over the high spots, so players know where to look.
             for (int i = 0; i < HighSpotCount; i++)
@@ -466,7 +569,10 @@ namespace ZombiesFPS.World
             }
         }
 
-        /// <summary>Ceiling lamps over every rectangle of floor big enough to need one, about 14 m apart.</summary>
+        /// <summary>
+        /// Ceiling lamps over every rectangle of floor big enough to need one, about 14 m apart, each hanging from a
+        /// steel beam spanning the rectangle's short way at the top of the walls.
+        /// </summary>
         void BuildLamps()
         {
             for (int i = 0; i < ZoneCount; i++)
@@ -474,15 +580,28 @@ namespace ZombiesFPS.World
                 {
                     if (r.width < 8 || r.height < 8) continue;
                     int nx = Mathf.Max(1, Mathf.RoundToInt(r.width / 14f)), nz = Mathf.Max(1, Mathf.RoundToInt(r.height / 14f));
+                    bool beamsAlongX = r.width <= r.height;
                     for (int a = 0; a < nx; a++)
                         for (int b = 0; b < nz; b++)
-                            AddLamp(new Vector3(r.xMin + (a + 0.5f) * r.width / nx, WallHeight - 0.4f, r.yMin + (b + 0.5f) * r.height / nz));
+                        {
+                            var at = new Vector3(r.xMin + (a + 0.5f) * r.width / nx, WallHeight - 0.4f, r.yMin + (b + 0.5f) * r.height / nz);
+                            AddLamp(at);
+                            // One beam per row of lamps.
+                            if (beamsAlongX && a == 0)
+                                Deco(new Vector3(r.center.x, WallHeight - 0.14f, at.z), new Vector3(r.width, 0.24f, 0.18f), Girder, Surface.Rust);
+                            else if (!beamsAlongX && b == 0)
+                                Deco(new Vector3(at.x, WallHeight - 0.14f, r.center.y), new Vector3(0.18f, 0.24f, r.height), Girder, Surface.Rust);
+                        }
                 }
         }
 
+        /// <summary>An enamelled shade on a short rod with a glowing bulb under it, and its light.</summary>
         void AddLamp(Vector3 position)
         {
-            Greybox.Prim(PrimitiveType.Cube, "Lamp", Root, position, new Vector3(0.5f, 0.1f, 0.5f), Lamp, collider: false, unlit: true);
+            Deco(position + Vector3.up * 0.17f, new Vector3(0.05f, 0.18f, 0.05f), Girder, Surface.Metal);
+            DecoPrim(PrimitiveType.Cylinder, position + Vector3.up * 0.04f, new Vector3(0.75f, 0.05f, 0.75f), Quaternion.identity, new Color(0.17f, 0.22f, 0.19f), Surface.Metal);
+            DecoPrim(PrimitiveType.Cylinder, position + Vector3.up * 0.1f, new Vector3(0.3f, 0.04f, 0.3f), Quaternion.identity, new Color(0.17f, 0.22f, 0.19f), Surface.Metal);
+            Glow(PrimitiveType.Cylinder, position - Vector3.up * 0.02f, new Vector3(0.42f, 0.02f, 0.42f), Quaternion.identity, Lamp);
             var go = new GameObject("Lamp Light");
             go.transform.SetParent(Root, false);
             go.transform.localPosition = position + Vector3.down * 0.3f;
@@ -503,7 +622,7 @@ namespace ZombiesFPS.World
                 // A door in a wall running north-south faces along x.
                 var rot = DoorInWallAlongZ(i) ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
                 var go = Greybox.Box("Door " + ZoneNames[DoorLinks[i].x] + " - " + ZoneNames[DoorLinks[i].y], Root,
-                    c + Vector3.up * (GapHeight / 2f), new Vector3(GapWidth, GapHeight, 0.35f), DoorWood);
+                    c + Vector3.up * (GapHeight / 2f), new Vector3(GapWidth, GapHeight, 0.35f), DoorWood, surface: Surface.Wood, moving: true);
                 go.transform.localRotation = rot;
                 var door = go.AddComponent<Door>();
                 door.Init(i);
@@ -546,8 +665,10 @@ namespace ZombiesFPS.World
                 var go = Greybox.Empty("Beacon " + HighSpotNames[i], Root, HighSpotPoints[i]).gameObject;
                 Beacons[i] = go.AddComponent<Generator>();
                 Beacons[i].Init();
-                Greybox.Box("Mast", go.transform, new Vector3(-0.5f, 2f, 0.2f), new Vector3(0.1f, 1.6f, 0.1f), Metal, collider: false);
-                Greybox.Prim(PrimitiveType.Sphere, "Dish", go.transform, new Vector3(-0.5f, 2.8f, 0.2f), new Vector3(0.5f, 0.5f, 0.15f), Metal, collider: false);
+                Greybox.Box("Mast", go.transform, new Vector3(-0.5f, 2f, 0.2f), new Vector3(0.1f, 1.6f, 0.1f), Metal, collider: false, surface: Surface.Metal);
+                Greybox.Prim(PrimitiveType.Sphere, "Dish", go.transform, new Vector3(-0.5f, 2.8f, 0.2f), new Vector3(0.5f, 0.5f, 0.15f), Metal, collider: false, surface: Surface.Metal);
+                // A red tip light, so the beacon reads from across the map.
+                Greybox.Prim(PrimitiveType.Sphere, "Tip", go.transform, new Vector3(-0.5f, 2.85f, 0.2f), Vector3.one * 0.08f, new Color(1f, 0.15f, 0.08f), collider: false, unlit: true);
             }
         }
 
@@ -558,9 +679,9 @@ namespace ZombiesFPS.World
             for (int b = 0; b < BenchCount; b++)
             {
                 var root = Greybox.Empty("Build Station " + BenchNames[b], Root, BenchPositions[b]);
-                Greybox.Box("Bench", root, new Vector3(0f, 0.47f, 0f), new Vector3(5.4f, 0.94f, 0.8f), new Color(0.42f, 0.32f, 0.2f));
-                Greybox.Box("Vice", root, new Vector3(-2.2f, 1.05f, 0.1f), new Vector3(0.3f, 0.2f, 0.3f), Metal, collider: false);
-                Greybox.Box("Pegboard", root, new Vector3(0f, 1.8f, 0.38f), new Vector3(5.4f, 1.4f, 0.05f), new Color(0.55f, 0.45f, 0.3f), collider: false);
+                Greybox.Box("Bench", root, new Vector3(0f, 0.47f, 0f), new Vector3(5.4f, 0.94f, 0.8f), new Color(0.4f, 0.3f, 0.18f), surface: Surface.Wood);
+                Greybox.Box("Vice", root, new Vector3(-2.2f, 1.05f, 0.1f), new Vector3(0.3f, 0.2f, 0.3f), Metal, collider: false, surface: Surface.Metal);
+                Greybox.Box("Pegboard", root, new Vector3(0f, 1.8f, 0.38f), new Vector3(5.4f, 1.4f, 0.05f), new Color(0.5f, 0.4f, 0.27f), collider: false, surface: Surface.Wood);
                 for (int i = 0; i < BuildableCount; i++)
                     Greybox.Label("Place", root, new Vector3((i - 1) * 1.8f, 1.9f, 0.34f), names[i], new Color(0.1f, 0.08f, 0.05f), 0.16f).transform.localRotation = Quaternion.identity;
                 Greybox.Label("Title", root, new Vector3(0f, 2.75f, 0.34f), "BUILD STATION", new Color(1f, 0.85f, 0.4f), 0.26f).transform.localRotation = Quaternion.identity;
@@ -601,13 +722,16 @@ namespace ZombiesFPS.World
         {
             var root = Greybox.Empty("Machine " + title, Root, spot.face + spot.inward * 0.45f);
             root.localRotation = Quaternion.LookRotation(spot.inward, Vector3.up);
-            Greybox.Box("Body", root, new Vector3(0f, 1.05f, 0f), new Vector3(1.1f, 2.1f, 0.8f), new Color(0.12f, 0.12f, 0.14f));
-            Greybox.Box("Top", root, new Vector3(0f, 2.16f, 0f), new Vector3(1.2f, 0.12f, 0.9f), color * 0.6f, collider: false);
+            Greybox.Box("Body", root, new Vector3(0f, 1.05f, 0f), new Vector3(1.1f, 2.1f, 0.8f), new Color(0.12f, 0.12f, 0.14f), surface: Surface.Metal);
+            Greybox.Box("Top", root, new Vector3(0f, 2.16f, 0f), new Vector3(1.2f, 0.12f, 0.9f), color * 0.6f, collider: false, surface: Surface.Metal);
             // Front: a glowing panel in the perk's colour, with bottles behind glass.
             Greybox.Prim(PrimitiveType.Cube, "Panel", root, new Vector3(0f, 1.45f, 0.41f), new Vector3(0.9f, 0.9f, 0.02f), color * 0.85f, collider: false, unlit: true);
             for (int b = 0; b < 3; b++)
                 Greybox.Prim(PrimitiveType.Cylinder, "Bottle", root, new Vector3(-0.25f + b * 0.25f, 0.62f, 0.32f), new Vector3(0.1f, 0.14f, 0.1f), color, collider: false, unlit: true);
-            Greybox.Box("Slot", root, new Vector3(0f, 0.35f, 0.41f), new Vector3(0.6f, 0.12f, 0.02f), new Color(0.05f, 0.05f, 0.05f), collider: false);
+            Greybox.Box("Slot", root, new Vector3(0f, 0.35f, 0.41f), new Vector3(0.6f, 0.12f, 0.02f), new Color(0.05f, 0.05f, 0.05f), collider: false, surface: Surface.Metal);
+            // A glowing marquee strip over the panel and a kick plate, like a real machine.
+            Greybox.Prim(PrimitiveType.Cube, "Marquee", root, new Vector3(0f, 2.0f, 0.41f), new Vector3(0.9f, 0.1f, 0.02f), Color.Lerp(color, Color.white, 0.4f), collider: false, unlit: true);
+            Greybox.Box("Kick", root, new Vector3(0f, 0.08f, 0.41f), new Vector3(1.1f, 0.16f, 0.02f), new Color(0.3f, 0.3f, 0.3f), collider: false, surface: Surface.Rust);
             var labelColor = Color.Lerp(color, Color.white, 0.6f);
             Greybox.Label("Name", root, new Vector3(0f, 2.45f, 0.2f), title.ToUpperInvariant(), labelColor, 0.2f);
             if (!string.IsNullOrEmpty(price)) Greybox.Label("Price", root, new Vector3(0f, 1.45f, 0.43f), price, new Color(0.05f, 0.05f, 0.05f), 0.16f);
@@ -626,7 +750,13 @@ namespace ZombiesFPS.World
             var glow = new Color(1f, 0.75f, 0.3f);
             var root = Greybox.Empty("Reroll Shrine", Root, spot.face + spot.inward * 0.45f);
             root.localRotation = Quaternion.LookRotation(spot.inward, Vector3.up);
-            Greybox.Box("Plinth", root, new Vector3(0f, 0.5f, 0f), new Vector3(1f, 1f, 0.8f), new Color(0.35f, 0.33f, 0.3f));
+            Greybox.Box("Plinth", root, new Vector3(0f, 0.5f, 0f), new Vector3(1f, 1f, 0.8f), new Color(0.4f, 0.38f, 0.34f), surface: Surface.Concrete);
+            // Candles round the cards, an old roadside-shrine look.
+            foreach (var c in new[] { new Vector3(-0.38f, 1.08f, -0.25f), new Vector3(0.38f, 1.08f, -0.2f), new Vector3(0.3f, 1.08f, 0.28f) })
+            {
+                Greybox.Prim(PrimitiveType.Cylinder, "Candle", root, c, new Vector3(0.06f, 0.08f, 0.06f), new Color(0.75f, 0.7f, 0.58f), collider: false, surface: Surface.Plaster);
+                Greybox.Prim(PrimitiveType.Sphere, "Flame", root, c + Vector3.up * 0.11f, new Vector3(0.035f, 0.06f, 0.035f), new Color(1f, 0.6f, 0.2f), collider: false, unlit: true);
+            }
             var card = Greybox.Prim(PrimitiveType.Cube, "Cards", root, new Vector3(0f, 1.25f, 0f), new Vector3(0.5f, 0.06f, 0.35f), glow, collider: false, unlit: true);
             card.transform.localRotation = Quaternion.Euler(0f, 20f, 0f);
             Greybox.Label("Name", root, new Vector3(0f, 1.8f, 0f), "FORTUNE SHRINE", Color.Lerp(glow, Color.white, 0.5f), 0.18f);
@@ -646,26 +776,30 @@ namespace ZombiesFPS.World
         {
             var shop = Greybox.Empty("Spawn Shop", Root, ShopPosition);
             var awning = new Color(0.2f, 0.45f, 0.55f);
-            Greybox.Box("Counter", shop, new Vector3(0f, 0.55f, 0f), new Vector3(1f, 1.1f, 3f), new Color(0.38f, 0.28f, 0.18f));
-            Greybox.Box("CounterTop", shop, new Vector3(-0.05f, 1.13f, 0f), new Vector3(1.2f, 0.06f, 3.2f), new Color(0.5f, 0.4f, 0.28f), collider: false);
+            Greybox.Box("Counter", shop, new Vector3(0f, 0.55f, 0f), new Vector3(1f, 1.1f, 3f), new Color(0.36f, 0.26f, 0.16f), surface: Surface.Wood);
+            Greybox.Box("CounterTop", shop, new Vector3(-0.05f, 1.13f, 0f), new Vector3(1.2f, 0.06f, 3.2f), new Color(0.46f, 0.36f, 0.24f), collider: false, surface: Surface.Wood);
             foreach (float z in new[] { -1.5f, 1.5f })
-                Greybox.Box("Post", shop, new Vector3(0.4f, 1.4f, z), new Vector3(0.12f, 2.8f, 0.12f), new Color(0.3f, 0.22f, 0.15f));
-            var roof = Greybox.Box("Awning", shop, new Vector3(-0.2f, 2.85f, 0f), new Vector3(1.8f, 0.08f, 3.4f), awning, collider: false);
+                Greybox.Box("Post", shop, new Vector3(0.4f, 1.4f, z), new Vector3(0.12f, 2.8f, 0.12f), new Color(0.3f, 0.22f, 0.15f), surface: Surface.Wood);
+            var roof = Greybox.Box("Awning", shop, new Vector3(-0.2f, 2.85f, 0f), new Vector3(1.8f, 0.08f, 3.4f), awning, collider: false, surface: Surface.Fabric);
             roof.transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
             Greybox.Prim(PrimitiveType.Cube, "Sign", shop, new Vector3(-0.56f, 2.35f, 0f), new Vector3(0.02f, 0.35f, 1.6f), new Color(0.95f, 0.8f, 0.35f), collider: false, unlit: true);
             // A few greybox "attachments" on the counter.
-            Greybox.Box("Scope", shop, new Vector3(-0.1f, 1.22f, -0.8f), new Vector3(0.12f, 0.12f, 0.4f), new Color(0.15f, 0.15f, 0.15f), collider: false);
-            Greybox.Box("Mag", shop, new Vector3(-0.1f, 1.25f, 0f), new Vector3(0.1f, 0.2f, 0.12f), new Color(0.2f, 0.2f, 0.22f), collider: false);
-            Greybox.Box("Grip", shop, new Vector3(-0.1f, 1.22f, 0.7f), new Vector3(0.1f, 0.14f, 0.1f), new Color(0.25f, 0.2f, 0.15f), collider: false);
+            Greybox.Box("Scope", shop, new Vector3(-0.1f, 1.22f, -0.8f), new Vector3(0.12f, 0.12f, 0.4f), new Color(0.15f, 0.15f, 0.15f), collider: false, surface: Surface.Metal);
+            Greybox.Box("Mag", shop, new Vector3(-0.1f, 1.25f, 0f), new Vector3(0.1f, 0.2f, 0.12f), new Color(0.2f, 0.2f, 0.22f), collider: false, surface: Surface.Metal);
+            Greybox.Box("Grip", shop, new Vector3(-0.1f, 1.22f, 0.7f), new Vector3(0.1f, 0.14f, 0.1f), new Color(0.25f, 0.2f, 0.15f), collider: false, surface: Surface.Rubber);
 
             // The Trader: a hooded scavenger behind the counter, with a lantern.
             var trader = Greybox.Empty("Trader", shop, new Vector3(0.95f, 0f, 0.4f));
             trader.localRotation = Quaternion.Euler(0f, -90f, 0f);
             var coat = new Color(0.28f, 0.24f, 0.2f);
-            Greybox.Prim(PrimitiveType.Capsule, "Body", trader, new Vector3(0f, 0.9f, 0f), new Vector3(0.55f, 0.9f, 0.45f), coat, collider: false);
-            Greybox.Prim(PrimitiveType.Sphere, "Head", trader, new Vector3(0f, 1.72f, 0.02f), Vector3.one * 0.3f, new Color(0.7f, 0.56f, 0.45f), collider: false);
-            Greybox.Prim(PrimitiveType.Sphere, "Hood", trader, new Vector3(0f, 1.78f, -0.04f), new Vector3(0.38f, 0.36f, 0.4f), new Color(0.2f, 0.17f, 0.14f), collider: false);
+            Greybox.Prim(PrimitiveType.Capsule, "Body", trader, new Vector3(0f, 0.9f, 0f), new Vector3(0.55f, 0.9f, 0.45f), coat, collider: false, surface: Surface.Fabric);
+            Greybox.Prim(PrimitiveType.Sphere, "Head", trader, new Vector3(0f, 1.72f, 0.02f), Vector3.one * 0.3f, new Color(0.62f, 0.48f, 0.38f), collider: false, surface: Surface.Skin);
+            Greybox.Prim(PrimitiveType.Sphere, "Hood", trader, new Vector3(0f, 1.78f, -0.04f), new Vector3(0.38f, 0.36f, 0.4f), new Color(0.2f, 0.17f, 0.14f), collider: false, surface: Surface.Fabric);
             Greybox.Prim(PrimitiveType.Cylinder, "Lantern", trader, new Vector3(0.32f, 1.25f, 0.1f), new Vector3(0.1f, 0.1f, 0.1f), new Color(1f, 0.75f, 0.35f), collider: false, unlit: true);
+            // The lantern's cage and handle.
+            Greybox.Prim(PrimitiveType.Cylinder, "Lantern Cap", trader, new Vector3(0.32f, 1.36f, 0.1f), new Vector3(0.13f, 0.015f, 0.13f), new Color(0.15f, 0.14f, 0.12f), collider: false, surface: Surface.Metal);
+            Greybox.Prim(PrimitiveType.Cylinder, "Lantern Base", trader, new Vector3(0.32f, 1.14f, 0.1f), new Vector3(0.13f, 0.015f, 0.13f), new Color(0.15f, 0.14f, 0.12f), collider: false, surface: Surface.Metal);
+            Greybox.Box("Lantern Handle", trader, new Vector3(0.32f, 1.42f, 0.1f), new Vector3(0.015f, 0.1f, 0.015f), new Color(0.15f, 0.14f, 0.12f), collider: false, surface: Surface.Metal);
             var lamp = new GameObject("Trader Lamp").AddComponent<Light>();
             lamp.transform.SetParent(trader, false);
             lamp.transform.localPosition = new Vector3(0.32f, 1.4f, 0.1f);
@@ -682,13 +816,13 @@ namespace ZombiesFPS.World
         {
             var glow = new Color(0.65f, 0.35f, 1f);
             var machine = Greybox.Empty("Upgrade Machine", Root, MachinePosition);
-            var body = Greybox.Box("Body", machine, new Vector3(0f, 1.1f, 0f), new Vector3(2.4f, 2.2f, 1.4f), new Color(0.14f, 0.13f, 0.17f));
+            var body = Greybox.Box("Body", machine, new Vector3(0f, 1.1f, 0f), new Vector3(2.4f, 2.2f, 1.4f), new Color(0.14f, 0.13f, 0.17f), surface: Surface.Metal);
             // Built after the bake like the doors, so it carves its own hole in the NavMesh.
             var obstacle = body.AddComponent<NavMeshObstacle>();
             obstacle.shape = NavMeshObstacleShape.Box;
             obstacle.size = Vector3.one;
             obstacle.carving = true;
-            Greybox.Box("Top", machine, new Vector3(0f, 2.35f, 0f), new Vector3(2.6f, 0.3f, 1.6f), new Color(0.22f, 0.2f, 0.26f));
+            Greybox.Box("Top", machine, new Vector3(0f, 2.35f, 0f), new Vector3(2.6f, 0.3f, 1.6f), new Color(0.22f, 0.2f, 0.26f), surface: Surface.Metal);
             // Glowing slot and strips facing the room.
             Greybox.Prim(PrimitiveType.Cube, "Slot", machine, new Vector3(0f, 1.25f, -0.71f), new Vector3(1.2f, 0.25f, 0.02f), glow, collider: false, unlit: true);
             Greybox.Prim(PrimitiveType.Cube, "StripL", machine, new Vector3(-1.05f, 1.1f, -0.71f), new Vector3(0.08f, 1.8f, 0.02f), glow, collider: false, unlit: true);
@@ -716,7 +850,7 @@ namespace ZombiesFPS.World
             Greybox.Box("Chalk R", panel, new Vector3(0.78f, 0f, 0f), new Vector3(0.05f, 0.88f, 0.02f), Chalk, collider: false);
             float length = gun != null ? Mathf.Clamp(gun.modelLength, 0.4f, 1.5f) : 1f;
             var accent = gun != null ? gun.accent : Cover;
-            Greybox.Box("Gun", panel, new Vector3(0f, 0.05f, 0f), new Vector3(0.9f * length, 0.12f, 0.04f), new Color(0.16f, 0.17f, 0.18f), collider: false);
+            Greybox.Box("Gun", panel, new Vector3(0f, 0.05f, 0f), new Vector3(0.9f * length, 0.12f, 0.04f), new Color(0.16f, 0.17f, 0.18f), collider: false, surface: Surface.Metal);
             Greybox.Box("Grip", panel, new Vector3(-0.15f * length, -0.1f, 0f), new Vector3(0.08f, 0.2f, 0.04f), accent, collider: false);
             Greybox.Box("Stock", panel, new Vector3(-0.5f * length, 0.02f, 0f), new Vector3(0.25f * length, 0.14f, 0.04f), accent, collider: false);
         }
