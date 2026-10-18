@@ -9,9 +9,9 @@ namespace ZombiesFPS.UI
     /// </summary>
     public static class SettingsMenu
     {
-        enum Tab { Controls, MouseAndView, Sound, Accessibility }
+        enum Tab { Controls, MouseAndView, Graphics, Sound, Accessibility }
 
-        static readonly string[] TabNames = { "Controls", "Mouse & view", "Sound", "Accessibility" };
+        static readonly string[] TabNames = { "Controls", "Mouse & view", "Graphics", "Sound", "Accessibility" };
 
         static Tab s_Tab;
         static Vector2 s_Scroll;
@@ -31,7 +31,7 @@ namespace ZombiesFPS.UI
 
             bool capturing = IsCapturing;
             GUI.enabled = !capturing;
-            float tw = (inner.width - 3 * 8 * u) / 4f;
+            float tw = (inner.width - (TabNames.Length - 1) * 8 * u) / TabNames.Length;
             for (int i = 0; i < TabNames.Length; i++)
             {
                 var r = new Rect(inner.x + i * (tw + 8 * u), inner.y + 58 * u, tw, 44 * u);
@@ -47,6 +47,7 @@ namespace ZombiesFPS.UI
             {
                 case Tab.Controls: DrawControls(body, u); break;
                 case Tab.MouseAndView: DrawMouseAndView(body, u); break;
+                case Tab.Graphics: DrawGraphics(body, u); break;
                 case Tab.Sound: DrawSound(body, u); break;
                 default: DrawAccessibility(body, u); break;
             }
@@ -171,6 +172,27 @@ namespace ZombiesFPS.UI
             GameSettings.InvertY = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Invert look up/down", GameSettings.InvertY, u);
             y += rowH + 10 * u;
             Ui.Label(new Rect(body.x, y, body.width, 60 * u), "Aiming down sights slows the mouse a little on top of this, and zooms in by the same amount at any field of view.", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+        }
+
+        static void DrawGraphics(Rect body, float u)
+        {
+            float rowH = 60 * u, y = body.y;
+            Ui.Label(new Rect(body.x, y, 260 * u, rowH), "Quality", Ui.Body, Ui.Text, TextAnchor.MiddleLeft);
+            float bw = 150 * u;
+            for (int i = 0; i < GameSettings.QualityNames.Length; i++)
+            {
+                var r = new Rect(body.x + 280 * u + i * (bw + 8 * u), y + 8 * u, bw, rowH - 16 * u);
+                if (GUI.Toggle(r, GameSettings.Quality == i, GameSettings.QualityNames[i], Ui.ButtonStyle)) GameSettings.Quality = i;
+            }
+            y += rowH;
+            GameSettings.Brightness = Ui.Slider(new Rect(body.x, y, body.width, rowH), "Brightness", GameSettings.Brightness,
+                GameSettings.MinBrightness, GameSettings.MaxBrightness, $"{GameSettings.Brightness * 100f:0}%", u);
+            y += rowH;
+            GameSettings.Bloom = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Bloom", GameSettings.Bloom, u, "glow around lamps, muzzle flashes and eyes");
+            y += rowH;
+            GameSettings.FilmGrain = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Film grain", GameSettings.FilmGrain, u);
+            y += rowH + 10 * u;
+            Ui.Label(new Rect(body.x, y, body.width, 80 * u), "Low turns off bloom and shortens shadows for older PCs. Medium adds bloom, soft shadows and smoother edges. High adds sharper, longer shadows, reflections on metal and the smoothest edges.", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
         }
 
         static void DrawSound(Rect body, float u)

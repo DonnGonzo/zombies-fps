@@ -4,17 +4,67 @@ using UnityEngine;
 namespace ZombiesFPS.Core
 {
     /// <summary>
-    /// Builds greybox geometry from Unity primitives so the prototype needs no art assets.
-    /// Materials are cached per colour so hundreds of zombies share a handful of materials.
+    /// Builds geometry from Unity primitives so the game needs no art assets, with procedurally textured
+    /// materials (see <see cref="SurfaceTextures"/>). Materials are cached per colour and surface so hundreds of
+    /// zombies share a handful of materials.
     /// </summary>
     public static class Greybox
     {
         static readonly Dictionary<Color, Material> s_Lit = new Dictionary<Color, Material>();
+        static readonly Dictionary<(Color, Surface, bool), Material> s_Surfaces = new Dictionary<(Color, Surface, bool), Material>();
         static readonly Dictionary<Color, Material> s_Unlit = new Dictionary<Color, Material>();
-        static Material s_DefaultLit;
+        static Material s_DefaultLit, s_SurfaceBase, s_GlowBase;
+        static bool s_SurfaceChecked, s_GlowChecked;
 
-        /// <summary>A lit material in the active render pipeline's default shader.</summary>
-        public static Material Lit(Color color)
+        /// <summary>Intensity of opaque glowing materials; above 1 so the bloom effect catches them.</summary>
+        public const float GlowIntensity = 1.6f;
+
+        /// <summary>
+        /// A lit material with a light all-purpose texture. Projected in the object's own space, so it's safe on
+        /// things that move.
+        /// </summary>
+        public static Material Lit(Color color) => Lit(color, Surface.Plain, true);
+
+        /// <summary>
+        /// A lit material made of <paramref name="surface"/> (concrete, brick, metal and so on) in this colour.
+        /// Map pieces leave <paramref name="moving"/> false so textures line up across neighbouring pieces;
+        /// anything that moves (zombies, guns, players) passes true so its texture moves with it.
+        /// </summary>
+        public static Material Lit(Color color, Surface surface, bool moving = false)
+        {
+            var key = (color, surface, moving);
+            if (s_Surfaces.TryGetValue(key, out var cached) && cached != null) return cached;
+            var baseMat = SurfaceBase();
+            if (baseMat == null) return FlatLit(color);
+            var (detail, normal) = SurfaceTextures.Get(surface);
+            var look = SurfaceTextures.LookOf(surface);
+            var mat = new Material(baseMat) { name = surface + " " + ColorUtility.ToHtmlStringRGB(color) };
+            mat.SetColor("_Color", color);
+            mat.SetTexture("_MainTex", detail);
+            mat.SetTexture("_BumpMap", normal);
+            mat.SetFloat("_Scale", look.Scale);
+            mat.SetFloat("_Detail", look.Detail);
+            mat.SetFloat("_BumpStrength", look.Bump);
+            mat.SetFloat("_Glossiness", look.Gloss);
+            mat.SetFloat("_Metallic", look.Metallic);
+            mat.SetFloat("_Grime", moving ? look.Grime * 0.7f : look.Grime);
+            mat.SetFloat("_ObjectSpace", moving ? 1f : 0f);
+            s_Surfaces[key] = mat;
+            return mat;
+        }
+
+        static Material SurfaceBase()
+        {
+            if (s_SurfaceChecked) return s_SurfaceBase;
+            s_SurfaceChecked = true;
+            // Loaded from Resources so builds include the shader. If it can't run here, fall back to Standard.
+            var m = Resources.Load<Material>("Materials/Surface");
+            if (m != null && m.shader != null && m.shader.isSupported) s_SurfaceBase = m;
+            return s_SurfaceBase;
+        }
+
+        /// <summary>A plain Standard-shader material, the fallback when the surface shader isn't available.</summary>
+        static Material FlatLit(Color color)
         {
             if (s_Lit.TryGetValue(color, out var cached) && cached != null) return cached;
             if (s_DefaultLit == null)
@@ -34,34 +84,57 @@ namespace ZombiesFPS.Core
             return mat;
         }
 
-        /// <summary>An unlit, always-bright material for muzzle flashes, tracers and zombie eyes.</summary>
+        /// <summary>
+        /// An unlit, always-bright material for muzzle flashes, tracers, lamps and zombie eyes. Opaque colours
+        /// glow (bright enough to bloom); see-through colours stay plain and blended.
+        /// </summary>
         public static Material Unlit(Color color)
         {
             if (s_Unlit.TryGetValue(color, out var cached) && cached != null) return cached;
-            // Sprites/Default ships with every pipeline and is always included in builds.
-            var shader = Shader.Find("Sprites/Default");
-            var mat = shader != null ? new Material(shader) : new Material(Lit(color));
+            Material mat;
+            var glow = color.a >= 0.99f ? GlowBase() : null;
+            if (glow != null)
+            {
+                mat = new Material(glow);
+                mat.SetFloat("_Intensity", GlowIntensity);
+            }
+            else
+            {
+                // Sprites/Default ships with every pipeline and is always included in builds.
+                var shader = Shader.Find("Sprites/Default");
+                mat = shader != null ? new Material(shader) : new Material(FlatLit(color));
+            }
             mat.name = "Unlit " + ColorUtility.ToHtmlStringRGB(color);
             mat.color = color;
             s_Unlit[color] = mat;
             return mat;
         }
 
+        static Material GlowBase()
+        {
+            if (s_GlowChecked) return s_GlowBase;
+            s_GlowChecked = true;
+            var m = Resources.Load<Material>("Materials/Glow");
+            if (m != null && m.shader != null && m.shader.isSupported) s_GlowBase = m;
+            return s_GlowBase;
+        }
+
         public static GameObject Prim(PrimitiveType type, string name, Transform parent, Vector3 localPos, Vector3 localScale,
-            Color color, bool collider = true, bool unlit = false)
+            Color color, bool collider = true, bool unlit = false, Surface surface = Surface.Plain, bool moving = false)
         {
             var go = GameObject.CreatePrimitive(type);
             go.name = name;
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPos;
             go.transform.localScale = localScale;
-            go.GetComponent<Renderer>().sharedMaterial = unlit ? Unlit(color) : Lit(color);
+            go.GetComponent<Renderer>().sharedMaterial = unlit ? Unlit(color) : surface == Surface.Plain ? Lit(color) : Lit(color, surface, moving);
             if (!collider) Object.DestroyImmediate(go.GetComponent<Collider>());
             return go;
         }
 
-        public static GameObject Box(string name, Transform parent, Vector3 localPos, Vector3 size, Color color, bool collider = true)
-            => Prim(PrimitiveType.Cube, name, parent, localPos, size, color, collider);
+        public static GameObject Box(string name, Transform parent, Vector3 localPos, Vector3 size, Color color, bool collider = true,
+            Surface surface = Surface.Plain, bool moving = false)
+            => Prim(PrimitiveType.Cube, name, parent, localPos, size, color, collider, false, surface, moving);
 
         public static Transform Empty(string name, Transform parent, Vector3 localPos)
         {

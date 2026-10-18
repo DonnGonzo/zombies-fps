@@ -10,10 +10,18 @@ namespace ZombiesFPS.Core
         public const float MinSensitivity = 0.2f, MaxSensitivity = 3f;
         public const float MinFov = 60f, MaxFov = 100f;
         public const float MinHudScale = 0.75f, MaxHudScale = 1.3f;
+        public const float MinBrightness = 0.6f, MaxBrightness = 1.6f;
+        public static readonly string[] QualityNames = { "Low", "Medium", "High" };
 
         static bool s_Loaded;
         static float s_Sensitivity, s_Fov, s_Master, s_Effects, s_Voice, s_HudScale;
         static bool s_InvertY, s_Subtitles, s_ReduceShake, s_Tips, s_Colorblind;
+        static int s_Quality;
+        static float s_Brightness;
+        static bool s_Bloom, s_Grain;
+
+        /// <summary>Raised when a graphics setting changes, so the camera and lights can be set up again.</summary>
+        public static event System.Action GraphicsChanged;
 
         static void EnsureLoaded()
         {
@@ -30,7 +38,46 @@ namespace ZombiesFPS.Core
             s_ReduceShake = PlayerPrefs.GetInt(Prefix + "ReduceShake", 0) != 0;
             s_Tips = PlayerPrefs.GetInt(Prefix + "Tips", 1) != 0;
             s_Colorblind = PlayerPrefs.GetInt(Prefix + "Colorblind", 0) != 0;
+            s_Quality = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "Quality", 2), 0, QualityNames.Length - 1);
+            s_Brightness = PlayerPrefs.GetFloat(Prefix + "Brightness", 1f);
+            s_Bloom = PlayerPrefs.GetInt(Prefix + "Bloom", 1) != 0;
+            s_Grain = PlayerPrefs.GetInt(Prefix + "FilmGrain", 1) != 0;
             AudioListener.volume = s_Master;
+        }
+
+        /// <summary>Graphics quality: 0 Low, 1 Medium, 2 High. Shadows, anti-aliasing and post effects.</summary>
+        public static int Quality
+        {
+            get { EnsureLoaded(); return s_Quality; }
+            set
+            {
+                EnsureLoaded();
+                int v = Mathf.Clamp(value, 0, QualityNames.Length - 1);
+                if (v == s_Quality) return;
+                s_Quality = v;
+                PlayerPrefs.SetInt(Prefix + "Quality", v);
+                GraphicsChanged?.Invoke();
+            }
+        }
+
+        /// <summary>Overall brightness (1 = as designed). The game is dark on purpose; this helps on dim screens.</summary>
+        public static float Brightness
+        {
+            get { EnsureLoaded(); return s_Brightness; }
+            set { EnsureLoaded(); s_Brightness = Mathf.Clamp(value, MinBrightness, MaxBrightness); PlayerPrefs.SetFloat(Prefix + "Brightness", s_Brightness); }
+        }
+
+        /// <summary>Glow around bright lights (needs Medium or High quality).</summary>
+        public static bool Bloom
+        {
+            get { EnsureLoaded(); return s_Bloom; }
+            set { EnsureLoaded(); s_Bloom = value; PlayerPrefs.SetInt(Prefix + "Bloom", value ? 1 : 0); }
+        }
+
+        public static bool FilmGrain
+        {
+            get { EnsureLoaded(); return s_Grain; }
+            set { EnsureLoaded(); s_Grain = value; PlayerPrefs.SetInt(Prefix + "FilmGrain", value ? 1 : 0); }
         }
 
         /// <summary>Mouse sensitivity multiplier (1 = default).</summary>
@@ -157,6 +204,10 @@ namespace ZombiesFPS.Core
             ReduceShake = false;
             Tips = true;
             Colorblind = false;
+            Quality = 2;
+            Brightness = 1f;
+            Bloom = true;
+            FilmGrain = true;
             Save();
         }
     }

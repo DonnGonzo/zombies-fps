@@ -397,8 +397,7 @@ namespace ZombiesFPS.UI
             RenderSettings.fogColor = Color.Lerp(_baseFog, new Color(0.03f, 0.01f, 0.03f), t);
             RenderSettings.fogDensity = Mathf.Lerp(_baseFogDensity, _baseFogDensity * 1.9f, t);
             if (_moon != null) _moon.intensity = Mathf.Lerp(_baseMoon, _baseMoon * 0.15f, t);
-            var cam = Camera.main;
-            if (cam != null) cam.backgroundColor = RenderSettings.fogColor;
+            GraphicsSetup.SetBlackout(t);
         }
 
         void RestoreAtmosphere()
@@ -408,6 +407,7 @@ namespace ZombiesFPS.UI
             RenderSettings.fogColor = _baseFog;
             RenderSettings.fogDensity = _baseFogDensity;
             if (_moon != null) _moon.intensity = _baseMoon;
+            GraphicsSetup.SetBlackout(0f);
         }
 
         // ---------------------------------------------------------------- drawing

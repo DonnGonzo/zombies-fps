@@ -37,7 +37,6 @@ namespace ZombiesFPS.Core
         const string NameKey = "ZombiesFPS.PlayerName";
         const string AddressKey = "ZombiesFPS.JoinAddress";
         const int ZombiePoolSize = 64;
-        static readonly Color FogColor = new Color(0.05f, 0.06f, 0.08f);
 
         /// <summary>Why the last session ended, shown on the menu after a scene reload.</summary>
         static string s_LastMessage;
@@ -78,6 +77,8 @@ namespace ZombiesFPS.Core
 
             SetUpEnvironment();
             GameConfig.Map = ZoneMap.Build(GameConfig.Prices);
+            var area = ZoneMap.Bounds;
+            GraphicsSetup.BakeReflections(new Bounds(new Vector3(area.center.x, 4f, area.center.y), new Vector3(area.width, 12f, area.height)));
             GameConfig.PlayerStart = GameConfig.Map.PlayerStart;
             new GameObject("FX").AddComponent<FxSystem>();
             BuildMenuCamera();
@@ -103,20 +104,8 @@ namespace ZombiesFPS.Core
 
         static void SetUpEnvironment()
         {
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.2f, 0.22f, 0.28f);
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = FogColor;
-            RenderSettings.fogDensity = 0.03f;
-            RenderSettings.skybox = null;
-
-            var moon = new GameObject("Moonlight").AddComponent<Light>();
-            moon.type = LightType.Directional;
-            moon.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
-            moon.color = new Color(0.62f, 0.7f, 0.95f);
-            moon.intensity = 0.45f;
-            moon.shadows = LightShadows.Soft;
+            GraphicsSetup.SetUpEnvironment();
+            SurfaceTextures.Prewarm();
         }
 
         void BuildMenuCamera()
@@ -124,8 +113,7 @@ namespace ZombiesFPS.Core
             var go = new GameObject("Menu Camera");
             go.transform.SetPositionAndRotation(new Vector3(-9f, 8f, -10f), Quaternion.Euler(28f, 38f, 0f));
             _menuCamera = go.AddComponent<Camera>();
-            _menuCamera.clearFlags = CameraClearFlags.SolidColor;
-            _menuCamera.backgroundColor = FogColor;
+            GraphicsSetup.ConfigureCamera(_menuCamera);
             go.AddComponent<AudioListener>();
         }
 

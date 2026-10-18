@@ -200,8 +200,7 @@ namespace ZombiesFPS.Net
             var cam = camGo.AddComponent<Camera>();
             cam.nearClipPlane = 0.02f;
             cam.farClipPlane = 200f;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = RenderSettings.fogColor;
+            GraphicsSetup.ConfigureCamera(cam);
             camGo.AddComponent<AudioListener>();
 
             var gunAudio = GameSettings.Effect(camGo.AddComponent<AudioSource>());
