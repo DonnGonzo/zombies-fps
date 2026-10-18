@@ -2,9 +2,16 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
-## Current state: every gameplay system from the design doc, in greybox
+## Current state: every gameplay system from the design doc, with procedural graphics
 
-All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the map, power-ups, the upgrade machine, six zombie types and bosses, missions, XP and the spawn shop, perks, the story and voice lines. Art is still greybox and the voices are placeholder "blips" with subtitles. A plain-language feature list is in the project files as `feature-breakdown.pdf`.
+All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the map, power-ups, the upgrade machine, six zombie types and bosses, missions, XP and the spawn shop, perks, the story and voice lines. Graphics are built in code (procedural textures, primitive-based models, custom shaders) and the voices are placeholder "blips" with subtitles. A plain-language feature list is in the project files as `feature-breakdown.pdf`.
+
+**Graphics pass (built-in render pipeline, no art files)**
+- `Shaders/`: `ZombiesFPS/Surface` (triplanar detail and normal maps, world space for the map and object space for anything that moves, plus grime), `Glow` (HDR unlit, so it blooms), `NightSky` (skybox), `Decal` and `Hidden/ZombiesFPS/Post`. Each has a material in `Resources/Materials` so builds include it
+- `Core/SurfaceTextures.cs` generates tileable textures per `Surface` (concrete, brick, metal, rust, wood, tile, plaster, asphalt, dirt, grass, fabric, skin, rubber); `Greybox.Lit(color, surface, moving)` makes the material
+- `Core/GraphicsSetup.cs`: moonlight, trilight ambient, fog, night sky, a realtime reflection probe on High, and quality levels; `Core/PostFx.cs`: bloom, ACES tone mapping, grade, vignette, grain, brightness. Settings > Graphics has quality, brightness, bloom and film grain
+- Map dressing in `World/ZoneMap.Dressing.cs` (zone materials, wall skins, colliderless decor merged per material and cell, lamps, skyline); detailed zombies and teammates with procedural animation; per-gun models in `Weapons/GunModels.cs`; pooled decals in `Weapons/Decals.cs`
+- An editor script switches the project to Linear colour space once, which the lighting is tuned for
 
 **Zombies that climb, bullet penetration, a new layout, the story to round 50, upgraded guns**
 - Zombies reach you on every high place. Parkour blocks are now 3 m square so zombies keep a path onto them, and a zombie standing under a player it has no path up to (a crate, a block, a ledge whose ladder is behind a shut door) scrambles up the side after a moment. High spots with a ladder or a jump up are still reached the long way round
