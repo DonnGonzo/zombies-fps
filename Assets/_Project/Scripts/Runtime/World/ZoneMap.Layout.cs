@@ -75,8 +75,8 @@ namespace ZombiesFPS.World
             new[] { 44, 56, 90, 86, 56, 50, 80, 56 },
             // Lantern Core: a stepped octagon round the core, entered from the Garage by a short passage.
             new[] { 12, 56, 44, 80, 16, 52, 40, 56, 20, 48, 36, 52, 16, 80, 40, 84, 20, 84, 36, 88, 22, 42, 34, 48 },
-            // Archives: an L, the reading room with the stacks off the north-east.
-            new[] { -22, 58, 12, 72, -4, 72, 12, 88 },
+            // Archives: an L, the big reading room (with the monks' altar) and the stacks off the north-east.
+            new[] { -22, 58, 12, 76, -4, 76, 12, 88 },
             // Greenhouse.
             new[] { -56, 58, -22, 80 },
             // Gaol: a vaulted cell block under the old gate, its guard hall up against the gate passage.
@@ -84,7 +84,7 @@ namespace ZombiesFPS.World
             // Plague Ward: the long infirmary hall, with the sick wing off the south-west.
             new[] { 18, -30, 58, -12, 18, -40, 40, -30 },
             // Scriptorium: the copying hall, its lectern gallery reaching east over the Archives' stacks.
-            new[] { -22, 72, -4, 96, -4, 88, 10, 96 },
+            new[] { -22, 76, -4, 96, -4, 88, 10, 96 },
             // Alchemist's Furnace: the furnace hall behind the Lantern Core, with a coal chute down to the Crane Yard.
             new[] { 20, 88, 64, 106, 44, 86, 64, 88 },
             // Rampart Ruins: the broken east wall, a long climb of fallen masonry.
@@ -158,7 +158,7 @@ namespace ZombiesFPS.World
             new Vector2(80f, 20f), new Vector2(50f, 27f), new Vector2(-35f, 58f), new Vector2(-8f, 58f),
             new Vector2(-22f, 65f), new Vector2(69f, 50f), new Vector2(12f, 68f), new Vector2(44f, 68f),
             new Vector2(28f, 42f), new Vector2(0f, -22f), new Vector2(18f, -34f), new Vector2(24f, -12f),
-            new Vector2(58f, -17f), new Vector2(-14f, 72f), new Vector2(-22f, 77f), new Vector2(29.9f, 88f),
+            new Vector2(58f, -17f), new Vector2(-14f, 76f), new Vector2(-22f, 78f), new Vector2(29.9f, 88f),
             new Vector2(54f, 86f), new Vector2(88f, 30f), new Vector2(90f, 72f), new Vector2(-54f, 1f),
             new Vector2(-46f, 22.5f),
         };
@@ -339,7 +339,7 @@ namespace ZombiesFPS.World
             W(7, Side.South, -7, -12), W(7, Side.North, 7, -16), W(7, Side.East, 7, 10),
             W(8, Side.North, 15, 14), W(8, Side.East, 23, -6), W(8, Side.West, -23, 10),
             W(9, Side.West, -16, -8), W(9, Side.South, -16, -10), W(9, Side.North, 16, -10),
-            W(10, Side.North, 7, -14.5f), W(10, Side.West, 1, 12), W(10, Side.South, -7, -13),
+            W(10, Side.North, 11, -2), W(10, Side.West, 1, 14), W(10, Side.South, -7, -13),
             W(11, Side.West, -17, -6), W(11, Side.North, 11, 0), W(11, Side.South, -11, 10),
             W(12, Side.South, -6, -10), W(12, Side.West, -16, 3), W(12, Side.South, -6, 12),
             W(13, Side.South, -9, 12), W(13, Side.South, -19, -10), W(13, Side.East, 20, -3),
@@ -354,7 +354,7 @@ namespace ZombiesFPS.World
         {
             W(0, Side.South, -14, 8), W(1, Side.North, 12, -14), W(2, Side.South, -15, 10), W(3, Side.East, 8, 10),
             W(4, Side.East, 11, 20), W(5, Side.East, 19, -10), W(6, Side.North, 10, -13), W(7, Side.North, 7, -10),
-            W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 7, -5.5f), W(11, Side.South, -11, 0),
+            W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 11, -14), W(11, Side.South, -11, 0),
             W(12, Side.North, 6, -13), W(13, Side.East, 2, -14), W(14, Side.East, 23, 8), W(15, Side.East, 22, 0),
             W(16, Side.South, -20, 0), W(17, Side.West, -12, 14),
         };

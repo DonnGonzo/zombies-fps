@@ -118,6 +118,8 @@ namespace ZombiesFPS.Zombies
 
         NetworkVariable<ZombieMode> _mode = new NetworkVariable<ZombieMode>(ZombieMode.Chasing);
         NetworkVariable<ZombieKind> _kind = new NetworkVariable<ZombieKind>(ZombieKind.Walker);
+        /// <summary>One of the easter egg's own bosses, drawn on a Warden's body (None for every other zombie).</summary>
+        NetworkVariable<EggBoss> _special = new NetworkVariable<EggBoss>(EggBoss.None);
         /// <summary>Health left as a share of full, kept up to date for bosses only.</summary>
         public NetworkVariable<float> HealthFraction = new NetworkVariable<float>(1f);
 
@@ -220,6 +222,14 @@ namespace ZombiesFPS.Zombies
         public long Health => _health;
         public ZombieKind Kind => _kind.Value;
         public ZombieData Data => _data != null ? _data : GameConfig.ZombieType(_kind.Value);
+        public EggBoss Special => _special.Value;
+        /// <summary>The name on its health bar.</summary>
+        public string DisplayName => _special.Value != EggBoss.None ? EasterEggData.BossName(_special.Value) : Data.displayName;
+        /// <summary>Host: health at the start of this life.</summary>
+        public long MaxHealth => _maxHealth;
+
+        /// <summary>Where zombies are drawn to besides the players: the easter egg's Watchman, or a protect mission's survivor.</summary>
+        static Vector3? Lure => EasterEgg.Lure ?? MissionBoard.Lure;
 
         /// <summary>Raised on the host when this zombie dies (for the round manager's counters).</summary>
         public event Action<NetZombie, DamageInfo> Died;
@@ -230,11 +240,12 @@ namespace ZombiesFPS.Zombies
         public void Prebuild() => Build(SkinTones[UnityEngine.Random.Range(0, SkinTones.Length)]);
 
         /// <summary>Host: call before Spawn(). Pooled zombies come back here for every new life.</summary>
-        public void ServerSetup(ZombieKind kind, long health, ZombieSpeedTier tier)
+        public void ServerSetup(ZombieKind kind, long health, ZombieSpeedTier tier, EggBoss special = EggBoss.None)
         {
             _pendingHealth = health;
             _pendingTier = tier;
             _kind.Value = kind;
+            _special.Value = special;
             _mode.Value = ZombieMode.Chasing;
             HealthFraction.Value = 1f;
         }
@@ -244,6 +255,7 @@ namespace ZombiesFPS.Zombies
             _data = GameConfig.ZombieType(_kind.Value);
             Prebuild();
             ApplyKind();
+            ApplySpecial();
             ResetVisuals();
             if (_data.IsBoss) s_Bosses.Add(this);
             _lastPosition = transform.position;
@@ -711,6 +723,38 @@ namespace ZombiesFPS.Zombies
             }
         }
 
+        Light _specialLight;
+
+        /// <summary>The easter egg's bosses: bigger or smaller than a Warden, tinted, and glowing.</summary>
+        void ApplySpecial()
+        {
+            var special = _special.Value;
+            if (special == EggBoss.None)
+            {
+                if (_specialLight != null) _specialLight.enabled = false;
+                return;
+            }
+            float scale = EasterEggData.BossScale(special);
+            _visual.localScale = _data.bodyScale * scale;
+            var tint = EasterEggData.BossTint(special);
+            var skinMat = Greybox.Lit(_skin * tint, Surface.Skin, true);
+            foreach (var r in _skinRenderers) r.sharedMaterial = skinMat;
+            for (int i = 0; i < _renderers.Length; i++) _baseMaterials[i] = _renderers[i].sharedMaterial;
+            if (_model != null) _model.SetLook(tint, 1f);
+            if (_specialLight == null)
+            {
+                _specialLight = new GameObject("Boss Glow").AddComponent<Light>();
+                _specialLight.transform.SetParent(transform, false);
+                _specialLight.type = LightType.Point;
+                _specialLight.shadows = LightShadows.None;
+            }
+            _specialLight.transform.localPosition = new Vector3(0f, 2.2f * _data.bodyScale.y * scale, 0.6f);
+            _specialLight.color = EasterEggData.BossGlow(special);
+            _specialLight.range = 9f;
+            _specialLight.intensity = 2.5f;
+            _specialLight.enabled = true;
+        }
+
         // ---------------------------------------------------------------- damage (host)
 
         public DamageResult TakeDamage(in DamageInfo info)
@@ -900,7 +944,7 @@ namespace ZombiesFPS.Zombies
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
             // Zombies crowding a protect-mission survivor are where they should be, not stuck.
-            var lured = MissionBoard.Lure;
+            var lured = Lure;
             bool goingForLure = lured.HasValue && (lured.Value - transform.position).sqrMagnitude < distance * distance;
             if (_mode.Value == ZombieMode.Chasing && !goingForLure && !_data.IsBoss
                 && (TryStartScramble(rise, distance) || TryStartDrop(rise))) return;
@@ -936,7 +980,7 @@ namespace ZombiesFPS.Zombies
                     _target = FindTarget() ?? _target;
                     // A survivor being protected draws zombies that are closer to them than to any player.
                     Vector3 dest = _target.transform.position;
-                    var lure = MissionBoard.Lure;
+                    var lure = Lure;
                     if (lure.HasValue && (lure.Value - transform.position).sqrMagnitude < distance * distance) dest = lure.Value;
                     _agent.SetDestination(dest);
                     _repathTimer = RepathInterval;

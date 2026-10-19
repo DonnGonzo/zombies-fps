@@ -103,9 +103,10 @@ namespace ZombiesFPS.Net
             if ((origin - eye).sqrMagnitude > 2f * 2f) origin = eye;
             direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
 
-            int count = Physics.SphereCastNonAlloc(origin, Equipment.meleeRadius, direction, _hits, Equipment.meleeRange, ~0, QueryTriggerInteraction.Ignore);
+            float reach = Equipment.meleeRange * (HasSword.Value ? EasterEggData.SwordReach : 1f);
+            int count = Physics.SphereCastNonAlloc(origin, Equipment.meleeRadius, direction, _hits, reach, ~0, QueryTriggerInteraction.Ignore);
             Hitbox best = null;
-            Vector3 point = origin + direction * Equipment.meleeRange;
+            Vector3 point = origin + direction * reach;
             float bestDist = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
@@ -124,13 +125,27 @@ namespace ZombiesFPS.Net
                 return;
             }
             var zombie = (NetZombie)best.Owner;
-            long damage = (long)System.Math.Round(Equipment.MeleeDamageFor(RoundHealth) * (double)(best.isHead ? 1.5f : 1f) * (1f + Bonus(PowerStat.Damage)));
+            long damage = (long)System.Math.Round(Equipment.MeleeDamageFor(RoundHealth) * (double)(best.isHead ? 1.5f : 1f) * (1f + Bonus(PowerStat.Damage)) * EggDamage);
+            if (HasSword.Value) damage = SwordDamage(zombie, damage);
             var result = zombie.TakeDamage(new DamageInfo(damage, point, direction, best.isHead, OwnerClientId));
             if (!result.Killed) zombie.ServerStagger(Equipment.meleeStagger);
             AwardPoints(zombie, result, best.isHead);
             OnServerKillHeal(result);
             HitConfirmRpc(result.Killed, best.isHead);
             MeleeFxRpc(point, true);
+        }
+
+        /// <summary>
+        /// Oathbreaker: a set number of hits kills any zombie (one up to round 55, two up to 100, three after),
+        /// whatever its type. Bosses just take a heavy blade.
+        /// </summary>
+        long SwordDamage(NetZombie zombie, long knife)
+        {
+            if (zombie.Data.IsBoss) return (long)System.Math.Round(knife * (double)EasterEggData.SwordBossDamage);
+            int round = RoundManager.Instance != null ? RoundManager.Instance.DisplayRound : 1;
+            int hits = EasterEggData.SwordHits(round);
+            long perHit = zombie.MaxHealth / hits + 1;
+            return System.Math.Max(knife, perHit);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
@@ -168,7 +183,7 @@ namespace ZombiesFPS.Net
         {
             if (this == null || !IsSpawned || Equipment == null) return;
             var def = Equipment.Def(t.Kind);
-            long centre = def.DamageFor(RoundHealth);
+            long centre = (long)System.Math.Round(def.DamageFor(RoundHealth) * (double)EggDamage);
             bool killedAny = false;
             if (t.Kind == ThrowableKind.Knife)
             {

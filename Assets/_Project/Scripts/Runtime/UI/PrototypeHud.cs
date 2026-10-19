@@ -70,6 +70,7 @@ namespace ZombiesFPS.UI
             BuildManager.RobotBroke += OnRobotBroke;
             EasterEgg.StepStarted += OnEggStarted;
             EasterEgg.StepCompleted += OnEggCompleted;
+            EasterEgg.Moment += OnEggMoment;
             // The pause menu has its own Resume button, so a click there mustn't drop straight back into the game.
             PlayerLook.ClickToResume = false;
             gameObject.AddComponent<StoryDirector>().Init(player);
@@ -88,6 +89,7 @@ namespace ZombiesFPS.UI
             BuildManager.RobotBroke -= OnRobotBroke;
             EasterEgg.StepStarted -= OnEggStarted;
             EasterEgg.StepCompleted -= OnEggCompleted;
+            EasterEgg.Moment -= OnEggMoment;
             PlayerLook.ClickToResume = true;
             SettingsMenu.Close();
             DebugConsole.Close();
@@ -184,15 +186,62 @@ namespace ZombiesFPS.UI
         {
             var def = EasterEggData.At(step);
             if (def == null) return;
-            ShowBanner(def.title.ToUpperInvariant(), $"The doors are sealed. Kill {def.zombies} of Doctor Morrow's runners. They don't count toward the round.", EasterEggData.ScientistColor);
+            string sub = def.kind switch
+            {
+                EggStepKind.Survival => $"The doors are sealed. Kill {def.zombies} of Doctor Morrow's runners. They don't count toward the round.",
+                EggStepKind.Ritual => $"Hold the Archives for {def.seconds / 60} minutes. The clock stops if nobody is in the room.",
+                EggStepKind.Rescue => "An ambush! Keep Sergeant Brannock alive: zombies go for him first.",
+                EggStepKind.Boss => "The binding stones' keeper is waking. Kill it.",
+                _ => "Azhrakel stirs beneath the altar.",
+            };
+            ShowBanner(def.title.ToUpperInvariant(), sub, EggColor(step));
         }
 
         void OnEggCompleted(int step)
         {
             var def = EasterEggData.At(step);
             if (def == null) return;
-            ShowBanner("THE LANTERN IS AWAKE", $"{def.title}: step {step + 1} of {EasterEggData.Steps.Length} done. {EasterEgg.StepReward:N0} points for everyone.", EasterEggData.ScientistColor);
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
+            // The last step's banner is its ending's reward (EasterEgg.Moment).
+            if (step == EasterEggData.Steps.Length - 1) return;
+            string title = step switch
+            {
+                0 => "THE LANTERN IS AWAKE",
+                1 => "THE SPARK IS CHARGED",
+                2 => "THE WATCHMAN TRUSTS YOU",
+                3 => "THE ELEMENTAL HEART",
+                _ => "THE EMBER BELOW",
+            };
+            ShowBanner(title, $"{def.title}: step {step + 1} of {EasterEggData.Steps.Length} done. {EasterEgg.StepReward:N0} points for everyone.", EggColor(step));
+        }
+
+        void OnEggMoment(string title, string sub, Color color) => ShowBanner(title, sub, color);
+
+        /// <summary>Each step in the colour of whoever is driving it.</summary>
+        static Color EggColor(int step) => step <= 1 ? EasterEggData.ScientistColor
+            : step == 2 || step == 3 ? EasterEggData.SpeakerColor(EggSpeaker.Watchman) : EasterEggData.SpeakerColor(EggSpeaker.God);
+
+        /// <summary>The line under the round counter while a step runs.</summary>
+        static string EggStatus(EasterEgg egg)
+        {
+            int left;
+            switch (egg.StepsDone.Value)
+            {
+                case 0: return $"LANTERN TRIAL  ·  {egg.Remaining} OF {egg.Total.Value} RUNNERS LEFT  ·  DOORS SEALED";
+                case 1:
+                    left = egg.Remaining;
+                    return egg.Paused.Value ? "MANA RITUAL STALLED  ·  GET BACK TO THE ARCHIVES" : $"MANA RITUAL  ·  {left / 60}:{left % 60:00} LEFT  ·  HOLD THE ARCHIVES";
+                case 2: return $"PROTECT THE WATCHMAN  ·  {Mathf.CeilToInt(egg.WatchmanHealth.Value * 100f)}% HEALTH  ·  {egg.Remaining} LEFT";
+                case 3: return "THE ROTBLOOM  ·  KILL THE KEEPER OF THE STONES";
+                default:
+                    return egg.Phase.Value switch
+                    {
+                        EggPhase.Choice => "FIGHT AZHRAKEL, OR SERVE HIM",
+                        EggPhase.FightGod => "DEFEAT AZHRAKEL  ·  MOVE OFF THE FIRE MARKS",
+                        EggPhase.GeneralSpeaks or EggPhase.FightGeneral => "THE HOLLOW KEEP  ·  KILL THE BETRAYER",
+                        _ => "THE BLOOD SANCTUM",
+                    };
+            }
         }
 
         void ShowBanner(string title, string sub, Color color)
@@ -376,6 +425,7 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Reroll: Tips.Offer("reroll", "The shrine sells redraws for power-up cards. Press 4 while picking a power-up to redraw."); break;
                     case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all the parts of the Scrap Cannon, Aegis Shield (four parts) or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
                     case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Aegis Shield or Buddy Bot here once the squad has all of its parts; after that, take one whenever you need it."); break;
+                    case BuyableKind.Egg: Tips.Offer("eggspot", "Part of the map's secret. The pause menu's story card says what the squad is carrying and what comes next."); break;
                     case BuyableKind.Reactor: Tips.Offer("reactor", "The Lantern reactor. Something in it is listening. With the whole squad in the room, touching it starts the map's secret, and seals you in until it's done."); break;
                 }
             }
@@ -533,7 +583,17 @@ namespace ZombiesFPS.UI
             // The easter egg shows up here once the squad has found it.
             var egg = EasterEgg.Instance;
             bool eggFound = egg != null && (egg.Active.Value || egg.StepsDone.Value > 0);
-            float eh = eggFound ? 54 * u : 0f;
+            string carrying = eggFound ? egg.Carrying : null;
+            string eggHint = eggFound && !egg.Finished && !egg.Active.Value ? EasterEggData.At(egg.StepsDone.Value).hint : null;
+            float hh = 0f;
+            if (eggHint != null)
+            {
+                bool ww = Ui.Tiny.wordWrap;
+                Ui.Tiny.wordWrap = true;
+                hh = Ui.Tiny.CalcHeight(new GUIContent(eggHint), cw - 48 * u) + 4 * u;
+                Ui.Tiny.wordWrap = ww;
+            }
+            float eh = eggFound ? 54 * u + hh + (carrying != null ? 22 * u : 0f) : 0f;
             var r = new Rect(pause.xMax + 24 * u, pause.y, cw, 90 * u + sh + lh + eh);
             Ui.PanelBox(r, StoryData.RadioColor, u);
             string actLine = act < StoryData.StoryActs ? $"ACT {act + 1} OF {StoryData.StoryActs}  ·  THE STORY ENDS AT ROUND {StoryData.FinalRound}" : "STORY COMPLETE";
@@ -554,11 +614,21 @@ namespace ZombiesFPS.UI
             {
                 int done = egg.StepsDone.Value, steps = EasterEggData.Steps.Length;
                 var next = EasterEggData.At(done);
-                string state = egg.Active.Value ? $"Now: {next.title}, {egg.Remaining} runners left"
-                    : next != null && next.kind != EggStepKind.Locked ? $"Next: {next.title}" : "Doctor Morrow will have more for you soon";
+                string state = egg.Finished ? (egg.Ending.Value == EggBoon.EmberOath ? "Done: you served Azhrakel and killed the Betrayer" : "Done: you beat Azhrakel")
+                    : egg.Active.Value ? $"Now: {next.title}" : $"Next: {next.title}";
                 float ey = r.yMax - eh;
                 Ui.Label(new Rect(r.x + 24 * u, ey, cw, 22 * u), $"DOCTOR MORROW'S WORK  ·  {done} OF {steps} STEPS", Ui.Tiny, EasterEggData.ScientistColor, TextAnchor.UpperLeft);
                 Ui.Label(new Rect(r.x + 24 * u, ey + 22 * u, cw - 48 * u, 22 * u), state, Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+                float ly = ey + 44 * u;
+                if (eggHint != null)
+                {
+                    bool ww = Ui.Tiny.wordWrap;
+                    Ui.Tiny.wordWrap = true;
+                    Ui.Label(new Rect(r.x + 24 * u, ly, cw - 48 * u, hh), eggHint, Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+                    Ui.Tiny.wordWrap = ww;
+                    ly += hh;
+                }
+                if (carrying != null) Ui.Label(new Rect(r.x + 24 * u, ly, cw - 48 * u, 22 * u), "Carrying: " + carrying, Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
             }
         }
 
@@ -706,8 +776,14 @@ namespace ZombiesFPS.UI
             var egg = EasterEgg.Instance;
             if (egg != null && egg.Active.Value)
             {
-                Ui.Label(new Rect(0, y, w, 26 * u), $"LANTERN TRIAL  ·  {egg.Remaining} OF {egg.Total.Value} RUNNERS LEFT  ·  DOORS SEALED", Ui.Small, EasterEggData.ScientistColor, TextAnchor.UpperCenter);
+                Ui.Label(new Rect(0, y, w, 26 * u), EggStatus(egg), Ui.Small, EggColor(egg.StepsDone.Value), TextAnchor.UpperCenter);
                 y += 26 * u;
+            }
+            if (_player.Boon.Value != EggBoon.None)
+            {
+                string boon = _player.Boon.Value == EggBoon.Godblood ? "GODBLOOD  ·  2x EVERYTHING" : "EMBER OATH  ·  3x DAMAGE AND HEALTH";
+                Ui.Label(new Rect(0, y, w, 24 * u), boon, Ui.Tiny, EasterEggData.SpeakerColor(EggSpeaker.God), TextAnchor.UpperCenter);
+                y += 24 * u;
             }
             if (rounds.GodMode.Value)
             {
@@ -723,7 +799,7 @@ namespace ZombiesFPS.UI
             foreach (var boss in NetZombie.Bosses)
             {
                 if (boss == null || !boss.IsAlive) continue;
-                Ui.Label(new Rect(0, y, w, 26 * u), boss.Data.displayName.ToUpperInvariant(), Ui.Small, new Color(1f, 0.6f, 0.3f), TextAnchor.LowerCenter);
+                Ui.Label(new Rect(0, y, w, 26 * u), boss.DisplayName.ToUpperInvariant(), Ui.Small, new Color(1f, 0.6f, 0.3f), TextAnchor.LowerCenter);
                 y += 28 * u;
                 Ui.Bar(new Rect((w - bw) / 2f, y, bw, bh), boss.HealthFraction.Value, new Color(0.9f, 0.38f, 0.08f));
                 y += bh + 12 * u;

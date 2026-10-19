@@ -42,7 +42,9 @@ namespace ZombiesFPS.Weapons
         Renderer[] _glowParts;
         Light _glowLight;
         int _glowTier = -1;
-        Transform _knife;
+        Transform _knife, _sword;
+        /// <summary>Oathbreaker (the easter egg's sword) swings instead of the knife.</summary>
+        public bool Sword { get; set; }
         float _meleeStart = -100f, _throwStart = -100f;
         const float MeleeTime = 0.38f, ThrowTime = 0.45f;
 
@@ -144,6 +146,18 @@ namespace ZombiesFPS.Weapons
                 surface: Surface.Metal, moving: true);
             Greybox.DisableShadows(_knife.gameObject);
             _knife.gameObject.SetActive(false);
+
+            // Oathbreaker: a long frost-steel blade with a gold crossguard and a blue glow down the fuller.
+            _sword = Greybox.Empty("Oathbreaker", transform, new Vector3(-0.12f, -0.16f, 0.36f));
+            var steel = new Color(0.72f, 0.76f, 0.84f);
+            Greybox.Box("Blade", _sword, new Vector3(0f, 0f, 0.42f), new Vector3(0.014f, 0.06f, 0.78f), steel, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Prim(PrimitiveType.Cube, "Fuller", _sword, new Vector3(0f, 0f, 0.4f), new Vector3(0.016f, 0.012f, 0.68f), new Color(0.45f, 0.65f, 1f), collider: false, unlit: true);
+            Greybox.Box("Tip", _sword, new Vector3(0f, 0f, 0.83f), new Vector3(0.012f, 0.035f, 0.05f), steel, collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Box("Crossguard", _sword, new Vector3(0f, 0f, 0.02f), new Vector3(0.03f, 0.2f, 0.03f), new Color(0.65f, 0.5f, 0.2f), collider: false, surface: Surface.Metal, moving: true);
+            Greybox.Box("Grip", _sword, new Vector3(0f, 0f, -0.08f), new Vector3(0.03f, 0.03f, 0.17f), new Color(0.12f, 0.1f, 0.14f), collider: false, surface: Surface.Rubber, moving: true);
+            Greybox.Prim(PrimitiveType.Sphere, "Pommel", _sword, new Vector3(0f, 0f, -0.18f), Vector3.one * 0.045f, new Color(0.65f, 0.5f, 0.2f), collider: false, surface: Surface.Metal, moving: true);
+            Greybox.DisableShadows(_sword.gameObject);
+            _sword.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -285,8 +299,16 @@ namespace ZombiesFPS.Weapons
             euler += new Vector3(25f, 20f, -25f) * meleeWeight + new Vector3(30f, 0f, -10f) * throwWeight;
 
             bool slashing = melee < 1f;
-            if (_knife.gameObject.activeSelf != slashing) _knife.gameObject.SetActive(slashing);
-            if (slashing)
+            if (_knife.gameObject.activeSelf != (slashing && !Sword)) _knife.gameObject.SetActive(slashing && !Sword);
+            if (_sword.gameObject.activeSelf != (slashing && Sword)) _sword.gameObject.SetActive(slashing && Sword);
+            if (slashing && Sword)
+            {
+                // A wide sweep from high right to low left.
+                float k = melee * melee * (3f - 2f * melee);
+                _sword.localPosition = Vector3.Lerp(new Vector3(0.32f, 0.12f, 0.22f), new Vector3(-0.3f, -0.2f, 0.32f), k);
+                _sword.localRotation = Quaternion.Euler(Mathf.Lerp(-35f, 25f, k), Mathf.Lerp(-40f, -125f, k), Mathf.Lerp(-40f, -90f, k));
+            }
+            else if (slashing)
             {
                 float k = melee * melee * (3f - 2f * melee);
                 _knife.localPosition = Vector3.Lerp(new Vector3(0.28f, 0.02f, 0.3f), new Vector3(-0.3f, -0.18f, 0.42f), k);

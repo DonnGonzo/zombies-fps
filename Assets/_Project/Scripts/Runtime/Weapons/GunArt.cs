@@ -32,6 +32,7 @@ namespace ZombiesFPS.Weapons
             { "Vanta .50 Sniper", ("specter308", 1f, false) },
             { "Ion Lance", ("helix", 1f, false) },
             { "Scrap Cannon", ("pulse", 1f, false) },
+            { "Brand of Azhrakel", ("helix", 1f, false) },
         };
 
         public const string Shield = "shield";

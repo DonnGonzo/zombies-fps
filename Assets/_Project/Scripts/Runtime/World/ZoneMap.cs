@@ -25,6 +25,8 @@ namespace ZombiesFPS.World
         Workbench,
         /// <summary>The Lantern Core's reactor, where the easter egg's steps start. Free to touch.</summary>
         Reactor,
+        /// <summary>One of the easter egg's later places (relics, altars, the Watchman, portals); Index is the EggSpot.</summary>
+        Egg,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -271,6 +273,7 @@ namespace ZombiesFPS.World
             BuildBenches();
             // Everything solid is in place now, so the dressing can keep clear of it.
             DressZones();
+            BuildEggRooms();
             BuildSkyline();
             _decor.Build(Root);
             _decor = null;
@@ -302,6 +305,7 @@ namespace ZombiesFPS.World
                     buyables.Add(new Buyable { Kind = BuyableKind.Workbench, Index = bench * BuildableCount + item, Position = BenchPlace(bench, item), Range = BenchRange });
             // Reached from any side: the range is measured from the reactor's middle.
             buyables.Add(new Buyable { Kind = BuyableKind.Reactor, Index = 0, Position = ReactorBase + Vector3.up, Range = CoreDiameter / 2f + 1.6f });
+            AddEggBuyables(buyables);
             Buyables = buyables.ToArray();
 
             PlayerStart = StartPosition;

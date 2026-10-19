@@ -76,11 +76,15 @@ namespace ZombiesFPS.UI
 
         static string Pick(string[] lines) => lines == null || lines.Length == 0 ? null : lines[Random.Range(0, lines.Length)];
 
-        /// <summary>Doctor Morrow, over the lab's intercoms: his recording if there is one, else the placeholder voice.</summary>
+        /// <summary>
+        /// The easter egg's voices: Doctor Morrow over the intercoms, Brannock, Azhrakel and Ashgrave in the room.
+        /// Their recording if there is one, else the placeholder voice.
+        /// </summary>
         void OnScientistLine(EggLine line)
         {
-            var voice = string.IsNullOrEmpty(line.id) ? null : Resources.Load<AudioClip>(EasterEggData.VoiceFolder + line.id);
-            _queue.Enqueue((EasterEggData.ScientistName, line.text, EasterEggData.ScientistColor, 0.55f, voice));
+            var voice = string.IsNullOrEmpty(line.id) ? null : Resources.Load<AudioClip>(EasterEggData.VoiceFolder(line.speaker) + line.id);
+            float pitch = line.speaker == EggSpeaker.God ? 0.4f : line.speaker == EggSpeaker.General ? 0.5f : line.speaker == EggSpeaker.Watchman ? 0.62f : 0.55f;
+            _queue.Enqueue((EasterEggData.SpeakerName(line.speaker), line.text, EasterEggData.SpeakerColor(line.speaker), pitch, voice));
         }
 
         void OnMissionCompleted(int id)
@@ -173,7 +177,9 @@ namespace ZombiesFPS.UI
             if (_queue.Count == 0 || Time.time < _nextLineAt) return;
             var (speaker, text, color, pitch, voice) = _queue.Dequeue();
             if (string.IsNullOrEmpty(text)) return;
-            bool radio = speaker != StoryData.TraderName;
+            // The Trader and the easter egg's people in the room talk to you directly; everyone else is on the radio.
+            bool radio = speaker != StoryData.TraderName && speaker != EasterEggData.SpeakerName(EggSpeaker.Watchman)
+                && speaker != EasterEggData.SpeakerName(EggSpeaker.God) && speaker != EasterEggData.SpeakerName(EggSpeaker.General);
             float duration = Mathf.Clamp(1.6f + text.Length * 0.055f, 2.5f, 8f);
             if (voice != null) duration = Mathf.Max(duration, voice.length + 0.6f);
             Subtitles.Show(speaker, text, color, radio, duration);

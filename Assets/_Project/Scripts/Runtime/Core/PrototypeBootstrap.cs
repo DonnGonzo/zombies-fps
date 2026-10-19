@@ -65,7 +65,11 @@ namespace ZombiesFPS.Core
             GameConfig.ZombieTypes = BuildZombieTypes(GameConfig.Zombie, zombieTypes);
             GameConfig.Round = roundData != null ? roundData : ScriptableObject.CreateInstance<RoundData>();
             GameConfig.Prices = priceTable != null ? priceTable : PriceTable.CreateDefault(GameConfig.Gun);
-            GameConfig.Guns = GameConfig.Prices.BuildCatalog(GameConfig.Gun);
+            var guns = GameConfig.Prices.BuildCatalog(GameConfig.Gun);
+            // The easter egg's reward gun goes last, so every other gun keeps its id.
+            System.Array.Resize(ref guns, guns.Length + 1);
+            guns[guns.Length - 1] = EasterEggData.MakeGodGun();
+            GameConfig.Guns = guns;
             GameConfig.Upgrades = upgradeData != null ? upgradeData : ScriptableObject.CreateInstance<UpgradeData>();
             GameConfig.Missions = missionData != null ? missionData : ScriptableObject.CreateInstance<MissionData>();
             GameConfig.Shop = shopData != null ? shopData : ScriptableObject.CreateInstance<ShopData>();

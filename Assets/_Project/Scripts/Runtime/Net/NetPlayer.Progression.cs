@@ -49,8 +49,8 @@ namespace ZombiesFPS.Net
 
         public int PowerLevel(int index) => UpgradeData.LevelOf(PowerLevels.Value, index);
         public float Bonus(PowerStat stat) => Upgrades != null ? Upgrades.StatBonus(PowerLevels.Value, stat) : 0f;
-        public float MaxHealthNow => MaxHealth * (1f + Bonus(PowerStat.MaxHealth)) * PerkHealthScale;
-        float ReloadSpeedNow => (1f + Bonus(PowerStat.ReloadSpeed)) * PerkReloadScale;
+        public float MaxHealthNow => MaxHealth * (1f + Bonus(PowerStat.MaxHealth)) * PerkHealthScale * EggHealth;
+        float ReloadSpeedNow => (1f + Bonus(PowerStat.ReloadSpeed)) * PerkReloadScale * EggReload;
 
         public bool HasPowerUpOffer => PowerOffer.Value >= 0;
         public bool OfferIsEmpowered => HasPowerUpOffer && (PowerOffer.Value & (1 << 12)) != 0;
@@ -62,7 +62,7 @@ namespace ZombiesFPS.Net
         public int OfferLevels => OfferIsEmpowered ? Mathf.Max(1, Upgrades.empoweredLevels) : 1;
 
         public float CapacityScale(int slot) => (1f + Bonus(PowerStat.AmmoCapacity)) * (Upgrades != null ? Upgrades.TierCapacity(TierInSlot(slot)) : 1f);
-        public float GunDamageMultiplier(int slot) => (Upgrades != null ? Upgrades.TierDamage(TierInSlot(slot)) : 1f) * (1f + Bonus(PowerStat.Damage));
+        public float GunDamageMultiplier(int slot) => (Upgrades != null ? Upgrades.TierDamage(TierInSlot(slot)) : 1f) * (1f + Bonus(PowerStat.Damage)) * EggDamage;
 
         public string GunName(int slot)
         {
@@ -138,8 +138,8 @@ namespace ZombiesFPS.Net
         {
             if (_motor != null)
             {
-                _motor.SpeedMultiplier = (1f + Bonus(PowerStat.MoveSpeed)) * PerkSpeedScale;
-                _motor.StaminaScale = PerkStaminaScale;
+                _motor.SpeedMultiplier = (1f + Bonus(PowerStat.MoveSpeed)) * PerkSpeedScale * EggSpeed;
+                _motor.StaminaScale = PerkStaminaScale * EggStamina;
             }
             if (_gun == null) return;
             _gun.ReloadSpeed = ReloadSpeedNow;

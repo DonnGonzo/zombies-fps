@@ -161,6 +161,7 @@ namespace ZombiesFPS.Net
                 SubscribePerks();
                 SubscribeVoice();
                 BuildLocalRig();
+                SubscribeEgg();
                 ApplyOwnerBonuses();
             }
             else
@@ -182,6 +183,7 @@ namespace ZombiesFPS.Net
                 UnsubscribeShop();
                 UnsubscribeVoice();
                 UnsubscribePerks();
+                UnsubscribeEgg();
             }
             if (Local == this) Local = null;
         }
@@ -704,6 +706,7 @@ namespace ZombiesFPS.Net
             {
                 if (b.Kind == BuyableKind.Door && MapState.Instance != null && MapState.Instance.IsDoorOpen(b.Index)) continue;
                 if (b.Kind == BuyableKind.Part && (BuildManager.Instance == null || BuildManager.Instance.PartWaitingAt(b.Index) < 0)) continue;
+                if (b.Kind == BuyableKind.Egg && (EasterEgg.Instance == null || !EasterEgg.Instance.SpotShown(b.Index))) continue;
                 Vector3 d = b.Position - here;
                 // Up on a ledge or down below doesn't count.
                 if (Mathf.Abs(d.y - 1f) > 1.6f) continue;
@@ -750,6 +753,7 @@ namespace ZombiesFPS.Net
                 return BuildManager.Instance.BenchPrice(this, b.Index % ZoneMap.BuildableCount, out what);
             }
             if (b.Kind == BuyableKind.Reactor) return EasterEgg.Instance != null ? EasterEgg.Instance.ReactorPrice(this, out what) : -1;
+            if (b.Kind == BuyableKind.Egg) return EasterEgg.Instance != null ? EasterEgg.Instance.SpotPrice(this, b.Index, out what) : -1;
             var entry = GameConfig.Prices.WallGunAt(b.Index);
             if (entry == null || entry.gun == null) return -1;
             bool owned = SlotOf(GameConfig.GunId(entry.gun)) >= 0;
@@ -837,6 +841,7 @@ namespace ZombiesFPS.Net
             Tier1.Value = 0;
             Att0.Value = 0;
             Att1.Value = 0;
+            ServerResetEgg();
         }
 
         /// <summary>Host only. Brings a bled-out player back at the end of a round, keeping their points.</summary>
@@ -1049,6 +1054,10 @@ namespace ZombiesFPS.Net
             else if (b.Kind == BuyableKind.Reactor)
             {
                 EasterEgg.Instance.ServerTouchReactor(this);
+            }
+            else if (b.Kind == BuyableKind.Egg)
+            {
+                EasterEgg.Instance.ServerUseSpot(this, b.Index);
             }
             else
             {

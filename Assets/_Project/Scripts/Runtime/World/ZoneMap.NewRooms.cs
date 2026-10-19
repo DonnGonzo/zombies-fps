@@ -122,8 +122,8 @@ namespace ZombiesFPS.World
                     rng.NextDouble() < 0.5 ? new Color(0.25f, 0.3f, 0.14f) : new Color(0.38f, 0.32f, 0.16f), Surface.Grass);
 
             // Scriptorium: a long runner up the middle aisle.
-            Deco(L(Scriptorium, 0f, 0.006f, -2f), new Vector3(2.4f, 0.01f, 18f), new Color(0.32f, 0.1f, 0.08f), Surface.Fabric);
-            Deco(L(Scriptorium, 0f, 0.009f, -2f), new Vector3(2f, 0.01f, 17.6f), new Color(0.45f, 0.3f, 0.12f), Surface.Fabric);
+            Deco(L(Scriptorium, 0f, 0.006f, 1f), new Vector3(2.4f, 0.01f, 15f), new Color(0.32f, 0.1f, 0.08f), Surface.Fabric);
+            Deco(L(Scriptorium, 0f, 0.009f, 1f), new Vector3(2f, 0.01f, 14.6f), new Color(0.45f, 0.3f, 0.12f), Surface.Fabric);
 
             // Alchemist's Furnace: coal heaped in the bunkers and spilled round them, the flue up to the roof and a
             // glowing mouth on the furnace.

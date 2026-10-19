@@ -110,13 +110,15 @@ namespace ZombiesFPS.Net
                     break;
 
                 case GamePhase.RoundActive:
-                    if (_toSpawn > 0 && AliveZombies.Value < LiveCap && Time.time >= _nextSpawnTime)
+                    // Nothing spawns while the squad is down in the easter egg's rooms off the map: zombies couldn't reach them.
+                    bool held = EasterEgg.Instance != null && EasterEgg.Instance.HoldsRound;
+                    if (!held && _toSpawn > 0 && AliveZombies.Value < LiveCap && Time.time >= _nextSpawnTime)
                     {
                         bool spawned = TrySpawn(PickKind(Round.Value));
                         _nextSpawnTime = Time.time + (spawned ? GameConfig.Round.SpawnIntervalForRound(Round.Value, NetPlayer.All.Count) : RetrySpawnDelay);
                     }
                     // Bosses come on top of the horde and ignore the live cap.
-                    if (_bossesToSpawn > 0 && Time.time >= _nextBossTime)
+                    if (!held && _bossesToSpawn > 0 && Time.time >= _nextBossTime)
                         _nextBossTime = Time.time + (TrySpawn(ZombieKind.Boss) ? BossSpacing : RetrySpawnDelay);
                     if (_toSpawn == 0 && _bossesToSpawn == 0 && AliveZombies.Value == 0) CompleteRound();
                     break;

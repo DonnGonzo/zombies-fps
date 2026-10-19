@@ -44,7 +44,9 @@ namespace ZombiesFPS.UI
             "doors          open every door",
             "parts          find every build part",
             "egg            finish the easter egg step being played (or the next one)",
-            "goto ZONE      teleport yourself (try: goto crane, goto high 2)",
+            "egg serve      finish the last step the Serve way (Ashgrave) instead of Fight",
+            "relics         pick up every easter egg relic (step 2)",
+            "goto ZONE      teleport yourself (try: goto crane, goto high 2, goto sanctum, goto keep)",
             "clearlog       empty this log",
         };
 
@@ -251,14 +253,23 @@ namespace ZombiesFPS.UI
                         break;
                     }
                     string title = egg.CurrentStep.title;
-                    egg.DebugCompleteStep();
+                    egg.DebugCompleteStep(arg.StartsWith("serve", StringComparison.OrdinalIgnoreCase));
                     Log($"Easter egg step done: {title}.");
+                    break;
+                case "relics":
+                    if (EasterEgg.Instance == null || EasterEgg.Instance.StepsDone.Value != 1)
+                    {
+                        Log("The relics only turn up once the Lantern is awake (step 2).");
+                        break;
+                    }
+                    EasterEgg.Instance.DebugAllRelics();
+                    Log("Every relic picked up. Take them to the altar in the Archives.");
                     break;
                 case "goto":
                     var me = NetPlayer.Local;
                     if (me == null || !TryFindPlace(arg, out Vector3 to, out string placeName))
                     {
-                        Log("Usage: goto ZONE (part of a zone name) or goto high N (0-5, a high spot)");
+                        Log("Usage: goto ZONE (part of a zone name), goto high N (0-5, a high spot), goto sanctum or goto keep");
                         break;
                     }
                     me.DebugTeleport(to);
@@ -281,6 +292,18 @@ namespace ZombiesFPS.UI
             {
                 position = ZoneMap.HighSpot(spot) + new Vector3(-1.5f, 0.1f, 0f);
                 name = "the " + ZoneMap.HighSpotNames[spot];
+                return true;
+            }
+            if (words[0].Equals("sanctum", StringComparison.OrdinalIgnoreCase))
+            {
+                position = ZoneMap.SanctumArrival;
+                name = "the Blood Sanctum";
+                return true;
+            }
+            if (words[0].Equals("keep", StringComparison.OrdinalIgnoreCase))
+            {
+                position = ZoneMap.KeepArrival;
+                name = "the Hollow Keep";
                 return true;
             }
             for (int z = 0; z < ZoneMap.ZoneCount; z++)
