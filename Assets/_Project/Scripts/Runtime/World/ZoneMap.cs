@@ -947,6 +947,18 @@ namespace ZombiesFPS.World
             Greybox.Box("Chalk B", panel, new Vector3(0f, -0.42f, 0f), new Vector3(1.6f, 0.05f, 0.02f), Chalk, collider: false);
             Greybox.Box("Chalk L", panel, new Vector3(-0.78f, 0f, 0f), new Vector3(0.05f, 0.88f, 0.02f), Chalk, collider: false);
             Greybox.Box("Chalk R", panel, new Vector3(0.78f, 0f, 0f), new Vector3(0.05f, 0.88f, 0.02f), Chalk, collider: false);
+            // The gun itself hangs in the outline, side on, sized to fill it.
+            if (Weapons.GunArt.Extent(gun, out float gunLength, out var middle, out float halfWidth))
+            {
+                float scale = Mathf.Clamp(1.25f / gunLength, 0.9f, 1.6f);
+                var hung = Weapons.GunArt.BuildProp(gun, panel).transform;
+                hung.localScale = Vector3.one * scale;
+                // Barrel along the panel's x, its side to the room, clear of the wall.
+                hung.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                hung.localPosition = new Vector3(-middle.z * scale, -middle.y * scale + 0.02f, -(halfWidth + 0.01f) * scale);
+                Greybox.DisableShadows(hung.gameObject);
+                return;
+            }
             float length = gun != null ? Mathf.Clamp(gun.modelLength, 0.4f, 1.5f) : 1f;
             var accent = gun != null ? gun.accent : Cover;
             Greybox.Box("Gun", panel, new Vector3(0f, 0.05f, 0f), new Vector3(0.9f * length, 0.12f, 0.04f), new Color(0.16f, 0.17f, 0.18f), collider: false, surface: Surface.Metal);

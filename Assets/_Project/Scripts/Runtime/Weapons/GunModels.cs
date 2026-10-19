@@ -68,6 +68,8 @@ namespace ZombiesFPS.Weapons
             public Light GlowLight;
             /// <summary>Parts hidden while aiming (a scope's tube), or null.</summary>
             public GameObject HideWhenAimed;
+            /// <summary>Paints a pack model (see <see cref="GunArt"/>) with a camo, or its own colours for null. Null for primitive guns.</summary>
+            public System.Action<Color?> Repaint;
 
             /// <summary>The furniture's colour for a gun's accent. Bright accents (energy, scrap) are toned down.</summary>
             public Color FurnitureColor(Color accent)
@@ -95,9 +97,11 @@ namespace ZombiesFPS.Weapons
         /// <summary>Brownish, muted accents are wood; everything else is polymer.</summary>
         static bool IsWoody(Color c) => c.r > c.g && c.g > c.b && c.r - c.b > 0.12f && c.r < 0.6f;
 
-        /// <summary>Builds a gun's model under the view-model root, hidden until it's held.</summary>
+        /// <summary>Builds a gun's model under the view-model root, hidden until it's held: the pack model when there is one.</summary>
         public static Model Build(GunData data, Transform parent)
         {
+            var art = GunArt.BuildView(data, parent);
+            if (art != null) return art;
             var m = new Model { Shape = ShapeOf(data) };
             m.Root = Greybox.Empty("Gun " + data.displayName, parent, Vector3.zero).gameObject;
             m.FurnitureSurface = IsWoody(data.accent) ? Surface.Wood : Surface.Rubber;
@@ -237,8 +241,13 @@ namespace ZombiesFPS.Weapons
         /// </summary>
         static void Glow(Builder b, float stripX, float stripY, float stripZ, float stripLength, Vector3 spine, float spineLength,
             Vector3 ring, float ringSize, Vector3 cell, Vector3 cellSize, float cellPitch)
+            => AddGlow(b.M, b.Root, stripX, stripY, stripZ, stripLength, spine, spineLength, ring, ringSize, cell, cellSize, cellPitch);
+
+        /// <summary>The upgrade glow group (see Glow) under any root, for the pack models too.</summary>
+        public static void AddGlow(Model m, Transform root, float stripX, float stripY, float stripZ, float stripLength, Vector3 spine, float spineLength,
+            Vector3 ring, float ringSize, Vector3 cell, Vector3 cellSize, float cellPitch)
         {
-            var glow = Greybox.Empty("Upgrade Glow", b.Root, Vector3.zero).gameObject;
+            var glow = Greybox.Empty("Upgrade Glow", root, Vector3.zero).gameObject;
             var t = glow.transform;
             var parts = new[]
             {
@@ -249,14 +258,14 @@ namespace ZombiesFPS.Weapons
                 Greybox.Prim(PrimitiveType.Cube, "MagCell", t, cell, cellSize, Color.white, collider: false, unlit: true),
             };
             parts[4].transform.localRotation = Quaternion.Euler(cellPitch, 0f, 0f);
-            b.M.GlowParts = new Renderer[parts.Length];
-            for (int i = 0; i < parts.Length; i++) b.M.GlowParts[i] = parts[i].GetComponent<Renderer>();
+            m.GlowParts = new Renderer[parts.Length];
+            for (int i = 0; i < parts.Length; i++) m.GlowParts[i] = parts[i].GetComponent<Renderer>();
             var light = glow.AddComponent<Light>();
             light.type = LightType.Point;
             light.range = 1.4f;
             light.shadows = LightShadows.None;
-            b.M.Glow = glow;
-            b.M.GlowLight = light;
+            m.Glow = glow;
+            m.GlowLight = light;
             glow.SetActive(false);
         }
 

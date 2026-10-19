@@ -91,6 +91,12 @@ namespace ZombiesFPS.Net
         Renderer[] _remoteGlowParts;
         Light _remoteGlowLight;
         int _remoteGlowTier = -1;
+        // The held gun's model from the weapon pack, replacing the stand-in blocks when the gun has one.
+        Transform _remoteGunRoot;
+        Renderer[] _remoteBlocky;
+        GameObject _remoteArt;
+        int _remoteArtGun = -2;
+        Color? _remoteArtCamo;
         static readonly Color RemoteGunColor = new Color(0.16f, 0.17f, 0.18f);
         AudioSource _remoteAudio;
         // The remote body's rig and per-character dressing, animated by AnimateRemoteBody.
@@ -306,6 +312,8 @@ namespace ZombiesFPS.Net
             RemotePart(null, metal, PrimitiveType.Cube, "Stock", gun, new Vector3(0f, -0.02f, -0.38f), new Vector3(0.06f, 0.1f, 0.18f), shadow: false);
             RemotePart(null, metal, PrimitiveType.Cube, "Sight", gun, new Vector3(0f, 0.07f, 0.02f), new Vector3(0.03f, 0.04f, 0.08f), shadow: false);
             _remoteMuzzle = Greybox.Empty("Muzzle", gun, new Vector3(0f, 0.015f, 0.48f));
+            _remoteGunRoot = gun;
+            _remoteBlocky = gun.GetComponentsInChildren<Renderer>();
             Vector3 g = gun.localPosition;
             BuildRemoteArm(1, jacket, skin, new Vector3(0.24f, 0.46f, 0f), g + new Vector3(0f, -0.08f, -0.1f), new Vector3(0.6f, -1f, -0.3f));
             // The support shoulder rolls forward a little, as in a real rifle stance, so the arm reaches the foregrip.
@@ -530,7 +538,19 @@ namespace ZombiesFPS.Net
                     _remoteGlowLight.color = glow;
                 }
             }
-            var color = CamoColorFor(ActiveSlot.Value) ?? RemoteGunColor;
+            int gunId = GunInSlot(ActiveSlot.Value);
+            var camo = CamoColorFor(ActiveSlot.Value);
+            if (gunId != _remoteArtGun || camo != _remoteArtCamo)
+            {
+                _remoteArtGun = gunId;
+                _remoteArtCamo = camo;
+                if (_remoteArt != null) Destroy(_remoteArt);
+                _remoteArt = GunArt.BuildProp(GameConfig.GunById(gunId), _remoteGunRoot, camo);
+                // Its sights sit about where the stand-in's did, the grip under the hand.
+                if (_remoteArt != null) _remoteArt.transform.localPosition = new Vector3(0f, -0.04f, -0.02f);
+                foreach (var r in _remoteBlocky) r.enabled = _remoteArt == null;
+            }
+            var color = camo ?? RemoteGunColor;
             if (color == _remoteGunColor) return;
             _remoteGunColor = color;
             _remoteGun.sharedMaterial = Greybox.Lit(color);

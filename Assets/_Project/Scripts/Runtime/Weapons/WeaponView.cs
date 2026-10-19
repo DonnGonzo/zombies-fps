@@ -7,8 +7,8 @@ using ZombiesFPS.Player;
 namespace ZombiesFPS.Weapons
 {
     /// <summary>
-    /// The first-person gun model: geometry built from primitives for each kind of gun (see
-    /// <see cref="GunModels"/>) plus procedural motion (aim, bob, sway, recoil kick, sprint and reload poses,
+    /// The first-person gun model: the gun's model from Ivan's weapon pack (see <see cref="GunArt"/>), or one built
+    /// from primitives for its kind of gun (see <see cref="GunModels"/>), plus procedural motion (aim, bob, sway, recoil kick, sprint and reload poses,
     /// muzzle flash). Purely visual; never affects where bullets go.
     /// </summary>
     public class WeaponView : MonoBehaviour
@@ -104,6 +104,7 @@ namespace ZombiesFPS.Weapons
             }
             foreach (var r in m.Furniture) r.sharedMaterial = furniture;
             foreach (var r in m.Body) r.sharedMaterial = body;
+            m.Repaint?.Invoke(camo);
             if (m.Cores.Count > 0)
             {
                 var core = Greybox.Unlit(new Color(data.accent.r, data.accent.g, data.accent.b, 1f));

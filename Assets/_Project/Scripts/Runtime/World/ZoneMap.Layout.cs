@@ -383,9 +383,31 @@ namespace ZombiesFPS.World
         public static Vector3 HighSpot(int spot) => HighSpotPoints[Mathf.Clamp(spot, 0, HighSpotCount - 1)];
 
         public const int BuildableCount = 3;
-        public const int PartsPerBuildable = 3;
-        public const int PartCount = BuildableCount * PartsPerBuildable;
+        /// <summary>Parts each buildable needs, in buildable order: the Aegis Shield takes four, the others three.</summary>
+        static readonly int[] PartsOf = { 3, 4, 3 };
+        public const int PartCount = 10;
         public const int SpotsPerPart = 3;
+
+        public static int PartsFor(int item) => PartsOf[Mathf.Clamp(item, 0, BuildableCount - 1)];
+
+        /// <summary>The first part of a buildable; its parts are numbered on from there.</summary>
+        public static int FirstPart(int item)
+        {
+            int first = 0;
+            for (int i = 0; i < item && i < BuildableCount; i++) first += PartsOf[i];
+            return first;
+        }
+
+        /// <summary>Which buildable a part belongs to.</summary>
+        public static int ItemOfPart(int part)
+        {
+            for (int i = 0; i < BuildableCount; i++)
+            {
+                if (part < PartsOf[i]) return i;
+                part -= PartsOf[i];
+            }
+            return BuildableCount - 1;
+        }
         public const int BenchCount = 2;
 
         /// <summary>
@@ -398,10 +420,11 @@ namespace ZombiesFPS.World
             L(1, 13f, 4f, 9f), L(5, -16.2f, 3.2f, -12.2f), L(10, -15f, 0f, 3f),
             L(2, -13f, 0f, -11f), L(8, 7f, 3.6f, 7.5f), L(4, -8.2f, 2.6f, -5f),
             L(3, 5f, 2.6f, 18f), L(6, 12f, 1.4f, -5f), L(11, 13f, 0f, 8f),
-            // Scrap Shield: frame, plate, handle.
+            // Aegis Shield: armour plate, view module, power core, brace kit.
             L(7, 2.7f, TowerHeight, 18.5f), L(0, -12.7f, 2.2f, 13f), L(9, 12f, 0f, -10f),
             L(9, -2f, 3f, 18f), L(4, 8f, 0f, -20f), L(6, -6.5f, 3f, -3f),
             L(10, 4f, 4f, 20.5f), L(1, -18f, 0f, -9f), L(7, 15f, 2.4f, 4f),
+            L(Gaol, -12f, 0f, -3f), L(PlagueWard, 8f, 0f, -5f), L(Temple, -9.5f, 0f, -10f),
             // Buddy Bot: chassis, rotor, brain.
             L(8, -18f, 0f, 12f), L(3, 17f, 0f, 4f), L(5, -16f, 0f, 4f),
             L(11, -6.5f, 4.5f, 3f), L(2, -13f, 0f, 11f), L(0, -13f, 0f, -11f),

@@ -8,10 +8,10 @@ using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.Net
 {
-    /// <summary>The player's side of buildables: the Scrap Shield they carry, and credit for Buddy Bot kills.</summary>
+    /// <summary>The player's side of buildables: the Aegis Shield they carry, and credit for Buddy Bot kills.</summary>
     public partial class NetPlayer
     {
-        /// <summary>What's left of the player's Scrap Shield (0 = none).</summary>
+        /// <summary>What's left of the player's Aegis Shield (0 = none).</summary>
         public NetworkVariable<float> ShieldHealth = new NetworkVariable<float>(0f);
         /// <summary>After a shield breaks, the round a new one can be taken from a station.</summary>
         public NetworkVariable<int> ShieldReadyRound = new NetworkVariable<int>(0);
@@ -23,7 +23,7 @@ namespace ZombiesFPS.Net
 
         public bool HasShield => ShieldHealth.Value > 0f;
 
-        /// <summary>Host only. A fresh Scrap Shield on the player's arm.</summary>
+        /// <summary>Host only. A fresh Aegis Shield on the player's arm.</summary>
         public void ServerGiveShield()
         {
             ShieldHealth.Value = BuildManager.ShieldMaxHealth;
@@ -84,6 +84,17 @@ namespace ZombiesFPS.Net
             TookCannon.Value = false;
         }
 
+        /// <summary>The pack's Aegis Shield model, this tall and centred on the holder, or false when it's missing.</summary>
+        static bool AegisModel(Transform holder, float height)
+        {
+            var bounds = GunArt.PieceBounds(GunArt.Shield);
+            if (bounds.size.y <= 0f) return false;
+            float scale = height / bounds.size.y;
+            var t = Greybox.Empty("Aegis", holder, -bounds.center * scale);
+            t.localScale = Vector3.one * scale;
+            return GunArt.BuildPiece(GunArt.Shield, t) != null;
+        }
+
         /// <summary>Shows the shield on the left arm: in view for the owner, in front of the body for everyone else.</summary>
         void UpdateShieldView()
         {
@@ -96,15 +107,21 @@ namespace ZombiesFPS.Net
                 {
                     _shieldView = Greybox.Empty("Shield", _pivot, new Vector3(-0.42f, -0.32f, 0.5f));
                     _shieldView.localRotation = Quaternion.Euler(0f, 28f, 0f);
-                    Greybox.Box("Plate", _shieldView, Vector3.zero, new Vector3(0.34f, 0.5f, 0.03f), new Color(0.35f, 0.37f, 0.38f), collider: false);
-                    Greybox.Box("Rim", _shieldView, new Vector3(0f, 0.24f, -0.01f), new Vector3(0.36f, 0.04f, 0.04f), color, collider: false);
+                    if (!AegisModel(_shieldView, 0.56f))
+                    {
+                        Greybox.Box("Plate", _shieldView, Vector3.zero, new Vector3(0.34f, 0.5f, 0.03f), new Color(0.35f, 0.37f, 0.38f), collider: false);
+                        Greybox.Box("Rim", _shieldView, new Vector3(0f, 0.24f, -0.01f), new Vector3(0.36f, 0.04f, 0.04f), color, collider: false);
+                    }
                     Greybox.DisableShadows(_shieldView.gameObject);
                 }
                 else if (_body != null)
                 {
                     _shieldView = Greybox.Empty("Shield", _body, new Vector3(-0.2f, 1.1f, 0.42f));
-                    Greybox.Box("Plate", _shieldView, Vector3.zero, new Vector3(0.6f, 0.9f, 0.05f), new Color(0.35f, 0.37f, 0.38f), collider: false);
-                    Greybox.Box("Rim", _shieldView, new Vector3(0f, 0.44f, 0.01f), new Vector3(0.62f, 0.06f, 0.06f), color, collider: false);
+                    if (!AegisModel(_shieldView, 0.95f))
+                    {
+                        Greybox.Box("Plate", _shieldView, Vector3.zero, new Vector3(0.6f, 0.9f, 0.05f), new Color(0.35f, 0.37f, 0.38f), collider: false);
+                        Greybox.Box("Rim", _shieldView, new Vector3(0f, 0.44f, 0.01f), new Vector3(0.62f, 0.06f, 0.06f), color, collider: false);
+                    }
                 }
                 else return;
             }

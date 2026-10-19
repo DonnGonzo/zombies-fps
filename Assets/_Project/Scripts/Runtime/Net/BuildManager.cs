@@ -10,9 +10,9 @@ using ZombiesFPS.Zombies;
 namespace ZombiesFPS.Net
 {
     /// <summary>
-    /// Host-owned buildables. Nine parts are hidden around the map, three for each of the Scrap Cannon, the
-    /// Scrap Shield and the Buddy Bot; every game the host picks one of three spots for each part, so they
-    /// turn up somewhere different each time. Parts found by anyone count for the whole squad. With all three
+    /// Host-owned buildables. Ten parts are hidden around the map: three each for the Scrap Cannon and the Buddy
+    /// Bot and four for the Aegis Shield. Every game the host picks one of three spots for each part, so they
+    /// turn up somewhere different each time. Parts found by anyone count for the whole squad. With all the
     /// parts of something, any build station builds it, and from then on players take it from a station:
     /// the Cannon once per player per game, a Shield whenever theirs has broken (from the next round), and the Bot
     /// whenever it is back online. The Bot follows whoever switched it on and shoots zombies for two minutes,
@@ -30,11 +30,11 @@ namespace ZombiesFPS.Net
         const float RobotRange = 28f;
         const float RobotSyncInterval = 0.1f;
 
-        public static readonly string[] BuildableNames = { "Scrap Cannon", "Scrap Shield", "Buddy Bot" };
+        public static readonly string[] BuildableNames = { "Scrap Cannon", "Aegis Shield", "Buddy Bot" };
         public static readonly string[] PartNames =
         {
             "Cannon Barrel", "Cannon Coil", "Cannon Grip",
-            "Shield Frame", "Shield Plate", "Shield Strap",
+            "Shield Armour Plate", "Shield View Module", "Shield Power Core", "Shield Brace Kit",
             "Bot Chassis", "Bot Rotor", "Bot Brain",
         };
         public static readonly Color[] BuildableColors =
@@ -80,7 +80,7 @@ namespace ZombiesFPS.Net
 
         // ---------------------------------------------------------------- queries (every machine)
 
-        public static int ItemOf(int part) => part / ZoneMap.PartsPerBuildable;
+        public static int ItemOf(int part) => ZoneMap.ItemOfPart(part);
         public int SpotOf(int part) => part * ZoneMap.SpotsPerPart + ((PartLayout.Value >> (part * 2)) & 3) % ZoneMap.SpotsPerPart;
         public bool IsCollected(int part) => (Collected.Value & (1 << part)) != 0;
         public bool IsBuilt(int item) => (Built.Value & (1 << item)) != 0;
@@ -88,13 +88,13 @@ namespace ZombiesFPS.Net
 
         public int PartsFound(int item)
         {
-            int n = 0;
-            for (int k = 0; k < ZoneMap.PartsPerBuildable; k++)
-                if (IsCollected(item * ZoneMap.PartsPerBuildable + k)) n++;
+            int n = 0, first = ZoneMap.FirstPart(item);
+            for (int k = 0; k < ZoneMap.PartsFor(item); k++)
+                if (IsCollected(first + k)) n++;
             return n;
         }
 
-        public bool HasAllParts(int item) => PartsFound(item) == ZoneMap.PartsPerBuildable;
+        public bool HasAllParts(int item) => PartsFound(item) == ZoneMap.PartsFor(item);
 
         /// <summary>The part lying at a spot right now, or -1.</summary>
         public int PartWaitingAt(int spot)
@@ -115,9 +115,9 @@ namespace ZombiesFPS.Net
             if (!IsBuilt(item))
             {
                 int found = PartsFound(item);
-                if (found < ZoneMap.PartsPerBuildable)
+                if (found < ZoneMap.PartsFor(item))
                 {
-                    what = $"{name}: {found}/{ZoneMap.PartsPerBuildable} parts found";
+                    what = $"{name}: {found}/{ZoneMap.PartsFor(item)} parts found";
                     return -1;
                 }
                 what = "build the " + name;
@@ -301,6 +301,9 @@ namespace ZombiesFPS.Net
                 go.transform.localRotation = Quaternion.Euler(rx, 0f, rz);
                 return go;
             }
+            // The shield's four parts are the pieces from Ivan's weapon pack, when they're in the project.
+            int first = ZoneMap.FirstPart(Shield);
+            if (part >= first && part < first + ZoneMap.PartsFor(Shield) && ShieldPiece(part - first, t)) return;
             switch (part)
             {
                 case 0: // Cannon Barrel
@@ -322,7 +325,7 @@ namespace ZombiesFPS.Net
                     P(PrimitiveType.Cube, "Trigger", new Vector3(0f, 0.01f, 0.07f), new Vector3(0.015f, 0.05f, 0.015f), metal, Surface.Metal, 15f);
                     G(PrimitiveType.Cube, "Strip", new Vector3(0.047f, 0.07f, 0.04f), new Vector3(0.004f, 0.02f, 0.18f));
                     break;
-                case 3: // Shield Frame
+                case 3: // Shield Armour Plate (stand-in: a frame)
                     P(PrimitiveType.Cube, "FrameTop", new Vector3(0f, 0.25f, 0f), new Vector3(0.44f, 0.04f, 0.04f), metal, Surface.Metal);
                     P(PrimitiveType.Cube, "FrameBottom", new Vector3(0f, -0.25f, 0f), new Vector3(0.44f, 0.04f, 0.04f), metal, Surface.Metal);
                     P(PrimitiveType.Cube, "FrameLeft", new Vector3(-0.2f, 0f, 0f), new Vector3(0.04f, 0.54f, 0.04f), metal, Surface.Metal);
@@ -331,13 +334,13 @@ namespace ZombiesFPS.Net
                     for (int i = 0; i < 4; i++)
                         G(PrimitiveType.Cube, "Corner", new Vector3(i % 2 == 0 ? -0.2f : 0.2f, i < 2 ? 0.25f : -0.25f, 0.022f), new Vector3(0.05f, 0.05f, 0.006f));
                     break;
-                case 4: // Shield Plate
+                case 4: // Shield View Module (stand-in: a plate)
                     P(PrimitiveType.Cube, "Plate", Vector3.zero, new Vector3(0.4f, 0.5f, 0.035f), new Color(0.4f, 0.36f, 0.32f), Surface.Rust);
                     for (int i = 0; i < 4; i++)
                         P(PrimitiveType.Sphere, "Rivet", new Vector3(i % 2 == 0 ? -0.16f : 0.16f, i < 2 ? 0.21f : -0.21f, 0.02f), Vector3.one * 0.03f, metal, Surface.Metal);
                     G(PrimitiveType.Cube, "Stripe", new Vector3(0f, 0f, 0.019f), new Vector3(0.32f, 0.03f, 0.004f));
                     break;
-                case 5: // Shield Strap
+                case 5: // Shield Power Core (stand-in: straps)
                     P(PrimitiveType.Cube, "Strap", new Vector3(0f, 0.06f, 0f), new Vector3(0.36f, 0.06f, 0.015f), new Color(0.24f, 0.2f, 0.14f), Surface.Fabric);
                     P(PrimitiveType.Cube, "Strap", new Vector3(0f, -0.06f, 0f), new Vector3(0.36f, 0.06f, 0.015f), new Color(0.24f, 0.2f, 0.14f), Surface.Fabric);
                     P(PrimitiveType.Cube, "Handle", new Vector3(0f, 0f, 0.04f), new Vector3(0.06f, 0.2f, 0.04f), dark, Surface.Rubber);
@@ -345,12 +348,18 @@ namespace ZombiesFPS.Net
                     P(PrimitiveType.Cube, "Buckle", new Vector3(0.18f, -0.06f, 0f), new Vector3(0.03f, 0.075f, 0.025f), metal, Surface.Metal);
                     G(PrimitiveType.Cube, "Tag", new Vector3(0f, 0f, 0.062f), new Vector3(0.03f, 0.08f, 0.004f));
                     break;
-                case 6: // Bot Chassis
+                case 6: // Shield Brace Kit
+                    P(PrimitiveType.Cube, "Brace", new Vector3(0f, 0f, 0f), new Vector3(0.5f, 0.05f, 0.05f), metal, Surface.Metal);
+                    P(PrimitiveType.Cube, "Arm", new Vector3(-0.2f, -0.08f, 0f), new Vector3(0.05f, 0.18f, 0.05f), dark, Surface.Metal, 0f, 20f);
+                    P(PrimitiveType.Cube, "Arm", new Vector3(0.2f, -0.08f, 0f), new Vector3(0.05f, 0.18f, 0.05f), dark, Surface.Metal, 0f, -20f);
+                    G(PrimitiveType.Cube, "Strip", new Vector3(0f, 0.03f, 0.022f), new Vector3(0.4f, 0.012f, 0.004f));
+                    break;
+                case 7: // Bot Chassis
                     P(PrimitiveType.Sphere, "Shell", Vector3.zero, new Vector3(0.34f, 0.26f, 0.34f), new Color(0.55f, 0.6f, 0.55f), Surface.Metal);
                     P(PrimitiveType.Cylinder, "Seam", Vector3.zero, new Vector3(0.35f, 0.01f, 0.35f), dark, Surface.Metal);
                     G(PrimitiveType.Cylinder, "SeamGlow", new Vector3(0f, -0.025f, 0f), new Vector3(0.335f, 0.006f, 0.335f));
                     break;
-                case 7: // Bot Rotor
+                case 8: // Bot Rotor
                     P(PrimitiveType.Cylinder, "Hub", Vector3.zero, new Vector3(0.09f, 0.03f, 0.09f), metal, Surface.Metal);
                     P(PrimitiveType.Cube, "Blade", Vector3.zero, new Vector3(0.5f, 0.015f, 0.06f), dark, Surface.Rubber);
                     P(PrimitiveType.Cube, "Blade", Vector3.zero, new Vector3(0.06f, 0.015f, 0.5f), dark, Surface.Rubber);
@@ -364,6 +373,19 @@ namespace ZombiesFPS.Net
                     G(PrimitiveType.Sphere, "AntennaTip", new Vector3(0.07f, 0.225f, -0.05f), Vector3.one * 0.02f);
                     break;
             }
+        }
+
+        /// <summary>One of the shield's pack pieces, about half a metre across, centred on the spinning pivot.</summary>
+        static bool ShieldPiece(int k, Transform t)
+        {
+            string name = GunArt.ShieldParts[k];
+            var bounds = GunArt.PieceBounds(name);
+            float size = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+            if (size <= 0f) return false;
+            float scale = 0.55f / size;
+            var holder = Greybox.Empty("Piece", t, -bounds.center * scale);
+            holder.localScale = Vector3.one * scale;
+            return GunArt.BuildPiece(name, holder) != null;
         }
 
         void Update()

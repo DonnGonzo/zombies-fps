@@ -127,9 +127,9 @@ namespace ZombiesFPS.UI
         void OnPartFound(int part, ulong finder, int found)
         {
             int item = BuildManager.ItemOf(part);
-            string sub = found >= ZoneMap.PartsPerBuildable
+            string sub = found >= ZoneMap.PartsFor(item)
                 ? $"All parts found. Build the {BuildManager.BuildableNames[item]} at a build station (Garage Roof or Greenhouse Roof)."
-                : $"{BuildManager.BuildableNames[item]}: {found}/{ZoneMap.PartsPerBuildable} parts";
+                : $"{BuildManager.BuildableNames[item]}: {found}/{ZoneMap.PartsFor(item)} parts";
             ShowBanner($"{NameOf(finder).ToUpperInvariant()} FOUND THE {BuildManager.PartNames[part].ToUpperInvariant()}", sub, BuildManager.BuildableColors[item]);
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.Purchase, 0.9f);
         }
@@ -354,8 +354,8 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Perk: Tips.Offer("perk", "Perk machines sell lasting upgrades. You keep them until you go down, then they're gone."); break;
                     case BuyableKind.Armor: Tips.Offer("armor", "Armour plates soak up hits before your health. You can carry three and they get pricier each round."); break;
                     case BuyableKind.Reroll: Tips.Offer("reroll", "The shrine sells redraws for power-up cards. Press 4 while picking a power-up to redraw."); break;
-                    case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all three parts of the Scrap Cannon, Scrap Shield or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
-                    case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Scrap Shield or Buddy Bot here once the squad has all three of its parts; after that, take one whenever you need it."); break;
+                    case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all the parts of the Scrap Cannon, Aegis Shield (four parts) or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
+                    case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Aegis Shield or Buddy Bot here once the squad has all of its parts; after that, take one whenever you need it."); break;
                 }
             }
             if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
@@ -847,7 +847,7 @@ namespace ZombiesFPS.UI
                 }
             }
 
-            // Scrap Shield and Buddy Bot, under the health bar.
+            // Aegis Shield and Buddy Bot, under the health bar.
             float extraX = x;
             if (_player.HasShield)
             {

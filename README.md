@@ -10,7 +10,7 @@ All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the 
 - `Shaders/`: `ZombiesFPS/Surface` (triplanar detail and normal maps, world space for the map and object space for anything that moves, plus grime), `Glow` (HDR unlit, so it blooms), `NightSky` (skybox), `Decal` and `Hidden/ZombiesFPS/Post`. Each has a material in `Resources/Materials` so builds include it
 - `Core/SurfaceTextures.cs` generates tileable textures per `Surface` (concrete, brick, metal, rust, wood, tile, plaster, asphalt, dirt, grass, fabric, skin, rubber); `Greybox.Lit(color, surface, moving)` makes the material
 - `Core/GraphicsSetup.cs`: moonlight, trilight ambient, fog, night sky, a realtime reflection probe on High, and quality levels; `Core/PostFx.cs`: bloom, ACES tone mapping, grade, vignette, grain, brightness. Settings > Graphics has quality, brightness, bloom and film grain
-- Map dressing in `World/ZoneMap.Dressing.cs` (zone materials, wall skins, colliderless decor merged per material and cell, lamps, skyline); detailed zombies and teammates with procedural animation; per-gun models in `Weapons/GunModels.cs`; pooled decals in `Weapons/Decals.cs`
+- Map dressing in `World/ZoneMap.Dressing.cs` (zone materials, wall skins, colliderless decor merged per material and cell, lamps, skyline); detailed zombies and teammates with procedural animation; gun and shield models from Ivan's TenWeapons pack in `Weapons/GunArt.cs` (meshes in `Resources/Guns`, made by `tools/tenweapons/pack_guns.py`; `Weapons/GunModels.cs` builds the old primitive guns if they are missing); pooled decals in `Weapons/Decals.cs`
 - An editor script switches the project to Linear colour space once, which the lighting is tuned for
 
 **Zombies that climb, bullet penetration, a new layout, the story to round 50, upgraded guns**
@@ -34,7 +34,7 @@ All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the 
 - New mission type, high ground: King of the Hill (round 6, full ammo) and Signal Boost (round 15, power-up reroll) light the signal beacon on one of the high spots; climb up and hold it
 - Build stations on the Garage Roof and the Greenhouse Roof build three things from parts hidden around the map. Each part can be in one of three places, picked fresh every game, many of them up on the high spots. Parts anyone finds count for the whole squad:
   - Scrap Cannon (barrel, coil, grip): a slow, explosive cannon whose shots punch through four zombies. Once built, everyone can take one each per game
-  - Scrap Shield (frame, plate, strap): carried on your arm, it takes 90% of hits from in front (not acid) until it has soaked 1,500 damage. When it breaks you can take a new one from the next round
+  - Aegis Shield (armour plate, view module, power core, brace kit: four parts): carried on your arm, it takes 90% of hits from in front (not acid) until it has soaked 1,500 damage. When it breaks you can take a new one from the next round
   - Buddy Bot (chassis, rotor, brain): a drone that follows whoever switched it on and shoots the nearest zombie it can see for two minutes, then breaks and stays offline for five rounds. Its kills count as yours
 - Map screen (M): every zone and its name, which are open, the doors and their prices, where you and your squad are and which way you face, the high spots, build stations, shop, upgrade machine and current missions, and which parts are still missing
 - Test console: `doors` opens every door, `parts` finds every part, `goto crane` or `goto high 2` teleports you

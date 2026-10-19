@@ -179,7 +179,7 @@ namespace ZombiesFPS.UI
                 int found = build != null ? build.PartsFound(item) : 0;
                 bool built = build != null && build.IsBuilt(item);
                 Ui.Label(new Rect(x, y, iw, 24 * u), BuildManager.BuildableNames[item], Ui.Small, color, TextAnchor.MiddleLeft);
-                Ui.Label(new Rect(x, y, iw, 24 * u), built ? "BUILT" : $"{found}/{ZoneMap.PartsPerBuildable} parts", Ui.Small, built ? Ui.Good : Ui.Text, TextAnchor.MiddleRight);
+                Ui.Label(new Rect(x, y, iw, 24 * u), built ? "BUILT" : $"{found}/{ZoneMap.PartsFor(item)} parts", Ui.Small, built ? Ui.Good : Ui.Text, TextAnchor.MiddleRight);
                 y += 24 * u;
                 string detail = null;
                 if (build != null)
@@ -187,9 +187,9 @@ namespace ZombiesFPS.UI
                     if (!built)
                     {
                         var missing = new System.Collections.Generic.List<string>();
-                        for (int k = 0; k < ZoneMap.PartsPerBuildable; k++)
+                        for (int k = 0; k < ZoneMap.PartsFor(item); k++)
                         {
-                            int part = item * ZoneMap.PartsPerBuildable + k;
+                            int part = ZoneMap.FirstPart(item) + k;
                             if (!build.IsCollected(part)) missing.Add(BuildManager.PartNames[part]);
                         }
                         detail = missing.Count > 0 ? "missing: " + string.Join(", ", missing) : "ready to build at a station";
