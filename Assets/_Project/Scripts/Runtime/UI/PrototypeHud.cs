@@ -48,6 +48,7 @@ namespace ZombiesFPS.UI
 
         // Blackout atmosphere.
         float _blackout;
+        float _staminaShow;
         bool _haveBaseline;
         Color _baseAmbient, _baseFog;
         float _baseFogDensity, _baseMoon;
@@ -358,6 +359,9 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Aegis Shield or Buddy Bot here once the squad has all of its parts; after that, take one whenever you need it."); break;
                 }
             }
+            var motor = _player.Motor;
+            if (motor != null && motor.Exhausted) Tips.Offer("stamina", "Out of breath! Sprinting drains the stamina bar under your health. Stop running for a moment and it refills; Fleet Foot makes it last twice as long.");
+            if (motor != null && motor.IsMantling) Tips.Offer("mantle", $"Jump at anything your head can reach and keep pushing {K(GameAction.MoveForward)} to climb up onto it. Zombies climb after you.");
             if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
             if (rounds.Round.Value >= 3) Tips.Offer("map", $"Press {K(GameAction.Map)} for the map: every zone, where your squad is, the high spots and the build stations.");
             if (_player.HasPowerUpOffer) Tips.Offer("powerup", "Power-up! Press 1, 2 or 3 to pick a card. Power-ups stack and stay for the whole game, even if you go down.");
@@ -809,7 +813,7 @@ namespace ZombiesFPS.UI
         {
             var lines = new List<string>
             {
-                $"{Keys(GameAction.MoveForward, GameAction.MoveLeft, GameAction.MoveBack, GameAction.MoveRight)} move  ·  {K(GameAction.Sprint)} sprint  ·  {K(GameAction.Jump)} jump",
+                $"{Keys(GameAction.MoveForward, GameAction.MoveLeft, GameAction.MoveBack, GameAction.MoveRight)} move  ·  {K(GameAction.Sprint)} sprint  ·  {K(GameAction.Jump)} jump (jump at a ledge to climb it)",
                 $"{K(GameAction.Fire)} fire  ·  {K(GameAction.Aim)} aim  ·  {K(GameAction.Reload)} reload  ·  {K(GameAction.SwitchWeapon)} switch gun",
                 $"{K(GameAction.Melee)} melee  ·  {K(GameAction.Grenade)} grenade  ·  {K(GameAction.ThrowingKnife)} knife  ·  {K(GameAction.Concussion)} bang",
                 $"{K(GameAction.Interact)} buy / hold to revive  ·  1 2 3 pick power-up  ·  4 redraw  ·  {K(GameAction.Map)} map",
@@ -847,21 +851,35 @@ namespace ZombiesFPS.UI
                 }
             }
 
-            // Aegis Shield and Buddy Bot, under the health bar.
+            // Stamina, just under the health bar while it isn't full. Red while it's run dry and locked.
+            var motor = _player.Motor;
+            if (motor != null)
+            {
+                _staminaShow = Mathf.MoveTowards(_staminaShow, motor.Stamina < 0.999f ? 1f : 0f, Time.unscaledDeltaTime * 2.5f);
+                if (_staminaShow > 0.01f)
+                {
+                    var sc = motor.Exhausted ? Ui.Blood : Color.Lerp(Ui.Amber, Ui.Good, motor.Stamina);
+                    sc.a *= _staminaShow;
+                    Ui.Bar(new Rect(x, y + 18 * u, bw * 0.6f, 5 * u), motor.Stamina, sc, new Color(0f, 0f, 0f, 0.55f * _staminaShow));
+                }
+            }
+            float ey = y + 9 * u;
+
+            // Aegis Shield and Buddy Bot, under the health and stamina bars.
             float extraX = x;
             if (_player.HasShield)
             {
                 var sc = BuildManager.BuildableColors[BuildManager.Shield];
-                Ui.Bar(new Rect(extraX, y + 22 * u, 150 * u, 6 * u), _player.ShieldHealth.Value / BuildManager.ShieldMaxHealth, sc);
-                Ui.Label(new Rect(extraX + 156 * u, y + 14 * u, 120 * u, 22 * u), "SHIELD", Ui.Tiny, sc, TextAnchor.MiddleLeft);
+                Ui.Bar(new Rect(extraX, ey + 22 * u, 150 * u, 6 * u), _player.ShieldHealth.Value / BuildManager.ShieldMaxHealth, sc);
+                Ui.Label(new Rect(extraX + 156 * u, ey + 14 * u, 120 * u, 22 * u), "SHIELD", Ui.Tiny, sc, TextAnchor.MiddleLeft);
                 extraX += 240 * u;
             }
             var build = BuildManager.Instance;
             if (build != null && build.RobotActive && build.RobotOwner.Value == (long)_player.OwnerClientId)
             {
                 var bc = BuildManager.BuildableColors[BuildManager.Bot];
-                Ui.Bar(new Rect(extraX, y + 22 * u, 150 * u, 6 * u), build.RobotTimeLeft.Value / BuildManager.RobotLifetime, bc);
-                Ui.Label(new Rect(extraX + 156 * u, y + 14 * u, 160 * u, 22 * u), $"BUDDY BOT {Mathf.CeilToInt(build.RobotTimeLeft.Value)}s", Ui.Tiny, bc, TextAnchor.MiddleLeft);
+                Ui.Bar(new Rect(extraX, ey + 22 * u, 150 * u, 6 * u), build.RobotTimeLeft.Value / BuildManager.RobotLifetime, bc);
+                Ui.Label(new Rect(extraX + 156 * u, ey + 14 * u, 160 * u, 22 * u), $"BUDDY BOT {Mathf.CeilToInt(build.RobotTimeLeft.Value)}s", Ui.Tiny, bc, TextAnchor.MiddleLeft);
             }
 
             // Big round number.

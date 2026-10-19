@@ -111,7 +111,7 @@ namespace ZombiesFPS.Weapons
 
             UpdateReload();
 
-            bool wantsAim = canAct && GameInput.AimHeld && !IsReloading && !IsRaising && !_motor.IsSprinting;
+            bool wantsAim = canAct && GameInput.AimHeld && !IsReloading && !IsRaising && !_motor.IsSprinting && !_motor.IsMantling;
             AimAmount = Mathf.MoveTowards(AimAmount, wantsAim ? 1f : 0f, dt / (_data.aimTime * Mathf.Lerp(1f, SpreadScale, 0.5f)));
             _look.AimAmount = AimAmount;
             float eased = AimAmount * AimAmount * (3f - 2f * AimAmount);
@@ -131,7 +131,7 @@ namespace ZombiesFPS.Weapons
 
             bool trigger = _data.automatic ? GameInput.FireHeld : GameInput.FirePressed;
             if (!GameInput.FireHeld) _dryFirePlayed = false;
-            if (trigger && !IsReloading && !_motor.IsSprinting && Time.time >= _nextFireTime)
+            if (trigger && !IsReloading && !_motor.IsSprinting && !_motor.IsMantling && Time.time >= _nextFireTime)
             {
                 if (Magazine > 0)
                 {

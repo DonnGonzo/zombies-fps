@@ -1,10 +1,14 @@
+using Unity.Netcode;
 using UnityEngine;
 using ZombiesFPS.Core;
 using ZombiesFPS.World;
 
 namespace ZombiesFPS.Player
 {
-    /// <summary>First-person movement on a CharacterController: walk, sprint, aim-walk, jump, climb ladders.</summary>
+    /// <summary>
+    /// First-person movement on a CharacterController: walk, sprint (on a stamina bar), aim-walk, jump, climb ladders,
+    /// and climb up onto ledges the head reaches mid-jump.
+    /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMotor : MonoBehaviour
     {
@@ -17,6 +21,18 @@ namespace ZombiesFPS.Player
         public float gravity = -22f;
         public float downedSpeed = 1.1f;
         public float climbSpeed = 3.5f;
+        [Header("Stamina")]
+        /// <summary>Seconds of sprint on a full bar.</summary>
+        public float sprintDuration = 6f;
+        /// <summary>Seconds to refill an empty bar once it starts refilling.</summary>
+        public float staminaRefillTime = 4f;
+        /// <summary>Pause after sprinting stops before the bar refills.</summary>
+        public float staminaRefillDelay = 0.8f;
+        /// <summary>An emptied bar has to refill this far before sprinting works again, so it doesn't stutter.</summary>
+        public float staminaRecoverAt = 0.3f;
+        [Header("Climbing over")]
+        public float mantleRiseSpeed = 4.2f;
+        public float mantleForwardSpeed = 3.2f;
 
         CharacterController _controller;
         Vector3 _velocity;
@@ -39,6 +55,14 @@ namespace ZombiesFPS.Player
         public bool Downed { get; set; }
         public bool IsGrounded => _controller.isGrounded;
         public bool IsSprinting { get; private set; }
+        /// <summary>Sprint left, 0 to 1.</summary>
+        public float Stamina { get; private set; } = 1f;
+        /// <summary>Ran the bar dry: no sprinting until it has refilled a little.</summary>
+        public bool Exhausted { get; private set; }
+        /// <summary>Stretches how long a full bar lasts (Fleet Foot).</summary>
+        public float StaminaScale { get; set; } = 1f;
+        /// <summary>Hauling up onto a ledge right now.</summary>
+        public bool IsMantling => _mantling;
         public Vector3 Velocity => _velocity;
         /// <summary>On a ladder right now.</summary>
         public bool IsClimbing => _ladder != null;
@@ -47,6 +71,22 @@ namespace ZombiesFPS.Player
         float _noGrabUntil;
         Vector3 _lastSafe;
         bool _haveSafe;
+
+        float _lastSprintTime = -10f;
+        float _airTime;
+
+        bool _mantling;
+        float _mantleTop, _mantleTime;
+        Vector3 _mantleTo, _mantleDir;
+        static readonly Collider[] s_Overlap = new Collider[16];
+
+        /// <summary>A ledge has to be at least this far above the feet to climb onto it (lower ones are a step or a hop).</summary>
+        const float MantleMinRise = 0.5f;
+        /// <summary>How far above the top of the head a ledge can be and still be grabbed (the hands).</summary>
+        const float MantleReach = 0.15f;
+        /// <summary>How far in from the edge the player ends up standing.</summary>
+        const float MantleInset = 0.4f;
+        const float MantleTimeout = 1.2f;
 
         /// <summary>Below this the player has fallen out of the map and is put back where they last stood.</summary>
         const float FallOutHeight = -8f;
@@ -65,6 +105,7 @@ namespace ZombiesFPS.Player
             _controller.enabled = true;
             _velocity = Vector3.zero;
             _ladder = null;
+            _mantling = false;
             _haveSafe = false;
         }
 
@@ -101,11 +142,23 @@ namespace ZombiesFPS.Player
             if (_ladder != null)
             {
                 IsSprinting = false;
+                UpdateStamina(dt);
                 Climb(dt, input);
                 return;
             }
+            // In the air (a jump, not a stair's flicker), pushing forward into something whose top the head reaches: climb onto it.
+            _airTime = _controller.isGrounded ? 0f : _airTime + dt;
+            if (!_mantling && _airTime > 0.1f && !Downed && !InputLocked && input.y > 0.1f) TryStartMantle();
+            if (_mantling)
+            {
+                IsSprinting = false;
+                UpdateStamina(dt);
+                Mantle(dt);
+                return;
+            }
 
-            IsSprinting = !InputLocked && !Downed && GameInput.SprintHeld && input.y > 0.1f && !aiming && !firing;
+            IsSprinting = !InputLocked && !Downed && !Exhausted && Stamina > 0f && GameInput.SprintHeld && input.y > 0.1f && !aiming && !firing;
+            UpdateStamina(dt);
             float targetSpeed = Downed ? downedSpeed : (IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed) * SpeedMultiplier;
             if (IsSlowed) targetSpeed *= _slowScale;
 
@@ -123,6 +176,107 @@ namespace ZombiesFPS.Player
             _velocity = new Vector3(planar.x, vertical, planar.z);
             var flags = _controller.Move(_velocity * dt);
             if ((flags & CollisionFlags.Above) != 0 && _velocity.y > 0f) _velocity.y = 0f;
+        }
+
+        /// <summary>Sprinting drains the bar; it refills a moment after you stop. Running it dry locks sprint until it recovers a bit.</summary>
+        void UpdateStamina(float dt)
+        {
+            if (IsSprinting)
+            {
+                Stamina = Mathf.Max(0f, Stamina - dt / Mathf.Max(0.1f, sprintDuration * StaminaScale));
+                _lastSprintTime = Time.time;
+                if (Stamina <= 0f)
+                {
+                    Exhausted = true;
+                    IsSprinting = false;
+                }
+                return;
+            }
+            if (Time.time - _lastSprintTime < staminaRefillDelay) return;
+            Stamina = Mathf.Min(1f, Stamina + dt / Mathf.Max(0.1f, staminaRefillTime));
+            if (Exhausted && Stamina >= staminaRecoverAt) Exhausted = false;
+        }
+
+        /// <summary>
+        /// Looks for a ledge just in front: a flat top no higher than the hands can reach (the head's height plus a
+        /// little) and well above the feet, a face under it, and room to stand on it. Starts the climb if there is one.
+        /// </summary>
+        void TryStartMantle()
+        {
+            Vector3 fwd = transform.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.01f) return;
+            fwd.Normalize();
+            Vector3 pos = transform.position;
+            float radius = _controller.radius, height = _controller.height;
+            float reach = pos.y + height + MantleReach;
+            float lowest = pos.y + MantleMinRise;
+
+            // The top: straight down just past the face, from as high as the hands reach.
+            Vector3 probe = pos + fwd * (radius + MantleInset);
+            if (!Physics.Raycast(new Vector3(probe.x, reach, probe.z), Vector3.down, out var top, reach - lowest, ~0, QueryTriggerInteraction.Ignore)) return;
+            if (top.normal.y < 0.7f || top.collider.GetComponentInParent<NetworkObject>() != null) return; // Not a zombie's head.
+            float ledge = top.point.y;
+
+            // A face to climb: something solid in front just under the lip (not the underside of a deck).
+            Vector3 lip = new Vector3(pos.x, ledge - 0.1f, pos.z);
+            if (!Physics.Raycast(lip, fwd, radius + MantleInset + 0.1f, ~0, QueryTriggerInteraction.Ignore)) return;
+
+            // Room to haul up beside the face, and room to stand on top.
+            if (Blocked(new Vector3(pos.x, ledge, pos.z), radius, height)) return;
+            if (Blocked(new Vector3(probe.x, ledge, probe.z), radius, height)) return;
+
+            _mantling = true;
+            _mantleTime = 0f;
+            _mantleTop = ledge + 0.03f;
+            _mantleTo = new Vector3(probe.x, _mantleTop, probe.z);
+            _mantleDir = fwd;
+            _velocity = Vector3.zero;
+        }
+
+        /// <summary>Would a standing player with their feet at this point overlap anything but themselves?</summary>
+        bool Blocked(Vector3 feet, float radius, float height)
+        {
+            float r = radius * 0.9f;
+            Vector3 bottom = feet + Vector3.up * (r + 0.06f);
+            Vector3 top = feet + Vector3.up * (height - r);
+            int n = Physics.OverlapCapsuleNonAlloc(bottom, top, r, s_Overlap, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+                if (s_Overlap[i] != _controller) return true;
+            return false;
+        }
+
+        /// <summary>Straight up the face until the feet clear the lip, then forward onto the top.</summary>
+        void Mantle(float dt)
+        {
+            _mantleTime += dt;
+            if (Downed || _mantleTime > MantleTimeout)
+            {
+                _mantling = false;
+                return;
+            }
+            Vector3 pos = transform.position;
+            if (pos.y < _mantleTop)
+            {
+                // A touch of forward keeps the body against the face so it rolls over the lip.
+                float rise = Mathf.Min(mantleRiseSpeed * dt, _mantleTop - pos.y + 0.005f);
+                _velocity = Vector3.up * mantleRiseSpeed;
+                var flags = _controller.Move(Vector3.up * rise + _mantleDir * (0.2f * dt));
+                if ((flags & CollisionFlags.Above) != 0) _mantling = false;
+                return;
+            }
+            Vector3 to = _mantleTo - pos;
+            to.y = 0f;
+            float dist = to.magnitude;
+            if (dist < 0.05f || Vector3.Dot(to, _mantleDir) <= 0f)
+            {
+                _mantling = false;
+                _velocity = _mantleDir * walkSpeed * 0.5f;
+                return;
+            }
+            Vector3 step = to / dist * Mathf.Min(mantleForwardSpeed * dt, dist);
+            _velocity = to / dist * mantleForwardSpeed;
+            _controller.Move(step + Vector3.down * 0.01f);
         }
 
         /// <summary>Forward climbs (backward while facing away from the ladder), back climbs down, jump lets go.</summary>

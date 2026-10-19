@@ -35,6 +35,7 @@ namespace ZombiesFPS.Net
 
         float PerkHealthScale => PerkTable != null && HasPerk(PerkKind.Ironhide) ? PerkTable.ironhideHealth : 1f;
         float PerkReloadScale => PerkTable != null && HasPerk(PerkKind.SlickFingers) ? PerkTable.slickReload : 1f;
+        float PerkStaminaScale => PerkTable != null && HasPerk(PerkKind.FleetFoot) ? PerkTable.fleetFootStamina : 1f;
         float PerkSpeedScale => PerkTable != null && HasPerk(PerkKind.FleetFoot) ? PerkTable.fleetFootSpeed : 1f;
         float PerkFireRateScale => PerkTable != null && HasPerk(PerkKind.HairTrigger) ? PerkTable.hairTriggerFireRate : 1f;
         float PerkSpreadScale => PerkTable != null && HasPerk(PerkKind.SteadyHand) ? PerkTable.steadyHandSpread : 1f;

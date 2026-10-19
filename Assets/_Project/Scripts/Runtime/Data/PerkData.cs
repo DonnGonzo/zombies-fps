@@ -53,7 +53,7 @@ namespace ZombiesFPS.Data
             new PerkDef("Slick Fingers", "Reload 50% faster", 3000, new Color(0.2f, 0.75f, 0.35f)),
             new PerkDef("Second Wind", "Revive teammates twice as fast. Solo: get yourself back up once", 1500, new Color(0.35f, 0.65f, 1f)),
             new PerkDef("Hair Trigger", "Fire 33% faster", 2000, new Color(1f, 0.75f, 0.2f)),
-            new PerkDef("Fleet Foot", "Move 12% faster", 2000, new Color(0.95f, 0.95f, 0.95f)),
+            new PerkDef("Fleet Foot", "Move 12% faster and sprint twice as long", 2000, new Color(0.95f, 0.95f, 0.95f)),
             new PerkDef("Steady Hand", "40% less spread, faster aiming", 2000, new Color(0.25f, 0.85f, 0.85f)),
             new PerkDef("Hazard Ward", "Immune to acid and crawler slows, take 15% less damage", 2500, new Color(0.55f, 0.95f, 0.2f)),
             new PerkDef("Bloodline", "Kills heal you, and health comes back sooner", 4000, new Color(0.6f, 0.05f, 0.25f)),
@@ -67,6 +67,8 @@ namespace ZombiesFPS.Data
         public float secondWindSelfRevive = 5f;
         public float hairTriggerFireRate = 1.33f;
         public float fleetFootSpeed = 1.12f;
+        /// <summary>Fleet Foot also makes a full stamina bar last this many times longer.</summary>
+        public float fleetFootStamina = 2f;
         public float steadyHandSpread = 0.6f;
         public float hazardDamageTaken = 0.85f;
         public float bloodlineHealPerKill = 8f;

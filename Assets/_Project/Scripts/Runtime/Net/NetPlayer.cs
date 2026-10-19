@@ -74,6 +74,8 @@ namespace ZombiesFPS.Net
 
         // Owner-only rig.
         PlayerMotor _motor;
+        /// <summary>The local player's movement (null on other players' copies).</summary>
+        public PlayerMotor Motor => _motor;
         PlayerLook _look;
         HitscanGun _gun;
         Transform _pivot;

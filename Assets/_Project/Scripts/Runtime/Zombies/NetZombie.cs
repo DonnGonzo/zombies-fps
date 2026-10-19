@@ -44,6 +44,14 @@ namespace ZombiesFPS.Zombies
         const float ScrambleMaxRise = 6.5f;
         const float ScrambleReach = 4f;
         const float ScrambleDelay = 0.8f;
+        // Climbing over: a ledge no higher than a jumping player's head is climbed straight away (quicker, and
+        // without waiting) whenever the path map's way up is a long walk round. Players climb the same ledges.
+        const float MantleMaxRise = 3.1f;
+        const float MantleDelay = 0.25f;
+        const float MantleClimbSpeed = 4f;
+        // A player standing on top of something no zombie can stand on (too small for the path map) can still be
+        // clawed at from below, up to this high.
+        const float GrabReach = 3.3f;
 
         static readonly Color[] SkinTones =
         {
@@ -194,7 +202,8 @@ namespace ZombiesFPS.Zombies
         float _linkTime, _linkDuration;
         bool _scrambling;
         Vector3 _scrambleStart, _scrambleEnd;
-        float _scrambleTime, _scrambleDuration;
+        float _scrambleTime, _scrambleDuration, _scrambleClimbSpeed = ClimbSpeed;
+        bool _reachUp;
         float _belowSince = -1f;
         // Pose smoothing and body lean (see SmoothPose and AnimateBody).
         Transform[] _joints;
@@ -288,6 +297,7 @@ namespace ZombiesFPS.Zombies
                 _spitAt = -1f;
                 _onLink = false;
                 _scrambling = false;
+                _reachUp = false;
                 _belowSince = -1f;
                 _aboveSince = -1f;
                 _agent.updatePosition = true;
@@ -884,7 +894,9 @@ namespace ZombiesFPS.Zombies
 
             Vector3 toTarget = _target.transform.position - transform.position;
             float rise = toTarget.y;
-            bool level = Mathf.Abs(rise) < AttackHeight;
+            bool reachUp = _reachUp && rise >= AttackHeight && rise < GrabReach && CanReachUp(rise);
+            bool level = Mathf.Abs(rise) < AttackHeight || reachUp;
+            float attackRange = reachUp ? _data.attackRange + 0.6f : _data.attackRange;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
             // Zombies crowding a protect-mission survivor are where they should be, not stuck.
@@ -930,7 +942,7 @@ namespace ZombiesFPS.Zombies
                     _repathTimer = RepathInterval;
                 }
                 SteerFacing(dt, toTarget, distance);
-                if (distance <= _data.attackRange && level)
+                if (distance <= attackRange && level)
                 {
                     _mode.Value = ZombieMode.Attacking;
                     _attackTimer = 0f;
@@ -951,7 +963,7 @@ namespace ZombiesFPS.Zombies
                 {
                     _attackLanded = true;
                     // Backing off during the wind-up dodges the hit.
-                    if (distance <= _data.attackRange + 0.5f && level)
+                    if (distance <= attackRange + 0.5f && level)
                     {
                         _target.ServerApplyDamage(_data.damage, transform.position);
                         // Crawlers go for the legs.
@@ -1029,6 +1041,7 @@ namespace ZombiesFPS.Zombies
             if (rise < ScrambleMinRise || rise > ScrambleMaxRise || distance > ScrambleReach)
             {
                 _belowSince = -1f;
+                _reachUp = false;
                 return false;
             }
             // Zombies re-path five times a second, so a path is often still being worked out. Wait for it, but keep
@@ -1037,13 +1050,17 @@ namespace ZombiesFPS.Zombies
             if (_agent.pathPending) return false;
             Vector3 target = _target.transform.position;
             bool noWayUp = _agent.pathStatus != NavMeshPathStatus.PathComplete || _agent.pathEndPosition.y < target.y - 1f;
-            if (!noWayUp)
+            // A ledge a player could climb, with the way up a long walk round (or unknown): climb it instead.
+            bool mantle = rise <= MantleMaxRise;
+            bool detour = mantle && !noWayUp && _agent.remainingDistance > distance * 2f + 6f;
+            if (!noWayUp && !detour)
             {
                 _belowSince = -1f;
+                _reachUp = false;
                 return false;
             }
             if (_belowSince < 0f) _belowSince = Time.time;
-            if (Time.time - _belowSince < ScrambleDelay) return false;
+            if (Time.time - _belowSince < (mantle ? MantleDelay : ScrambleDelay)) return false;
 
             // Land beside the player, on the side of them we're climbing from.
             Vector3 back = transform.position - target;
@@ -1060,6 +1077,8 @@ namespace ZombiesFPS.Zombies
                     break;
                 }
             }
+            // Nowhere to stand up there (a pillar or a crate too small for the path map): claw at them from below.
+            _reachUp = !found;
             Vector3 start = transform.position;
             Vector3 top = new Vector3(start.x, land.y + 0.6f, start.z);
             // Nothing overhead on the way up, and nothing between the top of the climb and the landing.
@@ -1071,11 +1090,12 @@ namespace ZombiesFPS.Zombies
 
             _scrambling = true;
             _belowSince = -1f;
+            _scrambleClimbSpeed = land.y - start.y <= MantleMaxRise ? MantleClimbSpeed : ClimbSpeed;
             _scrambleStart = start;
             _scrambleEnd = land;
             _scrambleTime = 0f;
             float across = Vector3.Distance(new Vector3(start.x, 0f, start.z), new Vector3(land.x, 0f, land.z));
-            _scrambleDuration = (land.y - start.y) / ClimbSpeed + across / Mathf.Max(1.5f, _moveSpeed) + 0.2f;
+            _scrambleDuration = (land.y - start.y) / _scrambleClimbSpeed + across / Mathf.Max(1.5f, _moveSpeed) + 0.2f;
             _agent.isStopped = true;
             _agent.updatePosition = false;
             Vector3 face = land - start;
@@ -1154,7 +1174,7 @@ namespace ZombiesFPS.Zombies
                 FinishScramble();
                 return;
             }
-            float climbShare = Mathf.Clamp01(rise / ClimbSpeed / _scrambleDuration);
+            float climbShare = Mathf.Clamp01(rise / _scrambleClimbSpeed / _scrambleDuration);
             float vertical = Mathf.Clamp01(t / Mathf.Max(0.01f, climbShare));
             float across = Mathf.Clamp01((t - climbShare) / Mathf.Max(0.01f, 1f - climbShare));
             Vector3 flat = _scrambleEnd - _scrambleStart;
@@ -1206,6 +1226,16 @@ namespace ZombiesFPS.Zombies
             float flight = Mathf.Clamp(Vector3.Distance(from, to) / Mathf.Max(1f, _data.spitSpeed), 0.35f, 1.4f);
             SpitRpc(from, to, flight);
             return false;
+        }
+
+        /// <summary>
+        /// Open air straight up from this zombie to the height of the player's feet, then across to them: true beside a
+        /// crate the player stands on, false under a deck (the deck's floor is in the way).
+        /// </summary>
+        bool CanReachUp(float rise)
+        {
+            Vector3 up = transform.position + Vector3.up * (rise + 0.3f);
+            return Clear(transform.position + Vector3.up * 1.5f, up) && Clear(up, _target.transform.position + Vector3.up * 0.3f);
         }
 
         /// <summary>Nothing but zombies and players between this zombie's head and the player's chest.</summary>

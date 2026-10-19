@@ -136,7 +136,11 @@ namespace ZombiesFPS.Net
 
         void ApplyOwnerBonuses()
         {
-            if (_motor != null) _motor.SpeedMultiplier = (1f + Bonus(PowerStat.MoveSpeed)) * PerkSpeedScale;
+            if (_motor != null)
+            {
+                _motor.SpeedMultiplier = (1f + Bonus(PowerStat.MoveSpeed)) * PerkSpeedScale;
+                _motor.StaminaScale = PerkStaminaScale;
+            }
             if (_gun == null) return;
             _gun.ReloadSpeed = ReloadSpeedNow;
             _gun.FireRateScale = PerkFireRateScale;

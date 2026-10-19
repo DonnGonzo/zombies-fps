@@ -258,7 +258,7 @@ namespace ZombiesFPS.Weapons
             _kickBack = Mathf.Lerp(_kickBack, 0f, recover);
             _kickPitch = Mathf.Lerp(_kickPitch, 0f, recover);
 
-            _sprintWeight = Mathf.MoveTowards(_sprintWeight, _motor.IsSprinting ? 1f : 0f, dt * 5f);
+            _sprintWeight = Mathf.MoveTowards(_sprintWeight, _motor.IsSprinting || _motor.IsMantling ? 1f : 0f, dt * (_motor.IsMantling ? 9f : 5f));
             float reloadWeight = _gun.IsReloading ? Mathf.Sin(Mathf.PI * _gun.ReloadProgress) : 0f;
             reloadWeight = Mathf.Clamp01(reloadWeight * 1.6f);
             float lowered = 1f - _gun.RaiseProgress;
