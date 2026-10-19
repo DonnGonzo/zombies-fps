@@ -39,6 +39,15 @@ def walk(i, parent):
                 nrm = (np.linalg.inv(m[:3, :3]).T @ nrm.T).T; nrm /= np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-12
             uv = acc(p['attributes']['TEXCOORD_0']).astype(np.float64) if 'TEXCOORD_0' in p['attributes'] else np.zeros((len(pos), 2))
             idx = acc(p['indices']).reshape(-1).astype(np.int64) if 'indices' in p else np.arange(len(pos))
+            if nrm is None:
+                # The pack's props carry no normals: split the corners and give each face its own (flat shading,
+                # which suits these hard-edged pieces). glTF faces wind counter-clockwise.
+                pos, uv = pos[idx], uv[idx]
+                idx = np.arange(len(pos))
+                t = pos.reshape(-1, 3, 3)
+                fn = np.cross(t[:, 1] - t[:, 0], t[:, 2] - t[:, 0])
+                fn /= np.linalg.norm(fn, axis=1, keepdims=True) + 1e-12
+                nrm = np.repeat(fn, 3, axis=0)
             mat = g['materials'][p['material']]['name'] if 'material' in p else 'default'
             parts.append({'name': n.get('name', ''), 'pos': pos, 'nrm': nrm, 'uv': uv, 'idx': idx, 'mat': mat, 'lo': pos.min(0), 'hi': pos.max(0)})
     for c in n.get('children', []): walk(c, m)

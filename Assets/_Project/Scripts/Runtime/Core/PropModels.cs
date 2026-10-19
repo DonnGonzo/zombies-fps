@@ -115,6 +115,8 @@ namespace ZombiesFPS.Core
                 for (int i = 0; i < tris.Length; i++) tris[i] = reader.ReadInt32();
                 mesh.SetTriangles(tris, s);
             }
+            // A model exported without normals would be lit as pure black; work them out instead.
+            if (n > 0 && nrm[0].sqrMagnitude < 0.5f) mesh.RecalculateNormals();
             mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             return (mesh, keys);
