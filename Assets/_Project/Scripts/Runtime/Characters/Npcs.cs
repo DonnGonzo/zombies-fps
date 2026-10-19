@@ -19,12 +19,18 @@ namespace ZombiesFPS.CharacterModels
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Register()
         {
-            if (EggProps.WatchmanModel != null || !CharacterSkin.Exists(CharacterSkin.Ranger)) return;
+            if (EggProps.WatchmanModel != null) return;
+            if (!CharacterSkin.Exists(CharacterSkin.Ranger))
+            {
+                Debug.LogWarning("[Characters] The Ranger model isn't in Resources/Characters, so Brannock keeps his blocky stand-in.");
+                return;
+            }
             // The egg Instantiates the model; the original waits here, switched off, so it never animates or draws.
             s_Holder = new GameObject("Character Models");
             s_Holder.SetActive(false);
             Object.DontDestroyOnLoad(s_Holder);
             EggProps.WatchmanModel = Brannock(s_Holder.transform);
+            Debug.Log(EggProps.WatchmanModel != null ? "[Characters] Brannock's model is ready." : "[Characters] Brannock's model couldn't be built.");
         }
 
         /// <summary>Sergeant Brannock: hooded Watch coat, an old soldier's face and a white beard. Feet at the origin, facing +Z.</summary>

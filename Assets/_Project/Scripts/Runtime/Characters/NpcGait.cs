@@ -27,6 +27,9 @@ namespace ZombiesFPS.CharacterModels
             _own = new Quaternion[_skin.Parts.Length];
             _last = transform.position;
             _time = Random.value * 10f;
+            var r = _skin.Renderer;
+            Debug.Log($"[Characters] {name} is in the game at {transform.position}, scale {transform.lossyScale.y:0.00}, " +
+                $"mesh {(r != null && r.sharedMesh != null ? r.sharedMesh.vertexCount : 0)} vertices, drawn {(r != null && r.enabled && r.gameObject.activeInHierarchy)}.");
         }
 
         void LateUpdate()
