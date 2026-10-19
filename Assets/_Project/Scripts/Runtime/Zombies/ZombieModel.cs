@@ -18,6 +18,7 @@ namespace ZombiesFPS.Zombies
     public sealed class ZombieModel : MonoBehaviour
     {
         const string CharacterFolder = "Zombies/Character";
+        const string TextureFolder = "Zombies/Character/Textures/";
         const string AnimationFolder = "Zombies/Animations/";
         const string Placeholder = "X Bot";
 
@@ -35,7 +36,10 @@ namespace ZombiesFPS.Zombies
             Clip.Walk, Clip.Idle, Clip.Walk, Clip.Walk, Clip.Crawl, Clip.Dying, Clip.Death, Clip.Bite, Clip.Attack, Clip.Bite, Clip.Attack,
         };
         // Ground speed (m/s) each loop looks right at; playback is sped up or slowed to the zombie's real speed.
+        // These are only fallbacks: the real strides are measured from the clips (MeasureStrides).
         static readonly float[] RefSpeed = { 1f, 0.9f, 3.2f, 0.5f, 1.6f };
+        // Measured stride speeds, in the model's own units (scaled by its size at runtime).
+        static float[] s_Stride;
 
         static readonly Color EyeGlow = new Color(1f, 0.85f, 0.2f);
 
@@ -167,6 +171,8 @@ namespace ZombiesFPS.Zombies
             _flash = new Material[_renderers.Length][];
             _baseColors = new Color[_renderers.Length][];
             var white = Greybox.Lit(Color.white);
+            var undead = Resources.Load<Material>("Materials/Undead");
+            if (undead != null && (undead.shader == null || !undead.shader.isSupported)) undead = null;
             for (int i = 0; i < _renderers.Length; i++)
             {
                 var shared = _renderers[i].sharedMaterials;
@@ -175,7 +181,7 @@ namespace ZombiesFPS.Zombies
                 _baseColors[i] = new Color[shared.Length];
                 for (int m = 0; m < shared.Length; m++)
                 {
-                    _materials[i][m] = shared[m] != null ? new Material(shared[m]) : white;
+                    _materials[i][m] = shared[m] == null ? white : undead != null ? UndeadSkin(undead, shared[m]) : new Material(shared[m]);
                     _flash[i][m] = white;
                     _baseColors[i][m] = ColorOf(_materials[i][m]);
                 }
@@ -199,7 +205,80 @@ namespace ZombiesFPS.Zombies
             }
 
             BuildGraph(animator);
+            if (s_Stride == null) MeasureStrides();
             return true;
+        }
+
+        /// <summary>
+        /// Rotting skin from the character's own textures. They're looked up by material name in the Textures
+        /// folder (Name_Diffuse, Name_Normal, Name_Gloss), so the look never depends on how the FBX's embedded
+        /// textures came through the import; otherwise whatever textures the imported material has are used.
+        /// </summary>
+        static Material UndeadSkin(Material undead, Material source)
+        {
+            var mat = new Material(undead);
+            string name = source.name.Replace(" (Instance)", "");
+            var diffuse = Resources.Load<Texture2D>(TextureFolder + name + "_Diffuse");
+            var normal = Resources.Load<Texture2D>(TextureFolder + name + "_Normal");
+            var gloss = Resources.Load<Texture2D>(TextureFolder + name + "_Gloss");
+            if (diffuse == null && source.HasProperty("_MainTex")) diffuse = source.GetTexture("_MainTex") as Texture2D;
+            if (normal == null && source.HasProperty("_BumpMap")) normal = source.GetTexture("_BumpMap") as Texture2D;
+            if (diffuse != null) mat.SetTexture("_MainTex", diffuse);
+            if (normal != null) mat.SetTexture("_BumpMap", normal);
+            if (gloss != null) mat.SetTexture("_GlossMap", gloss);
+            mat.name = name + " (Undead)";
+            return mat;
+        }
+
+        /// <summary>
+        /// How fast each loop actually walks, measured once from the clip itself so playback can match the zombie's
+        /// real speed and the feet don't slide. Works whether the clip moves the hips forward or walks in place:
+        /// the planted foot moves backward under the hips at exactly the ground speed.
+        /// </summary>
+        void MeasureStrides()
+        {
+            s_Stride = new float[RefSpeed.Length];
+            var footL = FindBone(transform, "LeftToeBase") ?? FindBone(transform, "LeftFoot");
+            var footR = FindBone(transform, "RightToeBase") ?? FindBone(transform, "RightFoot");
+            float unit = Mathf.Max(transform.lossyScale.z, 1e-4f);
+            _layers.SetInputWeight(1, 0f);
+            var speeds = new List<float>();
+            for (int clip = 1; clip < RefSpeed.Length; clip++)
+            {
+                s_Stride[clip] = RefSpeed[clip] / unit;
+                if (footL == null || footR == null) continue;
+                for (int i = 0; i < BaseCount; i++) _base.SetInputWeight(i, i == clip ? 1f : 0f);
+                float len = s_Clips[clip].length;
+                if (len < 0.1f) continue;
+                const int N = 48;
+                float dt = len / N;
+                speeds.Clear();
+                Vector3 prevHips = default, prevL = default, prevR = default;
+                for (int k = 0; k <= N; k++)
+                {
+                    _playables[clip].SetTime(k * dt);
+                    _graph.Evaluate(0f);
+                    var hips = transform.InverseTransformPoint(_hips.position);
+                    var l = transform.InverseTransformPoint(footL.position);
+                    var r = transform.InverseTransformPoint(footR.position);
+                    if (k > 0)
+                    {
+                        bool left = l.y < r.y;
+                        if (left == prevL.y < prevR.y)
+                        {
+                            var foot = left ? l - prevL : r - prevR;
+                            speeds.Add(((hips.z - prevHips.z) - foot.z) / dt);
+                        }
+                    }
+                    prevHips = hips; prevL = l; prevR = r;
+                }
+                if (speeds.Count < 6) continue;
+                // The median shrugs off the jump where the loop wraps.
+                speeds.Sort();
+                float v = speeds[speeds.Count / 2];
+                if (v * unit > 0.15f && v * unit < 7f) s_Stride[clip] = v;
+            }
+            s_Stride[0] = RefSpeed[0] / unit;
         }
 
         void BuildGraph(Animator animator)
@@ -310,6 +389,9 @@ namespace ZombiesFPS.Zombies
 
         // ---------------------------------------------------------------- per frame
 
+        /// <summary>The ground speed (m/s) clip <paramref name="clip"/> walks at, at this zombie's size.</summary>
+        float Stride(int clip) => Mathf.Max(s_Stride[clip] * transform.lossyScale.z, 0.1f);
+
         /// <param name="speed">Ground speed seen on this machine (m/s).</param>
         /// <param name="swing">0 none, 0..1 wind-up, 1..2 strike and recover (as NetZombie measures it).</param>
         /// <param name="swingTime">Seconds the whole swing lasts.</param>
@@ -332,14 +414,19 @@ namespace ZombiesFPS.Zombies
             }
             else if (crawls)
             {
-                float fast = Mathf.Clamp01((speed - 1.1f) / 0.8f);
+                float crawlPace = Stride((int)Clip.Crawl), fastPace = Stride((int)Clip.CrawlRun);
+                float from = crawlPace * 1.4f, to = Mathf.Max(fastPace * 0.8f, from + 0.4f);
+                float fast = Mathf.Clamp01((speed - from) / (to - from));
                 target[(int)Clip.Crawl] = 1f - fast;
                 target[(int)Clip.CrawlRun] = fast;
             }
             else
             {
+                // Walk until well past the walk's own pace, then blend into the run.
+                float walkPace = Stride((int)Clip.Walk), runPace = Stride((int)Clip.Run);
+                float from = walkPace * 1.4f, to = Mathf.Max(runPace * 0.8f, from + 0.5f);
                 float moving = Mathf.Clamp01((speed - 0.08f) / 0.35f);
-                float fast = Mathf.Clamp01((speed - 1.9f) / 1.3f);
+                float fast = Mathf.Clamp01((speed - from) / (to - from));
                 target[(int)Clip.Idle] = 1f - moving;
                 target[(int)Clip.Walk] = moving * (1f - fast);
                 target[(int)Clip.Run] = moving * fast;
@@ -353,7 +440,7 @@ namespace ZombiesFPS.Zombies
                 if (i < RefSpeed.Length)
                 {
                     // Loops play at the speed the zombie is really moving (idle at its own pace).
-                    float rate = i == (int)Clip.Idle ? 1f : Mathf.Clamp(speed / RefSpeed[i], 0.5f, 2.2f);
+                    float rate = i == (int)Clip.Idle ? 1f : Mathf.Clamp(speed / Stride(i), 0.35f, 3f);
                     _time[i] += dt * rate * slow;
                     float len = Mathf.Max(s_Clips[i].length, 0.05f);
                     if (_time[i] > len) _time[i] %= len;
@@ -400,9 +487,10 @@ namespace ZombiesFPS.Zombies
                 // The zombie is moved by its navigation, not the clip: keep the hips inside the body collider so
                 // a walk that travels doesn't drift off the body and snap back each loop.
                 var h = _hips.localPosition;
+                // Forward travel is pinned outright (a clamp would pop back each loop); side sway is kept.
                 float reach = 0.1f / Mathf.Max(transform.localScale.x, 1e-4f);
                 h.x = Mathf.Clamp(h.x, _hipsBind.x - reach, _hipsBind.x + reach);
-                h.z = Mathf.Clamp(h.z, _hipsBind.z - reach, _hipsBind.z + reach);
+                h.z = _hipsBind.z;
                 _hips.localPosition = h;
             }
             if (_headHidden) _headBone.localScale = Vector3.zero;
