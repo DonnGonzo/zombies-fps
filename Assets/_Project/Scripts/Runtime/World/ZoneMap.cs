@@ -699,8 +699,8 @@ namespace ZombiesFPS.World
         void AddLamp(Vector3 position, int zone)
         {
             bool lantern = PropModels.Get(PropModels.Lantern) != null;
-            bool chandelier = ChandelierZones.TryGetValue(zone, out var hanging) && HangChandelier(position, hanging);
-            if (chandelier) lantern = true;
+            bool chandelier = (ChandelierZones.TryGetValue(zone, out var hanging) || KitChandeliers.TryGetValue(zone, out hanging)) && HangChandelier(position, hanging);
+            if (chandelier || CeilingStrip(position, zone)) lantern = true;
             else if (lantern) CeilingLantern(position);
             else
             {

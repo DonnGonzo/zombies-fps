@@ -125,14 +125,17 @@ namespace ZombiesFPS.World
 
         void DressRooms()
         {
-            // Each room's centrepieces first, so they get the pick of its walls.
+            // The Lantern Core's machine shell first, so the furniture keeps clear of its pilasters; then each
+            // room's centrepieces, so they get the pick of its walls.
+            LabShell();
             foreach (var (big, zone) in Centrepieces)
                 for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                if (f.Length < 3f || !RoomSets.TryGetValue(f.Zone, out var set)) continue;
+                var set = RoomSet(f.Zone);
+                if (f.Length < 3f || set == null) continue;
                 var rng = new System.Random(8300 + i * 4111);
                 int total = 0;
                 foreach (var (_, w) in set) total += w;
@@ -145,6 +148,7 @@ namespace ZombiesFPS.World
                 }
             }
 
+            DressKits();
             WallHangings();
             HangTapestries();
             HangBanners();
@@ -177,6 +181,7 @@ namespace ZombiesFPS.World
             // A little askew, as if shoved there in a hurry.
             var rot = Quaternion.LookRotation(f.Inward, Vector3.up) * Quaternion.Euler(0f, Range(rng, -6f, 6f), 0f);
             PlacePackItem(item, mid, rot, size.y > 0.5f);
+            TableTop(item, mid, rot, f.Zone, rng);
             return true;
         }
 
@@ -292,6 +297,8 @@ namespace ZombiesFPS.World
         /// <summary>Materials for the packs' keys: Ten Worlds and lab materials by name, furniture by vertex colour ("#rrggbb").</summary>
         static Material PackMaterial(string key)
         {
+            // The Quaternius kits' keys say how to draw them (see ZoneMap.Kits.cs).
+            if (key.StartsWith("Q|")) return KitMaterial(key);
             // The Ten Worlds pack names its materials in lower case (wood_dark, brass).
             if (key.Length > 0 && char.IsLower(key[0])) return WorldsMaterial(key);
             if (key.StartsWith("#") && ColorUtility.TryParseHtmlString(key, out var c))

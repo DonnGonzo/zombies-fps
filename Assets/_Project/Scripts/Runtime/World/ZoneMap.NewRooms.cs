@@ -36,6 +36,7 @@ namespace ZombiesFPS.World
             // Scriptorium: rows of writing desks, each with its stool, facing the lectern stage on the north wall.
             var desk = PropModels.GetPack(WritingDesk.Path, PackMaterial);
             var stool = PropModels.GetPack(Stool.Path, PackMaterial);
+            var deskRng = new System.Random(1414);
             foreach (float x in new[] { -5f, -2.4f, 2.4f, 5f })
                 foreach (float z in new[] { -5f, -1.5f, 2f })
                 {
@@ -46,6 +47,7 @@ namespace ZombiesFPS.World
                     if (desk == null) continue;
                     box.GetComponent<Renderer>().enabled = false;
                     AddModel(desk, at, face, true);
+                    TableTop(WritingDesk, at, face, Scriptorium, deskRng);
                     if (stool != null) AddModel(stool, at + new Vector3(0f, 0f, -0.62f), face, true);
                 }
 

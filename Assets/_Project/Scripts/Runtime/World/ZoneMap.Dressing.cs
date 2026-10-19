@@ -934,6 +934,8 @@ namespace ZombiesFPS.World
             DressWorks();
             DressNewRooms();
             for (int z = 0; z < ZoneCount; z++) ScatterFloor(z);
+            if (_hangers != null) Object.DestroyImmediate(_hangers.gameObject);
+            _hangers = null;
         }
 
         /// <summary>The open-air zones: Gate Yard, Courtyard, Loading Dock, Crane Yard.</summary>

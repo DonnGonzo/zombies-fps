@@ -38,3 +38,9 @@ New files need a .meta: albedo textures sRGB, `_nrh` linear, `_normal` as a norm
 
 `tools/reactor` holds Ivan's Reactor_01 asset as delivered. `pack_reactor.py` turns its OBJ into
 `Resources/CC0/Reactor/*.bytes`, which `World/Reactor.cs` builds into the Lantern Core's reactor.
+
+## Quaternius kits (CC0 1.0)
+
+Fantasy Props MegaKit, Sci-Fi Essentials Kit and Modular SciFi MegaKit (standard free versions) by Quaternius,
+https://quaternius.com, public domain (CC0 1.0). Converted by `tools/quaternius` into
+`Resources/CC0/{Fantasy,SciFi,SciFiModular}` and `Resources/CC0/Quaternius/Textures`; see its README.
