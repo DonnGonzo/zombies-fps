@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
+using ZombiesFPS.Characters;
 using ZombiesFPS.Core;
 
 namespace ZombiesFPS.Zombies
@@ -14,6 +15,10 @@ namespace ZombiesFPS.Zombies
     ///
     /// Swapping the character: drop another Mixamo character FBX (exported "FBX for Unity", with skin) into the
     /// Character folder. Any file there other than "X Bot" is used in preference to it.
+    ///
+    /// Monsters: <see cref="UseSkin"/> dresses a life as one of Ivan's Quaternius characters (Imp, Puglin) instead.
+    /// The Mixamo rig still plays the clips, hidden, and its pose is copied onto the monster every frame
+    /// (<see cref="CharacterSkin.Retarget"/>); the hitboxes follow the monster's own spine and head.
     /// </summary>
     public sealed class ZombieModel : MonoBehaviour
     {
@@ -63,6 +68,22 @@ namespace ZombiesFPS.Zombies
         Vector3 _baseScale;
         GameObject[] _eyes;
 
+        // The Mixamo rig's parts and T-pose, for copying its pose onto a monster skin.
+        Transform[] _srcParts;
+        Quaternion[] _srcRest;
+        Vector3 _srcHipsRest;
+        float _tall;
+        CharacterSkin _skin;
+        readonly Dictionary<string, CharacterSkin> _skins = new Dictionary<string, CharacterSkin>();
+        readonly Dictionary<CharacterSkin, Quaternion[]> _align = new Dictionary<CharacterSkin, Quaternion[]>();
+        Quaternion[] _skinAlign;
+        // The rig's local pose at rest, to put it back while a new skin lines itself up with it.
+        Quaternion[] _srcLocalRest;
+        Vector3 _srcHipsLocalRest;
+        Material[] _skinMaterials, _skinFlash;
+        Color[] _skinColors;
+        Vector3 _skinHeadScale;
+
         float _deadAt = -1f, _upperWeight;
         int _deathClip;
         bool _headHidden;
@@ -77,10 +98,11 @@ namespace ZombiesFPS.Zombies
             }
         }
 
-        public Transform Spine => _spine;
-        public Transform Neck => _neck;
+        public Transform Spine => _skin != null ? _skin.Parts[(int)Part.Spine] : _spine;
+        public Transform Neck => _skin != null ? _skin.Parts[(int)Part.Neck] : _neck;
         /// <summary>Middle of the skull, where the head hitbox goes.</summary>
-        public Vector3 HeadCenter => _headTop != null ? Vector3.Lerp(_headBone.position, _headTop.position, 0.45f) : _headBone.position + _headBone.up * 0.1f;
+        public Vector3 HeadCenter => _skin != null ? _skin.HeadCenter
+            : _headTop != null ? Vector3.Lerp(_headBone.position, _headTop.position, 0.45f) : _headBone.position + _headBone.up * 0.1f;
 
         static void Load()
         {
@@ -153,6 +175,14 @@ namespace ZombiesFPS.Zombies
             // Scale to the zombie's height (packs come in centimetres, metres or anything in between).
             var top = _headTop != null ? _headTop : _headBone;
             float tall = transform.InverseTransformPoint(top.position).y;
+            _tall = tall;
+            // The rig's T-pose, before any clip moves it, for monster skins.
+            _srcParts = CharacterSkin.FindMixamo(transform);
+            _srcRest = CharacterSkin.Capture(transform, _srcParts);
+            _srcHipsRest = transform.InverseTransformPoint(_hips.position);
+            _srcLocalRest = new Quaternion[_srcParts.Length];
+            for (int p = 0; p < _srcParts.Length; p++) _srcLocalRest[p] = _srcParts[p] != null ? _srcParts[p].localRotation : Quaternion.identity;
+            _srcHipsLocalRest = _hips.localPosition;
             if (tall > 0.01f) transform.localScale = Vector3.one * (height / tall);
             _baseScale = transform.localScale;
             _hipsBind = _hips.localPosition;
@@ -352,6 +382,17 @@ namespace ZombiesFPS.Zombies
                     if (mat.HasProperty("_Color")) mat.SetColor("_Color", c);
                     else if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
                 }
+            // Monsters keep most of their own colours: the type's tint is only a wash over them.
+            if (_skin != null)
+            {
+                var wash = Color.Lerp(Color.white, tint, 0.35f);
+                for (int m = 0; m < _skinMaterials.Length; m++)
+                {
+                    var c = _skinColors[m] * wash;
+                    c.a = 1f;
+                    _skinMaterials[m].color = c;
+                }
+            }
         }
 
         /// <summary>A fresh, standing zombie.</summary>
@@ -361,7 +402,7 @@ namespace ZombiesFPS.Zombies
             _upperWeight = 0f;
             _headHidden = false;
             _headBone.localScale = _headScale;
-            foreach (var eye in _eyes) eye.SetActive(true);
+            foreach (var eye in _eyes) eye.SetActive(_skin == null);
             // Start the loops at different points so a horde doesn't step in unison.
             for (int i = 0; i < ClipCount; i++) _time[i] = ((seed >> (i % 16)) & 0xFF) / 255f * 3f;
             for (int i = 0; i < BaseCount; i++) _weight[i] = 0f;
@@ -379,12 +420,14 @@ namespace ZombiesFPS.Zombies
                 // Takes the head off: the bone shrinks to nothing, which collapses the skull into the neck.
                 _headHidden = true;
                 foreach (var eye in _eyes) eye.SetActive(false);
+                if (_skin != null) _skin.Head.localScale = Vector3.zero;
             }
         }
 
         public void SetFlash(bool flashing)
         {
             for (int i = 0; i < _renderers.Length; i++) _renderers[i].sharedMaterials = flashing ? _flash[i] : _materials[i];
+            if (_skin != null) _skin.Renderer.sharedMaterials = flashing ? _skinFlash : _skinMaterials;
         }
 
         // ---------------------------------------------------------------- per frame
@@ -494,6 +537,74 @@ namespace ZombiesFPS.Zombies
                 _hips.localPosition = h;
             }
             if (_headHidden) _headBone.localScale = Vector3.zero;
+            if (_skin != null)
+            {
+                _skin.Retarget(transform, _srcParts, _srcRest, _srcHipsRest, _skinAlign);
+                _skin.Head.localScale = _headHidden ? Vector3.zero : _skinHeadScale;
+            }
+        }
+
+        // ---------------------------------------------------------------- monster skins
+
+        /// <summary>Lines a new skin's rest pose up with the rig's T-pose (the rig is put back in it for a moment).</summary>
+        Quaternion[] AlignSkin(CharacterSkin skin)
+        {
+            var pose = new Quaternion[_srcParts.Length];
+            for (int p = 0; p < _srcParts.Length; p++)
+                if (_srcParts[p] != null)
+                {
+                    pose[p] = _srcParts[p].localRotation;
+                    _srcParts[p].localRotation = _srcLocalRest[p];
+                }
+            var hips = _hips.localPosition;
+            _hips.localPosition = _srcHipsLocalRest;
+            var align = skin.AlignTo(transform, _srcParts);
+            for (int p = 0; p < _srcParts.Length; p++)
+                if (_srcParts[p] != null) _srcParts[p].localRotation = pose[p];
+            _hips.localPosition = hips;
+            return align;
+        }
+
+        /// <summary>
+        /// Dresses this life as <paramref name="character"/> (see <see cref="CharacterSkin"/>) in colour
+        /// <paramref name="variant"/>, or as the zombie model itself when null or when the character isn't in the project.
+        /// </summary>
+        public void UseSkin(string character, int variant)
+        {
+            CharacterSkin skin = null;
+            if (character != null && !_skins.TryGetValue(character, out skin))
+            {
+                skin = CharacterSkin.Create(character, transform, 0);
+                if (skin != null)
+                {
+                    // As tall as the zombie, in the rig's own units (the model's scale then makes it the zombie's height).
+                    skin.transform.localScale = Vector3.one * (_tall / Mathf.Max(skin.Height, 0.01f));
+                    _align[skin] = AlignSkin(skin);
+                }
+                _skins[character] = skin;
+            }
+            foreach (var s in _skins.Values)
+                if (s != null) s.gameObject.SetActive(s == skin);
+            _skin = skin;
+            _skinAlign = skin != null ? _align[skin] : null;
+            foreach (var r in _renderers) r.enabled = skin == null;
+            foreach (var eye in _eyes) eye.SetActive(skin == null && !_headHidden);
+            if (skin == null) return;
+
+            // Own copies of the variant's materials, so each monster can be tinted for its type.
+            var shared = CharacterSkin.Materials(character, variant);
+            _skinMaterials = new Material[shared.Length];
+            _skinFlash = new Material[shared.Length];
+            _skinColors = new Color[shared.Length];
+            var white = Greybox.Lit(Color.white);
+            for (int m = 0; m < shared.Length; m++)
+            {
+                _skinMaterials[m] = new Material(shared[m]);
+                _skinFlash[m] = white;
+                _skinColors[m] = ColorOf(_skinMaterials[m]);
+            }
+            skin.Renderer.sharedMaterials = _skinMaterials;
+            _skinHeadScale = Vector3.one;
         }
     }
 }

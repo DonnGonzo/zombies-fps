@@ -4,6 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using ZombiesFPS.Combat;
+using ZombiesFPS.Characters;
 using ZombiesFPS.Core;
 using ZombiesFPS.Data;
 using ZombiesFPS.Net;
@@ -714,6 +715,11 @@ namespace ZombiesFPS.Zombies
 
             if (_model != null)
             {
+                // Ivan's monsters: every brute is an Imp and half the runners are Puglins, each in one of its colours.
+                string monster = d.kind == ZombieKind.Brute ? CharacterSkin.Imp
+                    : d.kind == ZombieKind.Runner && Rand() < 0.5f ? CharacterSkin.Puglin : null;
+                _model.UseSkin(monster, monster != null ? RandIndex(Mathf.Max(1, CharacterSkin.Variants(monster))) : 0);
+
                 // Each type leans toward its own colour; walkers only faintly, so they keep the model's own look.
                 var cloth = d.clothColor;
                 float peak = Mathf.Max(cloth.r, Mathf.Max(cloth.g, cloth.b), 0.01f);
