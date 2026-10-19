@@ -1117,6 +1117,14 @@ namespace ZombiesFPS.World
                 foreach (float x in new[] { 5f, 13f })
                     Books(L(10, x, 0f, 11.5f), 0.8f, 5f, StackHeight, bookRng);
             }
+            // Oak bookcases against the records loft (either side of its ladder), or the old filing cabinets.
+            if (PropModels.GetPack(TallBookcase.Path, PackMaterial) != null)
+            {
+                foreach (float x in new[] { 2.5f, 4.05f, 13.95f, 15.5f })
+                    PlacePackItem(TallBookcase, L(10, x, 0f, 17f - TallBookcase.Size.z / 2f - 0.02f), Quaternion.Euler(0f, 180f, 0f), true);
+            }
+            else
+            {
             var cabinet = new Color(0.3f, 0.33f, 0.3f);
             foreach (float x in new[] { 2.5f, 3.5f, 4.5f, 5.5f, 12.5f, 13.5f, 14.5f, 15.5f })
             {
@@ -1126,6 +1134,7 @@ namespace ZombiesFPS.World
                     Deco(L(10, x, 0.22f + d * 0.33f, 16.965f), new Vector3(0.78f, 0.28f, 0.012f), Shade(cabinet, 1.15f), Surface.Metal);
                     Deco(L(10, x, 0.28f + d * 0.33f, 16.95f), new Vector3(0.18f, 0.03f, 0.02f), Soot, Surface.Metal);
                 }
+            }
             }
             Deco(L(10, -5.5f, 0.004f, 0f), new Vector3(6.2f, 0.008f, 3.6f), new Color(0.16f, 0.06f, 0.05f), Surface.Fabric);
             Deco(L(10, -5.5f, 0.007f, 0f), new Vector3(5.8f, 0.008f, 3.2f), new Color(0.3f, 0.12f, 0.08f), Surface.Fabric);

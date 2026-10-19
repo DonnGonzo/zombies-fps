@@ -128,6 +128,7 @@ namespace ZombiesFPS.World
             // The Lantern Core's machine shell first, so the furniture keeps clear of its pilasters; then each
             // room's centrepieces, so they get the pick of its walls.
             LabShell();
+            ArchivesMakeover();
             foreach (var (big, zone) in Centrepieces)
                 for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 

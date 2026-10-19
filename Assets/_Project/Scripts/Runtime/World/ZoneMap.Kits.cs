@@ -190,7 +190,7 @@ namespace ZombiesFPS.World
             [7] = (new[] { Modular + "Prop_Cable_1", Modular + "Prop_Cable_3", Fantasy + "Bucket_Metal" }, 5),
             [8] = (new[] { Fantasy + "Chain_Coil", Fantasy + "Rope_3", Modular + "Prop_Cable_1" }, 5),
             [9] = (new[] { Modular + "Prop_Cable_1", Modular + "Prop_Cable_3", Modular + "Prop_Light_Floor" }, 7),
-            [10] = (new[] { Fantasy + "Book_5", Fantasy + "Book_7", Fantasy + "Scroll_1", Fantasy + "Book_Stack_1" }, 6),
+            [10] = (new[] { Fantasy + "Book_5", Fantasy + "Book_7", Fantasy + "Scroll_1", Fantasy + "Book_Stack_1", Fantasy + "Scroll_2", Fantasy + "Candle_2" }, 12),
             [12] = (new[] { Fantasy + "Chain_Coil", Fantasy + "Bucket_Wooden_1", Fantasy + "Vase_Rubble_Medium" }, 5),
             [13] = (new[] { Fantasy + "Bucket_Wooden_1", Fantasy + "Bottle_1", Fantasy + "Potion_2" }, 5),
             [14] = (new[] { Fantasy + "Scroll_2", Fantasy + "Book_7", Fantasy + "Book_Stack_2" }, 5),
