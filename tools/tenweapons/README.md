@@ -4,13 +4,21 @@ Ivan's "TEN ARMS + AEGIS" weapon pack: nine guns, the Aegis Shield and its four 
 pack's Unity-ready OBJ + MTL export as delivered, with its `README.md` and `generate_models.py`. The pack's own C#
 (a standalone demo using the old input API) isn't used; the game has its own guns, buys and shield.
 
-`pack_guns.py` converts the OBJs into `Assets/_Project/Resources/Guns` (PRP1 meshes plus `guns.txt`), which
-`Weapons/GunArt.cs` loads:
+`build_guns.py` builds the game's guns, their attachments and the shield into `Assets/_Project/Resources/Guns`
+(PRP1 meshes plus `guns.txt`), which `Weapons/GunArt.cs` loads. It needs numpy and trimesh:
 
-    python3 pack_guns.py
+    python3 build_guns.py
 
-Each gun is scaled to a view-model length, made 25% narrower, and moved so its sight line is on
-`GunModels.SightY`; optic housings and scope tubes go in a separate `_optic` mesh that hides while aiming.
+The pack's OBJs have parts that don't touch (stocks, grips, rails and sights float off the gun), so rather than
+converting them, `build_guns.py` rebuilds each model from the shapes, sizes and materials in
+`pack/generate_models.py` with every part placed against the one it hangs on. Each gun is scaled to a view-model
+length, made 25% narrower, and moved so its sight line is on `GunModels.SightY`.
+
+Every gun also gets its swappable parts as separate meshes (`slug_group.bytes`): `irons` (notch and glowing front
+post) or the sniper's `builtin` scope, the standard `mag`, and one fitted model per shop attachment: `reddot`,
+`scope`, `extmag`, `fastmag`, `grip`, `supp`, `heavy`, `ammo`, `auto`. The game shows the ones bought for the gun.
+`guns.txt` gives each gun's muzzle, bounds, suppressor length and how far a heavy barrel moves the muzzle. New
+meshes get a `.meta`; meshes no longer made are deleted.
 
 | Game gun | Pack model |
 |---|---|

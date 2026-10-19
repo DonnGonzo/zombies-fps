@@ -99,6 +99,7 @@ namespace ZombiesFPS.Net
         GameObject _remoteArt;
         int _remoteArtGun = -2;
         Color? _remoteArtCamo;
+        int _remoteArtAttachments;
         static readonly Color RemoteGunColor = new Color(0.16f, 0.17f, 0.18f);
         AudioSource _remoteAudio;
         // The remote body's rig and per-character dressing, animated by AnimateRemoteBody.
@@ -523,7 +524,7 @@ namespace ZombiesFPS.Net
             UpdateShieldView();
         }
 
-        /// <summary>Teammates see your camo on the gun in your hands.</summary>
+        /// <summary>Teammates see your camo and attachments on the gun in your hands.</summary>
         void UpdateRemoteGun()
         {
             if (_remoteGun == null) return;
@@ -542,12 +543,14 @@ namespace ZombiesFPS.Net
             }
             int gunId = GunInSlot(ActiveSlot.Value);
             var camo = CamoColorFor(ActiveSlot.Value);
-            if (gunId != _remoteArtGun || camo != _remoteArtCamo)
+            int attachments = AttachmentsInSlot(ActiveSlot.Value);
+            if (gunId != _remoteArtGun || camo != _remoteArtCamo || attachments != _remoteArtAttachments)
             {
                 _remoteArtGun = gunId;
                 _remoteArtCamo = camo;
+                _remoteArtAttachments = attachments;
                 if (_remoteArt != null) Destroy(_remoteArt);
-                _remoteArt = GunArt.BuildProp(GameConfig.GunById(gunId), _remoteGunRoot, camo);
+                _remoteArt = GunArt.BuildProp(GameConfig.GunById(gunId), _remoteGunRoot, camo, attachments);
                 // Its sights sit about where the stand-in's did, the grip under the hand.
                 if (_remoteArt != null) _remoteArt.transform.localPosition = new Vector3(0f, -0.04f, -0.02f);
                 foreach (var r in _remoteBlocky) r.enabled = _remoteArt == null;
@@ -650,6 +653,7 @@ namespace ZombiesFPS.Net
             _gun.UpgradeTier = TierInSlot(slot);
             _gun.Pierce = data.PierceWith(tier);
             _gun.Camo = CamoColorFor(slot);
+            _gun.Attachments = AttachmentsInSlot(slot);
             _gun.ReloadSpeed = ReloadSpeedNow;
             _gun.Equip(data, _slotMagazine[slot], _slotReserve[slot], CapacityScale(slot), GunName(slot));
         }

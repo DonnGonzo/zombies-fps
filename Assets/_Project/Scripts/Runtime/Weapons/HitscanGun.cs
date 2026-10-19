@@ -67,6 +67,10 @@ namespace ZombiesFPS.Weapons
         public int Pierce { get; set; }
         /// <summary>The camo colour of the gun in hand, or null for its own colours. Set before Equip.</summary>
         public Color? Camo { get; set; }
+        /// <summary>The shop attachments on the gun in hand (a mask of attachment ids), shown on its model. Set before Equip.</summary>
+        public int Attachments { get; set; }
+        /// <summary>True when the gun in hand aims through a scope (set by its view model): the HUD draws the scope view.</summary>
+        public bool Scoped { get; set; }
         public int MagazineCapacity => ScaledMagazine(_data, CapacityScale);
         public int MaxReserve => ScaledReserve(_data.maxReserve, CapacityScale);
         public int StartingReserve => ScaledReserve(_data.startingReserve, CapacityScale);

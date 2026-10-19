@@ -7,12 +7,14 @@ using ZombiesFPS.Data;
 namespace ZombiesFPS.Weapons
 {
     /// <summary>
-    /// Gun and shield models from Ivan's TenWeapons pack. Each lives in Resources/Guns as slug.bytes (a PRP1 mesh
-    /// made by tools/tenweapons/pack_guns.py, already scaled for the view model with its sight line on
-    /// <see cref="GunModels.SightY"/>), plus slug_optic.bytes for an optic housing or scope tube that hides while
-    /// aiming. guns.txt holds each gun's muzzle, bounds and sight. Submeshes are keyed by the pack's material
-    /// names and drawn with the game's own lit, glow and glass materials. When a file is missing the game falls
-    /// back to the primitive guns in <see cref="GunModels"/>.
+    /// Gun and shield models in the style of Ivan's TenWeapons pack, rebuilt by tools/tenweapons/build_guns.py so
+    /// every part sits flush. Each gun lives in Resources/Guns as slug.bytes (a PRP1 mesh already scaled for the
+    /// view model with its sight line on <see cref="GunModels.SightY"/>) plus one slug_group.bytes per swappable
+    /// part: its iron sights or built-in scope, standard magazine, and a fitted model of every shop attachment
+    /// (red dot, scope, extended and fast mags, foregrip, suppressor, heavy barrel, hollow-core band, auto sear).
+    /// Bought attachments show on the gun. guns.txt holds each gun's muzzle, bounds and attachment lengths.
+    /// Submeshes are keyed by material name and drawn with the game's own lit, glow and glass materials. When a
+    /// file is missing the game falls back to the primitive guns in <see cref="GunModels"/>.
     /// </summary>
     public static class GunArt
     {
@@ -38,9 +40,11 @@ namespace ZombiesFPS.Weapons
 
         sealed class Info
         {
-            public string Kind;
+            public bool BuiltinScope;
             public Vector3 Muzzle, Min, Max;
-            public float ScopeFront, ScopeRadius;
+            /// <summary>How far a suppressor reaches past the muzzle, and how far a heavy barrel moves the muzzle.</summary>
+            public float SuppressorLength, HeavyLength;
+            public string[] Groups;
         }
 
         static Dictionary<string, Info> s_Info;
@@ -75,6 +79,9 @@ namespace ZombiesFPS.Weapons
             { "EnergyGlass", (new Color32(59, 102, 154, 150), Look.Glass) },
             { "ShieldGlass", (new Color32(80, 152, 177, 145), Look.Glass) },
             { "WornPaint", (new Color32(74, 91, 95, 255), Look.Paint) },
+            { "SightGlow", (new Color32(90, 255, 120, 255), Look.Glow) },
+            { "EmissiveRed", (new Color32(255, 40, 30, 255), Look.Glow) },
+            { "OpticGlass", (new Color32(150, 200, 220, 38), Look.Glass) },
         };
 
         /// <summary>
@@ -89,7 +96,7 @@ namespace ZombiesFPS.Weapons
             switch (m.look)
             {
                 case Look.Glow: return Greybox.Unlit(new Color(c.r, c.g, c.b, 1f));
-                case Look.Glass: return Greybox.Unlit(new Color(c.r, c.g, c.b, 0.45f));
+                case Look.Glass: return Greybox.Unlit(new Color(c.r, c.g, c.b, m.color.a < 100 ? m.color.a / 255f : 0.45f));
                 case Look.Lens: return Greybox.Lit(c, Surface.Plain, true);
             }
             bool furnitureLike = m.look == Look.Paint || m.look == Look.Polymer || m.look == Look.Wood;
@@ -125,14 +132,17 @@ namespace ZombiesFPS.Weapons
                 var p = line.Split(' ');
                 if (p.Length < 13) continue;
                 float F(int i) => float.Parse(p[i], CultureInfo.InvariantCulture);
+                var groups = new string[p.Length - 13];
+                System.Array.Copy(p, 13, groups, 0, groups.Length);
                 s_Info[p[0]] = new Info
                 {
-                    Kind = p[1],
+                    BuiltinScope = p[1] == "scope",
                     Muzzle = new Vector3(F(2), F(3), F(4)),
                     Min = new Vector3(F(5), F(6), F(7)),
                     Max = new Vector3(F(8), F(9), F(10)),
-                    ScopeFront = F(11),
-                    ScopeRadius = F(12),
+                    SuppressorLength = F(11),
+                    HeavyLength = F(12),
+                    Groups = groups,
                 };
             }
             return s_Info;
@@ -170,38 +180,123 @@ namespace ZombiesFPS.Weapons
             r.sharedMaterials = mats;
         }
 
+        /// <summary>The model part that shows an attachment, or null when it has none.</summary>
+        static string GroupFor(Attachment a)
+        {
+            if (a == null) return null;
+            switch (a.slot)
+            {
+                case AttachmentSlot.Optic: return a.name.Contains("Scope") ? "scope" : "reddot";
+                case AttachmentSlot.Magazine: return a.name.Contains("Fast") ? "fastmag" : "extmag";
+                case AttachmentSlot.Underbarrel: return "grip";
+                case AttachmentSlot.Muzzle: return "supp";
+                case AttachmentSlot.Barrel: return "heavy";
+                case AttachmentSlot.Ammo: return "ammo";
+                case AttachmentSlot.Trigger: return "auto";
+                default: return null;
+            }
+        }
+
+        /// <summary>The parts showing for an attachment mask (bits are shop attachment ids).</summary>
+        static HashSet<string> Fitted(int mask)
+        {
+            var set = new HashSet<string>();
+            var shop = GameConfig.Shop;
+            if (shop == null) return set;
+            for (int id = 0; id < shop.Count; id++)
+            {
+                if (!ShopData.Has(mask, id)) continue;
+                var g = GroupFor(shop.At(id));
+                if (g != null) set.Add(g);
+            }
+            return set;
+        }
+
+        /// <summary>A built gun: its model transform and a renderer per part, and how to fit attachments.</summary>
+        sealed class Built
+        {
+            public Transform Root, Model;
+            public Info Info;
+            public readonly Dictionary<string, Renderer> Parts = new Dictionary<string, Renderer>();
+            public readonly List<(Renderer r, string[] keys)> Renderers = new List<(Renderer, string[])>();
+            public Color? Furniture;
+            public Transform Muzzle;
+            public GameObject ScopeShowing;
+            public bool Scoped;
+
+            /// <summary>
+            /// Shows the parts for an attachment mask: an optic replaces the iron sights (or a sniper's own scope),
+            /// a bought magazine replaces the standard one, and a suppressor screws onto the end of a heavy barrel.
+            /// The muzzle (and its flash) moves to the end of whatever's fitted.
+            /// </summary>
+            public void Fit(int mask)
+            {
+                var on = Fitted(mask);
+                bool builtin = Parts.ContainsKey("builtin");
+                bool scope = on.Remove("scope"), dot = on.Remove("reddot");
+                on.Add(scope ? (builtin ? "builtin" : "scope") : dot ? "reddot" : builtin ? "builtin" : "irons");
+                if (!on.Contains("extmag") && !on.Contains("fastmag")) on.Add("mag");
+                else if (on.Contains("extmag")) on.Remove("fastmag");
+                foreach (var kv in Parts) kv.Value.gameObject.SetActive(on.Contains(kv.Key));
+
+                Scoped = on.Contains("scope") || on.Contains("builtin");
+                ScopeShowing = on.Contains("scope") && Parts.TryGetValue("scope", out var sc) ? sc.gameObject
+                    : on.Contains("builtin") && Parts.TryGetValue("builtin", out var b) ? b.gameObject : null;
+                bool heavy = on.Contains("heavy"), supp = on.Contains("supp");
+                if (Parts.TryGetValue("supp", out var s)) s.transform.localPosition = new Vector3(0f, 0f, heavy ? Info.HeavyLength : 0f);
+                if (Muzzle != null)
+                    Muzzle.localPosition = Info.Muzzle + new Vector3(0f, 0f, 0.005f + (heavy ? Info.HeavyLength : 0f) + (supp ? Info.SuppressorLength : 0f));
+            }
+
+            public void Paint(Color? camo)
+            {
+                foreach (var (r, k) in Renderers) GunArt.Paint(r, k, camo, Furniture);
+            }
+        }
+
+        static Built Assemble(GunData data, Transform parent, Color? camo)
+        {
+            var (slug, scale, ownColours) = s_ByGun[data.displayName];
+            var b = new Built { Info = Infos()[slug], Furniture = ownColours ? data.accent : (Color?)null };
+            b.Root = Greybox.Empty("Gun " + data.displayName, parent, Vector3.zero);
+            // Scaled about the back of the sight, so a shortened gun still lines up when aiming.
+            b.Model = Greybox.Empty("Model", b.Root, new Vector3(0f, GunModels.SightY, PackRearZ) * (1f - scale));
+            b.Model.localScale = Vector3.one * scale;
+            var (mesh, keys) = MeshOf(slug);
+            b.Renderers.Add((AddMesh(b.Model, "Body", mesh, keys, camo, b.Furniture), keys));
+            foreach (var g in b.Info.Groups)
+            {
+                var (gm, gk) = MeshOf(slug + "_" + g);
+                if (gm == null) continue;
+                var r = AddMesh(b.Model, g, gm, gk, camo, b.Furniture);
+                b.Parts[g] = r;
+                b.Renderers.Add((r, gk));
+            }
+            return b;
+        }
+
         /// <summary>
         /// The first-person model for a gun, or null when it has none (the caller builds the primitive gun instead).
-        /// Hidden until it's held, like <see cref="GunModels.Build"/>.
+        /// Hidden until it's held, like <see cref="GunModels.Build"/>. Its Fit shows the attachments bought for it.
         /// </summary>
         public static GunModels.Model BuildView(GunData data, Transform parent)
         {
             if (!Has(data)) return null;
-            var (slug, scale, ownColours) = s_ByGun[data.displayName];
-            var info = Infos()[slug];
-            var (mesh, keys) = MeshOf(slug);
+            var b = Assemble(data, parent, null);
+            var info = b.Info;
+            var model = b.Model;
             var shape = GunModels.ShapeOf(data);
-            var m = new GunModels.Model { Shape = shape };
-            m.Root = Greybox.Empty("Gun " + data.displayName, parent, Vector3.zero).gameObject;
-            // Scaled about the back of the sight, so a shortened gun still lines up when aiming.
-            var model = Greybox.Empty("Model", m.Root.transform, new Vector3(0f, GunModels.SightY, PackRearZ) * (1f - scale));
-            model.localScale = Vector3.one * scale;
-            Color? furniture = ownColours ? data.accent : (Color?)null;
-            var renderers = new List<(Renderer, string[])> { (AddMesh(model, "Body", mesh, keys, null, furniture), keys) };
-            var (optic, opticKeys) = MeshOf(slug + "_optic");
-            if (optic != null)
+            var m = new GunModels.Model { Shape = shape, Root = b.Root.gameObject };
+            m.Repaint = b.Paint;
+            m.Muzzle = b.Muzzle = Greybox.Empty("Muzzle", model, info.Muzzle + new Vector3(0f, 0f, 0.005f));
+            m.Fit = mask =>
             {
-                var r = AddMesh(model, "Optic", optic, opticKeys, null, furniture);
-                renderers.Add((r, opticKeys));
-                m.HideWhenAimed = r.gameObject;
-            }
-            if (info.Kind == "scope") Reticle(model, info);
-            m.Repaint = camo =>
-            {
-                foreach (var (r, k) in renderers) Paint(r, k, camo, furniture);
+                b.Fit(mask);
+                m.Scoped = b.Scoped;
+                // A scope's tube would fill the view when looking through it; the HUD draws the scope view instead.
+                m.HideWhenAimed = b.ScopeShowing;
             };
-
-            m.Muzzle = Greybox.Empty("Muzzle", model, info.Muzzle + new Vector3(0f, 0f, 0.005f));
+            m.Fit(0);
             m.EnergyFlash = shape == GunModels.Shape.Energy || shape == GunModels.Shape.Launcher;
             m.FlashScale = shape switch
             {
@@ -220,7 +315,7 @@ namespace ZombiesFPS.Weapons
             float side = Mathf.Min(-info.Min.x, info.Max.x) * 0.8f + 0.003f;
             float front = info.Muzzle.z;
             GunModels.AddGlow(m, model, side, info.Muzzle.y, front * 0.45f, front * 0.5f,
-                new Vector3(0f, GunModels.SightY - 0.012f, front * 0.4f), front * 0.4f,
+                new Vector3(0f, GunModels.SightY - 0.034f, front * 0.4f), front * 0.4f,
                 new Vector3(0f, info.Muzzle.y, front - 0.03f), 0.045f,
                 new Vector3(0f, info.Muzzle.y - 0.06f, 0.02f), new Vector3(0.002f, 0.002f, 0.002f), 0f);
 
@@ -229,41 +324,20 @@ namespace ZombiesFPS.Weapons
             return m;
         }
 
-        /// <summary>Back of the sight in the converted meshes (tools/tenweapons/pack_guns.py REAR_Z).</summary>
+        /// <summary>Back of the sight in the built meshes (tools/tenweapons/build_guns.py REAR_Z).</summary>
         const float PackRearZ = -0.08f;
 
-        /// <summary>A scope's lens and crosshair on the sight line, left showing while the tube hides.</summary>
-        static void Reticle(Transform model, Info info)
-        {
-            float z = info.ScopeFront, size = info.ScopeRadius * 1.8f;
-            var lens = Greybox.Prim(PrimitiveType.Cylinder, "Lens", model, new Vector3(0f, GunModels.SightY, z + 0.004f), new Vector3(size, 0.0005f, size),
-                new Color(0.4f, 0.6f, 0.75f, 0.16f), collider: false, unlit: true);
-            lens.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var dark = new Color(0.02f, 0.02f, 0.022f);
-            Greybox.Box("ReticleH", model, new Vector3(0f, GunModels.SightY, z), new Vector3(size * 0.92f, 0.0006f, 0.0004f), dark, collider: false, surface: Surface.Rubber, moving: true);
-            Greybox.Box("ReticleV", model, new Vector3(0f, GunModels.SightY, z), new Vector3(0.0006f, size * 0.92f, 0.0004f), dark, collider: false, surface: Surface.Rubber, moving: true);
-            Greybox.Prim(PrimitiveType.Cube, "ReticleDot", model, new Vector3(0f, GunModels.SightY, z - 0.0005f), new Vector3(0.0012f, 0.0012f, 0.0004f),
-                new Color(1f, 0.12f, 0.08f), collider: false, unlit: true);
-        }
-
         /// <summary>
-        /// A plain copy of a gun's model (optic included, no glow or muzzle) for a teammate's hands or a wall buy,
-        /// painted with the camo if any. Null when the gun has no pack model. The model's origin is where the view
-        /// model's is: just behind the sights, with the sight line <see cref="GunModels.SightY"/> above it.
+        /// A plain copy of a gun's model (no glow or muzzle) for a teammate's hands or a wall buy, painted with the
+        /// camo if any and showing the attachments in the mask. Null when the gun has no model. The model's origin is
+        /// where the view model's is: just behind the sights, with the sight line <see cref="GunModels.SightY"/> above it.
         /// </summary>
-        public static GameObject BuildProp(GunData data, Transform parent, Color? camo = null)
+        public static GameObject BuildProp(GunData data, Transform parent, Color? camo = null, int attachments = 0)
         {
             if (!Has(data)) return null;
-            var (slug, scale, ownColours) = s_ByGun[data.displayName];
-            var (mesh, keys) = MeshOf(slug);
-            var root = Greybox.Empty("Gun " + data.displayName, parent, Vector3.zero);
-            var model = Greybox.Empty("Model", root, new Vector3(0f, GunModels.SightY, PackRearZ) * (1f - scale));
-            model.localScale = Vector3.one * scale;
-            Color? furniture = ownColours ? data.accent : (Color?)null;
-            AddMesh(model, "Body", mesh, keys, camo, furniture);
-            var (optic, opticKeys) = MeshOf(slug + "_optic");
-            if (optic != null) AddMesh(model, "Optic", optic, opticKeys, camo, furniture);
-            return root.gameObject;
+            var b = Assemble(data, parent, camo);
+            b.Fit(attachments);
+            return b.Root.gameObject;
         }
 
         /// <summary>A gun prop's size along the barrel and its middle (in the prop's own space), for fitting it to a panel.</summary>

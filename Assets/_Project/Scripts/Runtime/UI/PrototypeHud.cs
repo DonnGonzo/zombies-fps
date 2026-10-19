@@ -1127,6 +1127,7 @@ namespace ZombiesFPS.UI
         void DrawCrosshair(float w, float h, float u)
         {
             float aim = _gun.AimAmount;
+            if (_gun.Scoped) DrawScope(w, h, u, aim);
             if (aim > 0.85f) return; // Iron sights take over.
             float alpha = 1f - aim;
             // Gap tracks real spread: degrees to pixels at the current FOV.
@@ -1147,6 +1148,63 @@ namespace ZombiesFPS.UI
                 Ui.Fill(new Rect(cx + gap + o, cy - thick / 2 + o, len, thick), col);
             }
             Ui.Fill(new Rect(cx - 1f, cy - 1f, 2f, 2f), c);
+        }
+
+        static Texture2D s_ScopeMask;
+
+        /// <summary>A round scope view: black outside a lens with a soft dark rim.</summary>
+        static Texture2D ScopeMask
+        {
+            get
+            {
+                if (s_ScopeMask != null) return s_ScopeMask;
+                const int n = 512;
+                var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                var px = new Color32[n * n];
+                for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy);
+                    // Clear in the middle, darkening towards the rim, solid black past it.
+                    float a = Mathf.Clamp01((r - 0.8f) / 0.17f);
+                    a = r >= 0.97f ? 1f : a * a * 0.85f;
+                    px[y * n + x] = new Color32(0, 0, 0, (byte)(a * 255f));
+                }
+                t.SetPixels32(px);
+                t.Apply();
+                return s_ScopeMask = t;
+            }
+        }
+
+        /// <summary>Looking through a scope: the lens fills the middle of the screen with a fine crosshair and a red dot.</summary>
+        void DrawScope(float w, float h, float u, float aim)
+        {
+            float eased = aim * aim * (3f - 2f * aim);
+            if (eased < 0.9f) return; // the gun's own scope tube shows until then (WeaponView)
+            float d = h * 0.94f, cx = w / 2f, cy = h / 2f;
+            var lens = new Rect(cx - d / 2f, cy - d / 2f, d, d);
+            GUI.DrawTexture(lens, ScopeMask);
+            var black = Color.black;
+            Ui.Fill(new Rect(0f, 0f, lens.xMin + 1f, h), black);
+            Ui.Fill(new Rect(lens.xMax - 1f, 0f, w - lens.xMax + 1f, h), black);
+            Ui.Fill(new Rect(lens.xMin, 0f, d, lens.yMin + 1f), black);
+            Ui.Fill(new Rect(lens.xMin, lens.yMax - 1f, d, h - lens.yMax + 1f), black);
+            // Thick posts from the rim, thin hairs across the middle, and a small lit dot.
+            var ink = new Color(0.02f, 0.02f, 0.02f, 0.95f);
+            float thin = Mathf.Max(1f, 1.2f * u), thick = Mathf.Max(3f, 4f * u), gap = d * 0.16f;
+            Ui.Fill(new Rect(lens.xMin, cy - thick / 2f, d / 2f - gap, thick), ink);
+            Ui.Fill(new Rect(cx + gap, cy - thick / 2f, d / 2f - gap, thick), ink);
+            Ui.Fill(new Rect(cx - thick / 2f, cy + gap, thick, d / 2f - gap), ink);
+            Ui.Fill(new Rect(cx - gap, cy - thin / 2f, gap * 2f, thin), ink);
+            Ui.Fill(new Rect(cx - thin / 2f, lens.yMin, thin, d / 2f + gap), ink);
+            for (int i = 1; i <= 4; i++)
+            {
+                float y = cy + i * gap * 0.22f;
+                Ui.Fill(new Rect(cx - (i % 2 == 0 ? 8f : 5f) * u, y, (i % 2 == 0 ? 16f : 10f) * u, thin), ink);
+            }
+            float dot = Mathf.Max(3f, 3.5f * u);
+            Ui.Fill(new Rect(cx - dot / 2f, cy - dot / 2f, dot, dot), new Color(1f, 0.15f, 0.1f, 0.95f));
         }
 
         void DrawHitmarker(float w, float h, float u)

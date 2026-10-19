@@ -105,6 +105,8 @@ namespace ZombiesFPS.Weapons
             foreach (var r in m.Furniture) r.sharedMaterial = furniture;
             foreach (var r in m.Body) r.sharedMaterial = body;
             m.Repaint?.Invoke(camo);
+            m.Fit?.Invoke(_gun.Attachments);
+            _gun.Scoped = m.Scoped;
             if (m.Cores.Count > 0)
             {
                 var core = Greybox.Unlit(new Color(data.accent.r, data.accent.g, data.accent.b, 1f));
@@ -233,7 +235,7 @@ namespace ZombiesFPS.Weapons
 
             if (_flash.activeSelf && Time.time >= _flashUntil) _flash.SetActive(false);
             UpdateGlow();
-            // A scope's tube would fill the view when looking through it; only its front ring and reticle stay.
+            // A scope's tube would fill the view when looking through it; the HUD draws the scope view instead.
             if (_current != null && _current.HideWhenAimed != null)
             {
                 bool show = aimEased < 0.9f;

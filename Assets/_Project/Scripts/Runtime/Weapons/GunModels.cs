@@ -70,6 +70,10 @@ namespace ZombiesFPS.Weapons
             public GameObject HideWhenAimed;
             /// <summary>Paints a pack model (see <see cref="GunArt"/>) with a camo, or its own colours for null. Null for primitive guns.</summary>
             public System.Action<Color?> Repaint;
+            /// <summary>Shows the attachments in a mask on a pack model (see <see cref="GunArt"/>). Null for primitive guns.</summary>
+            public System.Action<int> Fit;
+            /// <summary>True when the fitted sight is a scope: the HUD draws the scope view while aiming.</summary>
+            public bool Scoped;
 
             /// <summary>The furniture's colour for a gun's accent. Bright accents (energy, scrap) are toned down.</summary>
             public Color FurnitureColor(Color accent)
