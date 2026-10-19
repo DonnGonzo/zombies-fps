@@ -45,7 +45,6 @@ namespace ZombiesFPS.World
 
         void DressProps()
         {
-            _propSpots.Clear();
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];

@@ -915,6 +915,9 @@ namespace ZombiesFPS.World
             Physics.SyncTransforms();
             CollectKeepOuts();
             // Props first: they're solid, so the wall clutter and floor litter placed after keep clear of them.
+            // The rooms' own furniture before the general barrels and crates, so it gets the pick of the walls.
+            _propSpots.Clear();
+            DressRooms();
             DressProps();
             DressWallFaces();
             DoorSigns();

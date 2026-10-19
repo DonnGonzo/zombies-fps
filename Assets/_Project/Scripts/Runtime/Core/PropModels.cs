@@ -51,6 +51,32 @@ namespace ZombiesFPS.Core
             return model;
         }
 
+        static readonly Dictionary<string, Model> s_Packs = new Dictionary<string, Model>();
+
+        /// <summary>
+        /// A model from one of Ivan's packs (Resources/CC0/pack/name.bytes, made by tools/packs/pack_obj.py), its
+        /// materials picked by key, or null when the map art is off or the file isn't there.
+        /// </summary>
+        public static Model GetPack(string path, System.Func<string, Material> materialFor)
+        {
+            if (!SurfaceTextures.PhotosEnabled) return null;
+            if (s_Packs.TryGetValue(path, out var cached)) return cached != null && cached.Mesh != null ? cached : null;
+            Model model = null;
+            try
+            {
+                var (mesh, keys) = LoadRaw("CC0/" + path);
+                if (mesh != null)
+                {
+                    var mats = new Material[keys.Length];
+                    for (int i = 0; i < keys.Length; i++) mats[i] = materialFor(keys[i]);
+                    model = new Model { Mesh = mesh, Materials = mats, Keys = keys };
+                }
+            }
+            catch (System.Exception e) { Debug.LogWarning($"Model {path} couldn't be loaded: {e.Message}"); }
+            s_Packs[path] = model;
+            return model;
+        }
+
         static Model Load(string slug)
         {
             var (mesh, keys) = LoadRaw($"CC0/Props/{slug}/{slug}_mesh");

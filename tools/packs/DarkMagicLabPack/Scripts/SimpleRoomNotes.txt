@@ -1,0 +1,1 @@
+Attach RitualFlicker.cs to point lights near candles/torches. Attach DarkMagicAura.cs to SpellAura_Activated, assign a Point Light to auraLight, keep startActive false if the ritual moment should activate later.
