@@ -2,7 +2,7 @@ using UnityEngine;
 using ZombiesFPS.Core;
 using ZombiesFPS.World;
 
-namespace ZombiesFPS.Characters
+namespace ZombiesFPS.CharacterModels
 {
     /// <summary>
     /// Character models for the story's people. Sergeant Brannock is the Ranger outfit in Lantern Watch blue, plugged

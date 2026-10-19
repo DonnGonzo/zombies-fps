@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
-using ZombiesFPS.Characters;
+using ZombiesFPS.CharacterModels;
 using ZombiesFPS.Core;
 
 namespace ZombiesFPS.Zombies

@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using ZombiesFPS.Combat;
-using ZombiesFPS.Characters;
+using ZombiesFPS.CharacterModels;
 using ZombiesFPS.Core;
 using ZombiesFPS.Data;
 using ZombiesFPS.Net;

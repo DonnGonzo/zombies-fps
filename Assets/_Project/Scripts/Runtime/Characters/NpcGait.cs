@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ZombiesFPS.Characters
+namespace ZombiesFPS.CharacterModels
 {
     /// <summary>
     /// Walks, runs and breathes a <see cref="CharacterSkin"/> procedurally, from how fast its object is really moving,

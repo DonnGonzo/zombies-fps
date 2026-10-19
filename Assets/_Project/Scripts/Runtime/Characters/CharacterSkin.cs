@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using ZombiesFPS.Core;
 
-namespace ZombiesFPS.Characters
+namespace ZombiesFPS.CharacterModels
 {
     /// <summary>The humanoid bones a pose is copied through (see <see cref="CharacterSkin.Retarget"/>).</summary>
     public enum Part
