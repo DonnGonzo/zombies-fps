@@ -454,7 +454,9 @@ namespace ZombiesFPS.Net
         void StartRitual(EggStep step)
         {
             CollectSpawnSpots(step.zone);
-            _spawnSpots.RemoveAll(p => (p - ZoneMap.ArchivesAltar).sqrMagnitude < 4.5f * 4.5f);
+            // Not on or right against the altar's dais: they climb up to the squad, not out of the steps.
+            var altar = ZoneMap.ArchivesAltar;
+            _spawnSpots.RemoveAll(p => Mathf.Abs(p.x - altar.x) < 7.5f && Mathf.Abs(p.z - altar.z) < 7.5f);
             Kills.Value = 0;
             Total.Value = step.seconds;
             _elapsed = 0f;
