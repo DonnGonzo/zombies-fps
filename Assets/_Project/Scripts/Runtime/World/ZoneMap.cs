@@ -614,17 +614,9 @@ namespace ZombiesFPS.World
             Stairs(9, -5.5f, 16f, Vector3.back, 3f, 2f);
             AddLadder(9, 5.5f, 16f, Vector3.back, 3f);
 
-            // Archives: tall double-sided stacks either side of a central aisle, and a records loft up a ladder at the far
-            // end of the north wing.
-            Block("Records Loft", 10, 1.3f, 17f, 16.7f, 22.7f, 4f, DarkWood, Surface.Wood);
-            AddLadder(10, 9f, 17f, Vector3.back, 4f);
-            var bookcase = new Color(0.33f, 0.22f, 0.13f);
-            foreach (float x in new[] { -10f, -1f })
-                Reskin(Greybox.Box("Bookshelf", Root, L(10, x, StackHeight / 2f, 4.7f), new Vector3(0.8f, StackHeight, 4f), bookcase, surface: Surface.Wood), Bookcase, true);
-            foreach (float x in new[] { -10f, 3f, 7f })
-                Reskin(Greybox.Box("Bookshelf", Root, L(10, x, StackHeight / 2f, -4.7f), new Vector3(0.8f, StackHeight, 4f), bookcase, surface: Surface.Wood), Bookcase, true);
-            foreach (float x in new[] { 5f, 13f })
-                Reskin(Greybox.Box("Bookshelf", Root, L(10, x, StackHeight / 2f, 11.5f), new Vector3(0.8f, StackHeight, 5f), bookcase, surface: Surface.Wood), Bookcase, true);
+            // Archives: the monks' altar on a stepped dais in the middle of the reading room, rows of tall stacks
+            // either side, and a records loft up a ladder at the far end of the north wing.
+            BuildArchives();
 
             // Greenhouse: planters, glass frames, and a potting shed whose roof (up a ladder) holds the second build station.
             Block("Potting Shed", 11, -14f, 1f, -5f, 10.7f, 4.5f, new Color(0.36f, 0.27f, 0.18f), Surface.Wood);

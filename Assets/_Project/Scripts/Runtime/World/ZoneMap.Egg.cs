@@ -43,7 +43,8 @@ namespace ZombiesFPS.World
 
         // ---------------------------------------------------------------- places
 
-        public static Vector3 ArchivesAltar => L(EasterEggData.ArchivesZone, -5.5f, 0f, 7.5f);
+        /// <summary>The monks' altar, on top of the dais in the middle of the Archives' reading room.</summary>
+        public static Vector3 ArchivesAltar => L(EasterEggData.ArchivesZone, DaisX, DaisHeight, DaisZ);
         public const float AltarHeight = 1.0f;
         const float PedestalRadius = 2.6f;
         public const float PedestalHeight = 1.05f;
@@ -165,7 +166,7 @@ namespace ZombiesFPS.World
             {
                 float ang = k * 15f * Mathf.Deg2Rad;
                 var p = a + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * PedestalRadius;
-                Deco(new Vector3(p.x, 0.006f, p.z), new Vector3(0.12f, 0.01f, 0.72f), Quaternion.Euler(0f, -k * 15f, 0f), Shade(OldGold, 0.6f), Surface.Metal);
+                Deco(new Vector3(p.x, a.y + 0.006f, p.z), new Vector3(0.12f, 0.01f, 0.72f), Quaternion.Euler(0f, -k * 15f, 0f), Shade(OldGold, 0.6f), Surface.Metal);
             }
             for (int i = 0; i < EasterEggData.RelicCount; i++)
             {

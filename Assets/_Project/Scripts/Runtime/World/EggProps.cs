@@ -38,6 +38,7 @@ namespace ZombiesFPS.World
         Transform _altarSpark, _column, _stonesSpark, _portal, _altarItems, _choiceFight, _choiceServe;
         Light _altarLight, _stonesLight, _portalLight;
         Material _columnMat, _portalMat;
+        float _columnHalf = 3f;
         Figure _watchman, _god, _general;
         AudioSource _hum;
         View _view;
@@ -76,7 +77,10 @@ namespace ZombiesFPS.World
             _altarSpark = Spark("Altar Spark", altar, ZoneMap.ManaColor);
             _altarLight = PointLight("Altar Light", _altarSpark, ZoneMap.ManaColor, 9f);
             _columnMat = new Material(Greybox.Unlit(new Color(ZoneMap.ManaColor.r, ZoneMap.ManaColor.g, ZoneMap.ManaColor.b, 0.18f)));
-            var column = Greybox.Prim(PrimitiveType.Cylinder, "Mana Column", transform, ZoneMap.ArchivesAltar + Vector3.up * 4f, new Vector3(1.2f, 3f, 1.2f), Color.white, collider: false);
+            // From the altar's top up to the ceiling.
+            float bottom = ZoneMap.ArchivesAltar.y + ZoneMap.AltarHeight;
+            _columnHalf = (ZoneMap.WallHeight - bottom) / 2f;
+            var column = Greybox.Prim(PrimitiveType.Cylinder, "Mana Column", transform, new Vector3(ZoneMap.ArchivesAltar.x, bottom + _columnHalf, ZoneMap.ArchivesAltar.z), new Vector3(1.2f, _columnHalf, 1.2f), Color.white, collider: false);
             column.GetComponent<Renderer>().sharedMaterial = _columnMat;
             Greybox.DisableShadows(column);
             _column = column.transform;
@@ -301,7 +305,7 @@ namespace ZombiesFPS.World
                 var c = _columnMat.color;
                 c.a = (_view.ritualPaused ? 0.05f : 0.08f + 0.18f * _view.charge) * (0.85f + 0.15f * Mathf.Sin(t * 6f));
                 _columnMat.color = c;
-                _column.localScale = new Vector3(0.8f + 0.6f * _view.charge, 3f, 0.8f + 0.6f * _view.charge);
+                _column.localScale = new Vector3(0.8f + 0.6f * _view.charge, _columnHalf, 0.8f + 0.6f * _view.charge);
             }
             if (_stonesSpark.gameObject.activeSelf)
             {

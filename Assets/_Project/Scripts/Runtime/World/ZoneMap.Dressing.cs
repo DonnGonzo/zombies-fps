@@ -1104,18 +1104,14 @@ namespace ZombiesFPS.World
                     }
                 }
 
-            // Archives: books on every case (the bookcase models come with their own), filing cabinets along the
-            // records loft, and a rug in the reading room. The books draw from their own generator, so the rest
+            // Archives: books on every stack (the bookcase models get theirs as they're placed), and bookcases or
+            // filing cabinets along the records loft. The books draw from their own generator, so the rest
             // comes out the same with or without the models.
             var bookRng = new System.Random(rng.Next());
             if (PropModels.GetPack(Bookcase.Path, PackMaterial) == null)
             {
-                foreach (float x in new[] { -10f, -1f })
-                    Books(L(10, x, 0f, 4.7f), 0.8f, 4f, StackHeight, bookRng);
-                foreach (float x in new[] { -10f, 3f, 7f })
-                    Books(L(10, x, 0f, -4.7f), 0.8f, 4f, StackHeight, bookRng);
-                foreach (float x in new[] { 5f, 13f })
-                    Books(L(10, x, 0f, 11.5f), 0.8f, 5f, StackHeight, bookRng);
+                foreach (var st in ArchiveStacks)
+                    Books(L(10, st.x, 0f, (st.y + st.z) / 2f), 0.8f, st.z - st.y, StackHeight, bookRng);
             }
             // Oak bookcases against the records loft (either side of its ladder), or the old filing cabinets.
             if (PropModels.GetPack(TallBookcase.Path, PackMaterial) != null)
@@ -1136,8 +1132,6 @@ namespace ZombiesFPS.World
                 }
             }
             }
-            Deco(L(10, -5.5f, 0.004f, 0f), new Vector3(6.2f, 0.008f, 3.6f), new Color(0.16f, 0.06f, 0.05f), Surface.Fabric);
-            Deco(L(10, -5.5f, 0.007f, 0f), new Vector3(5.8f, 0.008f, 3.2f), new Color(0.3f, 0.12f, 0.08f), Surface.Fabric);
         }
 
         /// <summary>The working zones: Garage, Pump Station, Lantern Core, Greenhouse.</summary>

@@ -200,7 +200,11 @@ namespace ZombiesFPS.World
                 go.AddComponent<BoxCollider>().size = size;
             }
             var model = PropModels.GetPack(item.Path, PackMaterial);
-            if (model != null) AddModel(model, p, rot, true);
+            if (model != null)
+            {
+                AddModel(model, p, rot, true);
+                ShelveBooks(item.Path, model, p, rot, Vector3.one);
+            }
             else if (solid) Deco(p + Vector3.up * size.y / 2f, size, rot, PropWood, Surface.Wood);
         }
 

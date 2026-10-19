@@ -126,7 +126,7 @@ namespace ZombiesFPS.World
             [7] = new[] { (SfDrum, 2), (SfDrumOpen, 1), (SfShelfLow, 1), (SfLocker, 1), (TechBarrel, 2), (IronPail, 1) },                       // Pump Station
             [8] = new[] { (SfTarpLong, 1), (SfCrate, 2), (TechCrateBig, 2), (TechCrate, 1), (BarrelRack, 1), (WoodCrate, 1) },                  // Crane Yard
             [9] = new[] { (Console, 3), (SfChair, 1), (SfDeskSmall, 1), (SfShelfTall, 1), (SfLocker, 1), (TechChest, 1), (TechBarrel, 1), (ItemHolder, 1) },  // Lantern Core
-            [10] = new[] { (TallBookcase, 3), (BookStand, 1), (CandleStand, 1), (LongTable, 1) },                                              // Archives
+            [10] = new[] { (TallBookcase, 2), (BookStand, 1) },                                                                                         // Archives
             [11] = new[] { (AppleCrate, 1), (Pail, 1), (BigVase, 2), (AppleBarrel, 1) },                                                         // Greenhouse
             [12] = new[] { (Cage, 2), (Pail, 1), (KitStool, 1) },                                                                                // Gaol
             [13] = new[] { (Bunk2, 2), (Nightstand, 2), (Cauldron, 1), (CandleStand, 1) },                                                       // Plague Ward
@@ -139,7 +139,7 @@ namespace ZombiesFPS.World
         /// <summary>The kits' big pieces, one each against a wall of its room.</summary>
         static readonly (PackItem item, int zone)[] KitCentrepieces =
         {
-            (StallCart, 0), (AnvilLog, 2), (LongTable, 4), (LongTable, 10), (SfDish, 8), (PipeRack, LabZone), (SfDesk, LabZone),
+            (StallCart, 0), (AnvilLog, 2), (LongTable, 4), (SfDish, 8), (PipeRack, LabZone), (SfDesk, LabZone),
             (Cauldron, 13), (Workbench, 15), (SfShelfWide, 6),
         };
 

@@ -93,6 +93,7 @@ namespace ZombiesFPS.World
                     var at = floor + facing * new Vector3(-length / 2f + (i + 0.5f) * length / n, 0f, z);
                     var m = Matrix4x4.TRS(at, rot, scale) * pivot;
                     for (int s = 0; s < model.Materials.Length; s++) _decor.Add(model.Mesh, s, m, model.Materials[s], true);
+                    ShelveBooks(item.Path, model, at, rot, scale);
                 }
             }
         }
