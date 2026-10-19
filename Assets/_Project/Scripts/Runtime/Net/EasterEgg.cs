@@ -46,7 +46,7 @@ namespace ZombiesFPS.Net
     /// Every machine follows the network variables: the lines, the fields, the props and the music all come from
     /// them changing, so nothing else needs sending except the lightning and fire strikes.
     /// </summary>
-    public class EasterEgg : NetworkBehaviour
+    public partial class EasterEgg : NetworkBehaviour
     {
         public static EasterEgg Instance { get; private set; }
 
@@ -137,12 +137,7 @@ namespace ZombiesFPS.Net
         {
             Instance = this;
             var map = GameConfig.Map;
-            if (map != null)
-            {
-                _lockdown = Lockdown.Build(map.Root, EasterEggData.LanternZone);
-                _fx = ReactorFx.Build(map.Root, ZoneMap.ReactorBase, map.CoilTops);
-                _props = EggProps.Build(map.Root);
-            }
+            if (map != null) BuildProps(map);
             Active.OnValueChanged += OnActiveChanged;
             Kills.OnValueChanged += OnKillsChanged;
             StepsDone.OnValueChanged += OnStepsDoneChanged;
@@ -150,6 +145,16 @@ namespace ZombiesFPS.Net
             Phase.OnValueChanged += OnPhaseChanged;
             Ending.OnValueChanged += OnEndingChanged;
             Paused.OnValueChanged += OnPausedChanged;
+            ShowState();
+        }
+
+        /// <summary>The egg's fields, reactor effects and props. Done at spawn, or as soon as the map exists if it didn't yet.</summary>
+        void BuildProps(ZoneMap map)
+        {
+            if (_props != null) return;
+            _lockdown = Lockdown.Build(map.Root, EasterEggData.LanternZone);
+            _fx = ReactorFx.Build(map.Root, ZoneMap.ReactorBase, map.CoilTops);
+            _props = EggProps.Build(map.Root);
             ShowState();
         }
 
@@ -165,6 +170,7 @@ namespace ZombiesFPS.Net
             if (_lockdown != null) Destroy(_lockdown.gameObject);
             if (_fx != null) Destroy(_fx.gameObject);
             if (_props != null) Destroy(_props.gameObject);
+            StopWatchmanRun();
             foreach (var (mark, _) in _marks)
                 if (mark != null) Destroy(mark);
             _marks.Clear();
@@ -498,7 +504,7 @@ namespace ZombiesFPS.Net
 
         void ServerTick()
         {
-            Lure = Active.Value && StepsDone.Value == 2 && Time.time >= _introEnds ? ZoneMap.WatchmanSpot : (Vector3?)null;
+            Lure = Active.Value && StepsDone.Value == 2 && Time.time >= _introEnds ? WatchmanPosition : (Vector3?)null;
             if (!Active.Value) return;
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.IsGameOver) return;
@@ -529,6 +535,7 @@ namespace ZombiesFPS.Net
                         }
                         else _nextSpawn = Time.time + 0.25f;
                     }
+                    WatchmanRunTick();
                     WatchmanTick();
                     break;
 
@@ -574,7 +581,7 @@ namespace ZombiesFPS.Net
         void WatchmanTick()
         {
             if (Time.time < _introEnds) return;
-            var at = ZoneMap.WatchmanSpot;
+            var at = WatchmanPosition;
             _nearWatchman.Clear();
             int n = Physics.OverlapSphereNonAlloc(at + Vector3.up, EasterEggData.WatchmanReach, _near, ~0, QueryTriggerInteraction.Ignore);
             float dps = 0f;
@@ -585,7 +592,12 @@ namespace ZombiesFPS.Net
                 var zd = z.Data;
                 dps += zd.damage / Mathf.Max(0.5f, zd.attackWindup + zd.attackRecovery);
             }
-            if (dps <= 0f) return;
+            if (dps <= 0f)
+            {
+                WatchmanRecover();
+                return;
+            }
+            _watchHitAt = Time.time;
             WatchmanHealth.Value = Mathf.Max(0f, WatchmanHealth.Value - dps * Time.deltaTime / EasterEggData.WatchmanHealth);
             if (WatchmanHealth.Value <= 0f) FailStep();
         }
@@ -864,6 +876,7 @@ namespace ZombiesFPS.Net
             foreach (var z in _zombies)
                 if (z != null && z.IsSpawned) BurstRpc(z.transform.position, 0);
             ClearZombies();
+            StopWatchmanRun();
             Paused.Value = false;
             Phase.Value = EggPhase.None;
             Active.Value = false;
@@ -874,6 +887,7 @@ namespace ZombiesFPS.Net
         void FailStep()
         {
             ClearZombies();
+            StopWatchmanRun();
             Active.Value = false;
             WatchmanHealth.Value = 1f;
             FailedRpc();
@@ -884,6 +898,7 @@ namespace ZombiesFPS.Net
         {
             if (!IsServer) return;
             ClearZombies();
+            StopWatchmanRun();
             Active.Value = false;
             Kills.Value = 0;
             Total.Value = 0;
@@ -1002,6 +1017,8 @@ namespace ZombiesFPS.Net
                 Destroy(mark);
                 _marks.RemoveAt(i);
             }
+            if (_props == null && GameConfig.Map != null && Time.frameCount % 30 == 0) BuildProps(GameConfig.Map);
+            if (_props != null) _props.SetWatchmanAt(WatchmanPosition);
             float health = WatchmanHealth.Value;
             if (health < _lastWatchmanHealth - 0.001f) _hurtUntil = Time.time + 0.15f;
             _lastWatchmanHealth = health;

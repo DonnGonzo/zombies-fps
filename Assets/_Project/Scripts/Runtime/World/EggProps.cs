@@ -44,6 +44,17 @@ namespace ZombiesFPS.World
         float _godRiseAt = -100f, _standAt = -100f;
         bool _wasRising, _wasStanding;
 
+        /// <summary>
+        /// Sergeant Brannock's character model. Set this before the match starts, or put a prefab at
+        /// Resources/<see cref="WatchmanModelPath"/>, and it replaces the blocky stand-in: feet at the prefab's origin,
+        /// facing +Z, about 1.8 m tall. An Animator on it gets a float "Speed" (metres a second) if it has one.
+        /// </summary>
+        public static GameObject WatchmanModel;
+        public const string WatchmanModelPath = "Characters/Brannock";
+
+        Vector3 _watchmanAt, _watchmanFacing = Vector3.back;
+        float _watchmanSpeed;
+
         public static EggProps Build(Transform parent)
         {
             var go = new GameObject("Easter Egg Props");
@@ -71,6 +82,9 @@ namespace ZombiesFPS.World
             _column = column.transform;
 
             _watchman = Figure.Watchman(transform, ZoneMap.WatchmanSpot);
+            var model = WatchmanModel != null ? WatchmanModel : Resources.Load<GameObject>(WatchmanModelPath);
+            if (model != null) _watchman.UseModel(model);
+            _watchmanAt = ZoneMap.WatchmanSpot;
 
             _stonesSpark = Spark("Stones Spark", ZoneMap.StonesCenter + Vector3.up * 1.0f, ZoneMap.ManaColor);
             _stonesLight = PointLight("Stones Light", _stonesSpark, ZoneMap.ManaColor, 10f);
@@ -223,6 +237,9 @@ namespace ZombiesFPS.World
             _view.ritualPaused = paused;
         }
 
+        /// <summary>Where Brannock is now (he runs about during the ambush). The figure follows smoothly.</summary>
+        public void SetWatchmanAt(Vector3 at) => _watchmanAt = at;
+
         /// <summary>Flashes the Watchman white while he's being hit.</summary>
         public void SetWatchmanHurt(float hurt) => _view.watchmanHurt = hurt;
 
@@ -304,7 +321,7 @@ namespace ZombiesFPS.World
                 _altarItems.localPosition = ZoneMap.BloodAltar + Vector3.up * (1.6f + Mathf.Sin(t * 1.5f) * 0.05f);
                 _altarItems.localRotation = Quaternion.Euler(0f, t * 25f, 0f);
             }
-            if (_watchman.Root.gameObject.activeSelf) _watchman.Idle(t, _view.watchmanHurt);
+            if (_watchman.Root.gameObject.activeSelf) MoveWatchman(t);
             if (_god.Root.gameObject.activeSelf)
             {
                 // Rises out of the ember pit over four seconds, then sways with his arms out.
@@ -321,6 +338,26 @@ namespace ZombiesFPS.World
             }
         }
 
+        void MoveWatchman(float t)
+        {
+            var root = _watchman.Root;
+            var from = root.localPosition;
+            var to = _watchmanAt;
+            // Far off (back to his post after the ambush, or joining late) he's simply there.
+            var next = (to - from).sqrMagnitude > 6f * 6f ? to : Vector3.Lerp(from, to, 1f - Mathf.Exp(-10f * Time.deltaTime));
+            var step = next - from;
+            step.y = 0f;
+            float speed = Time.deltaTime > 0f ? step.magnitude / Time.deltaTime : 0f;
+            _watchmanSpeed = Mathf.Lerp(_watchmanSpeed, speed, 1f - Mathf.Exp(-8f * Time.deltaTime));
+            root.localPosition = next;
+            if (_watchmanSpeed > 0.4f && step.sqrMagnitude > 0.000001f) _watchmanFacing = step.normalized;
+            else if (_watchmanSpeed < 0.2f && (_watchmanAt - ZoneMap.WatchmanSpot).sqrMagnitude < 0.25f)
+                _watchmanFacing = Quaternion.Euler(0f, 160f, 0f) * Vector3.forward;
+            root.localRotation = Quaternion.Slerp(root.localRotation, Quaternion.LookRotation(_watchmanFacing), 1f - Mathf.Exp(-10f * Time.deltaTime));
+            _watchman.Run(t, _watchmanSpeed);
+            _watchman.Idle(t, _view.watchmanHurt, _watchmanSpeed);
+        }
+
         void OnDestroy()
         {
             if (_columnMat != null) Destroy(_columnMat);
@@ -335,8 +372,13 @@ namespace ZombiesFPS.World
             public Transform Root, Body, Head, ArmL, ArmR, LegL, LegR;
             float _scale;
             readonly List<Renderer> _renderers = new List<Renderer>();
-            Material[] _materials;
+            Material[][] _materials, _whites;
             Material _white;
+            Transform _model;
+            Animator _animator;
+            bool _hasSpeed, _flashing;
+            float _stride;
+            static readonly int SpeedParam = Animator.StringToHash("Speed");
 
             static Figure Make(Transform parent, string name, Vector3 at, float scale, Color coat, Color skin, Color legs, Surface coatSurface)
             {
@@ -366,11 +408,60 @@ namespace ZombiesFPS.World
 
             void Finish()
             {
-                Root.GetComponentsInChildren(true, _renderers);
-                _materials = new Material[_renderers.Count];
-                for (int i = 0; i < _renderers.Count; i++) _materials[i] = _renderers[i].sharedMaterial;
                 _white = Greybox.Unlit(Color.white);
+                CaptureMaterials();
                 Root.gameObject.SetActive(false);
+            }
+
+            void CaptureMaterials()
+            {
+                _renderers.Clear();
+                (_model != null ? _model : Root).GetComponentsInChildren(true, _renderers);
+                _materials = new Material[_renderers.Count][];
+                _whites = new Material[_renderers.Count][];
+                for (int i = 0; i < _renderers.Count; i++)
+                {
+                    _materials[i] = _renderers[i].sharedMaterials;
+                    _whites[i] = new Material[_materials[i].Length];
+                    for (int k = 0; k < _whites[i].Length; k++) _whites[i][k] = _white;
+                }
+            }
+
+            /// <summary>Swaps the blocky body for a character model (see <see cref="WatchmanModel"/>).</summary>
+            public void UseModel(GameObject prefab)
+            {
+                var go = Object.Instantiate(prefab, Root, false);
+                go.name = prefab.name;
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
+                foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
+                _model = go.transform;
+                _animator = go.GetComponentInChildren<Animator>();
+                if (_animator != null)
+                {
+                    _animator.applyRootMotion = false;
+                    foreach (var p in _animator.parameters)
+                        if (p.nameHash == SpeedParam && p.type == AnimatorControllerParameterType.Float) _hasSpeed = true;
+                }
+                Body.gameObject.SetActive(false);
+                CaptureMaterials();
+            }
+
+            /// <summary>Legs and arms swing with his speed (the model's Animator gets the speed instead).</summary>
+            public void Run(float t, float speed)
+            {
+                if (_model != null)
+                {
+                    if (_hasSpeed) _animator.SetFloat(SpeedParam, speed);
+                    return;
+                }
+                float k = Mathf.Clamp01(speed / 4f);
+                _stride += Time.deltaTime * (2f + speed * 2.2f);
+                float swing = Mathf.Sin(_stride) * 50f * k;
+                LegL.localRotation = Quaternion.Euler(swing, 0f, 0f);
+                LegR.localRotation = Quaternion.Euler(-swing, 0f, 0f);
+                Body.localRotation = Quaternion.Euler(12f * k, 0f, 0f);
+                Body.localPosition = new Vector3(0f, 0.95f * _scale + Mathf.Abs(Mathf.Cos(_stride)) * 0.06f * k, 0f);
             }
 
             /// <summary>Sergeant Brannock: Watch-blue greatcoat, steel cap, a lantern on his belt and an old rifle.</summary>
@@ -442,15 +533,19 @@ namespace ZombiesFPS.World
                 LegL.localRotation = LegR.localRotation = Quaternion.Euler(-85f * seated, 0f, 0f);
             }
 
-            public void Idle(float t, float hurt)
+            public void Idle(float t, float hurt, float speed = 0f)
             {
                 float breathe = Mathf.Sin(t * 1.6f);
-                Head.localRotation = Quaternion.Euler(breathe * 2f, Mathf.Sin(t * 0.4f) * 14f, 0f);
-                ArmL.localRotation = Quaternion.Euler(breathe * 4f, 0f, -8f);
-                ArmR.localRotation = Quaternion.Euler(-breathe * 4f - 10f, 0f, 8f);
+                float k = Mathf.Clamp01(speed / 4f);
+                float swing = Mathf.Sin(_stride) * 45f * k;
+                Head.localRotation = Quaternion.Euler(breathe * 2f, Mathf.Sin(t * 0.4f) * 14f * (1f - k), 0f);
+                ArmL.localRotation = Quaternion.Euler(breathe * 4f - swing, 0f, -8f);
+                ArmR.localRotation = Quaternion.Euler(-breathe * 4f - 10f + swing, 0f, 8f);
                 bool flash = hurt > 0f && Mathf.Repeat(t * 12f, 1f) < 0.5f;
+                if (flash == _flashing) return;
+                _flashing = flash;
                 for (int i = 0; i < _renderers.Count; i++)
-                    if (_renderers[i] != null) _renderers[i].sharedMaterial = flash ? _white : _materials[i];
+                    if (_renderers[i] != null) _renderers[i].sharedMaterials = flash ? _whites[i] : _materials[i];
             }
         }
     }

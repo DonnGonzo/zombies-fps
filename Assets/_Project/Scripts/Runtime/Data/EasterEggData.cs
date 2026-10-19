@@ -342,11 +342,20 @@ namespace ZombiesFPS.Data
             ZombieKind.Brute, ZombieKind.Spitter, ZombieKind.Crawler, ZombieKind.Brute, ZombieKind.Spitter, ZombieKind.Crawler,
             ZombieKind.Brute, ZombieKind.Spitter, ZombieKind.Crawler, ZombieKind.Brute, ZombieKind.Spitter, ZombieKind.Brute,
         };
-        public static int AmbushAliveCap(int players) => 16 + 4 * Mathf.Max(0, players - 1);
+        public static int AmbushAliveCap(int players) => 13 + 4 * Mathf.Max(0, players - 1);
         public const float AmbushSpawnInterval = 0.35f;
         /// <summary>The Watchman takes this many points of zombie damage before he goes down.</summary>
-        public const float WatchmanHealth = 3000f;
+        public const float WatchmanHealth = 3600f;
         public const float WatchmanReach = 2.2f;
+        /// <summary>Brannock runs round the yard during the ambush: a bit slower than a jogging runner, faster when hit.</summary>
+        public const float WatchmanSpeed = 3.9f;
+        public const float WatchmanSprint = 5.2f;
+        /// <summary>How often he looks for somewhere safer, and how far he'll go in one go.</summary>
+        public const float WatchmanRethink = 0.7f;
+        public static readonly float[] WatchmanHops = { 4f, 7.5f };
+        /// <summary>Left alone this long, he patches himself up by this share of his health a second.</summary>
+        public const float WatchmanRecoverDelay = 4f;
+        public const float WatchmanRecoverRate = 0.01f;
 
         /// <summary>Zombies alive at once alongside a boss.</summary>
         public static int BossAddsCap(int players) => 8 + 3 * Mathf.Max(0, players - 1);
