@@ -1146,10 +1146,13 @@ namespace ZombiesFPS.World
             // Lantern Core: metal and glowing bands on the core, a glowing ring and spokes on the floor, cables to the
             // consoles, screens on the consoles, and a glow strip under the catwalk's edge.
             var trim = new Color(0.13f, 0.14f, 0.17f);
-            foreach (float y in new[] { 0.3f, 5.7f })
-                DecoPrim(PrimitiveType.Cylinder, L(9, 0f, y, 0f), new Vector3(3.12f, 0.15f, 3.12f), Quaternion.identity, trim, Surface.Metal);
-            foreach (float y in new[] { 1.6f, 4.6f })
-                Glow(PrimitiveType.Cylinder, L(9, 0f, y, 0f), new Vector3(3.05f, 0.04f, 3.05f), Quaternion.identity, CoreGlow);
+            if (!_reactor)
+            {
+                foreach (float y in new[] { 0.3f, 5.7f })
+                    DecoPrim(PrimitiveType.Cylinder, L(9, 0f, y, 0f), new Vector3(CoreDiameter + 0.12f, 0.15f, CoreDiameter + 0.12f), Quaternion.identity, trim, Surface.Metal);
+                foreach (float y in new[] { 1.6f, 4.6f })
+                    Glow(PrimitiveType.Cylinder, L(9, 0f, y, 0f), new Vector3(CoreDiameter + 0.05f, 0.04f, CoreDiameter + 0.05f), Quaternion.identity, CoreGlow);
+            }
             var ring = Shade(CoreGlow, 0.6f);
             foreach (float radius in new[] { 2.2f, 4.2f })
                 for (int k = 0; k < 8; k++)
@@ -1167,7 +1170,7 @@ namespace ZombiesFPS.World
                 Glow(console + Vector3.up * 1.03f - dir * 0.15f, new Vector3(0.7f, 0.03f, 0.4f), Quaternion.LookRotation(-dir) * Quaternion.Euler(-15f, 0f, 0f), new Color(0.15f, 0.45f, 0.4f));
             }
             foreach (var d in new[] { Vector3.right, Vector3.left, Vector3.forward, Vector3.back })
-                Rod(L(9, 0f, 0.035f, 0f) + d * 1.55f, L(9, 0f, 0.035f, 0f) + d * 11f, 0.07f, new Color(0.05f, 0.05f, 0.05f), Surface.Rubber);
+                Rod(L(9, 0f, 0.035f, 0f) + d * (CoreDiameter / 2f + 0.05f), L(9, 0f, 0.035f, 0f) + d * 11f, 0.07f, new Color(0.05f, 0.05f, 0.05f), Surface.Rubber);
             Glow(L(9, 0f, 2.69f, 15.98f), new Vector3(15.2f, 0.04f, 0.02f), Quaternion.identity, Shade(CoreGlow, 0.7f));
 
             // Greenhouse: soil and plants in the planters, a roof of rafters with the odd surviving pane, upper

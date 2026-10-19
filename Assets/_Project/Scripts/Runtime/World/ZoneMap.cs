@@ -130,6 +130,10 @@ namespace ZombiesFPS.World
         static readonly Color Girder = new Color(0.22f, 0.2f, 0.19f);
         static readonly Color BunkGreen = new Color(0.24f, 0.28f, 0.22f);
         static readonly Color CoreGlow = new Color(0.5f, 0.85f, 1f);
+        /// <summary>The Lantern Core's drum, sized to the reactor model that stands in its place.</summary>
+        const float CoreDiameter = Reactor.Diameter + 0.04f;
+        /// <summary>Whether the reactor model went in (the drum's own trim is left off then).</summary>
+        bool _reactor;
 
         /// <summary>Parkour blocks per zone: stacked steel crates in the Garage, broken masonry in the Courtyard, rusty crates in the Crane Yard.</summary>
         static (Surface surface, Color color) HopLook(int zone) => zone switch
@@ -529,10 +533,10 @@ namespace ZombiesFPS.World
             Block("Container", 8, 4.7f, -9f, 7.3f, -3f, 2.6f, Rust, Surface.Rust);
             Block("Container", 8, -20f, 2f, -14f, 4.6f, 2.6f, ContainerBlue, Surface.Metal);
 
-            // Lantern Core: the glowing core, consoles round it, and a catwalk at the north end with stairs and a ladder.
-            var core = Greybox.Prim(PrimitiveType.Cylinder, "Core", Root, L(9, 0f, 3f, 0f), new Vector3(3f, 3f, 3f), new Color(0.18f, 0.2f, 0.27f), surface: Surface.Metal);
+            // Lantern Core: the reactor (or the old glowing drum without its model), consoles round it, and a catwalk
+            // at the north end with stairs and a ladder. The drum's collider stands for the reactor either way.
+            var core = Greybox.Prim(PrimitiveType.Cylinder, "Core", Root, L(9, 0f, 3f, 0f), new Vector3(CoreDiameter, 3f, CoreDiameter), new Color(0.18f, 0.2f, 0.27f), surface: Surface.Metal);
             core.name = "Lantern Core";
-            Greybox.Prim(PrimitiveType.Cylinder, "Core Glow", Root, L(9, 0f, 3.5f, 0f), new Vector3(3.1f, 0.15f, 3.1f), CoreGlow, collider: false, unlit: true);
             var coreLight = new GameObject("Core Light").AddComponent<Light>();
             coreLight.transform.SetParent(Root, false);
             coreLight.transform.localPosition = L(9, 0f, 4f, 0f);
@@ -541,6 +545,16 @@ namespace ZombiesFPS.World
             coreLight.range = 12f;
             coreLight.intensity = 1.8f;
             coreLight.shadows = LightShadows.None;
+            _reactor = Reactor.Build(Root, L(9, 0f, 0f, 0f), Quaternion.identity, coreLight) != null;
+            if (_reactor)
+            {
+                core.GetComponent<Renderer>().enabled = false;
+                coreLight.color = new Color(1f, 0.55f, 0.25f);
+                coreLight.transform.localPosition = L(9, 0f, 3f, 0f);
+                coreLight.intensity = 2.2f;
+            }
+            else
+                Greybox.Prim(PrimitiveType.Cylinder, "Core Glow", Root, L(9, 0f, 3.5f, 0f), new Vector3(CoreDiameter + 0.1f, 0.15f, CoreDiameter + 0.1f), CoreGlow, collider: false, unlit: true);
             foreach (var p in new[] { new Vector2(-7f, -7f), new Vector2(7f, -7f), new Vector2(-7f, 7f), new Vector2(7f, 7f) })
                 Greybox.Box("Console", Root, L(9, p.x, 0.5f, p.y), new Vector3(1.2f, 1f, 1.2f), new Color(0.2f, 0.22f, 0.25f), surface: Surface.Metal);
             Deck("Catwalk", 9, -7.7f, 16f, 7.7f, 19.7f, 3f, Metal);

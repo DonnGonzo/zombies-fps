@@ -53,10 +53,20 @@ namespace ZombiesFPS.Core
 
         static Model Load(string slug)
         {
-            var data = Resources.Load<TextAsset>($"CC0/Props/{slug}/{slug}_mesh");
-            if (data == null) return null;
+            var (mesh, keys) = LoadRaw($"CC0/Props/{slug}/{slug}_mesh");
+            if (mesh == null) return null;
+            var mats = new Material[keys.Length];
+            for (int s = 0; s < keys.Length; s++) mats[s] = MaterialFor(slug, keys[s]);
+            return new Model { Mesh = mesh, Materials = mats, Keys = keys };
+        }
+
+        /// <summary>A mesh in the converters' binary format (see tools/cc0/pack_props.py) and its submeshes' material keys.</summary>
+        public static (Mesh mesh, string[] keys) LoadRaw(string resourcePath)
+        {
+            var data = Resources.Load<TextAsset>(resourcePath);
+            if (data == null) return (null, null);
             using var reader = new BinaryReader(new MemoryStream(data.bytes));
-            if (new string(reader.ReadChars(4)) != "PRP1") return null;
+            if (new string(reader.ReadChars(4)) != "PRP1") return (null, null);
             int subCount = reader.ReadInt32();
             var keys = new string[subCount];
             for (int i = 0; i < subCount; i++) keys[i] = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(reader.ReadInt32()));
@@ -68,7 +78,7 @@ namespace ZombiesFPS.Core
             for (int i = 0; i < n; i++) nrm[i] = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
             for (int i = 0; i < n; i++) uv[i] = new Vector2(reader.ReadSingle(), reader.ReadSingle());
 
-            var mesh = new Mesh { name = slug, indexFormat = n > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
+            var mesh = new Mesh { name = System.IO.Path.GetFileName(resourcePath), indexFormat = n > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
             mesh.SetVertices(pos);
             mesh.SetNormals(nrm);
             mesh.SetUVs(0, uv);
@@ -81,10 +91,7 @@ namespace ZombiesFPS.Core
             }
             mesh.RecalculateTangents();
             mesh.RecalculateBounds();
-
-            var mats = new Material[subCount];
-            for (int s = 0; s < subCount; s++) mats[s] = MaterialFor(slug, keys[s]);
-            return new Model { Mesh = mesh, Materials = mats, Keys = keys };
+            return (mesh, keys);
         }
 
         static Material MaterialFor(string slug, string key)

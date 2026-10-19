@@ -33,3 +33,8 @@ Download a texture's Diffuse, nor_gl, Displacement and AO (1k jpg) into a folder
 `python3 pack_surfaces.py <folder> Assets/_Project/Resources/CC0/Surfaces <slug>...`.
 For a prop, unzip its 1k glTF and run `python3 pack_props.py <gltf folder> Assets/_Project/Resources/CC0/Props/<slug> <slug> 512`.
 New files need a .meta: albedo textures sRGB, `_nrh` linear, `_normal` as a normal map.
+
+## Reactor (not CC0: made for this game)
+
+`tools/reactor` holds Ivan's Reactor_01 asset as delivered. `pack_reactor.py` turns its OBJ into
+`Resources/CC0/Reactor/*.bytes`, which `World/Reactor.cs` builds into the Lantern Core's reactor.
