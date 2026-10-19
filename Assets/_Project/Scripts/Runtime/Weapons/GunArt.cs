@@ -15,11 +15,13 @@ namespace ZombiesFPS.Weapons
     /// Bought attachments show on the gun. guns.txt holds each gun's muzzle, bounds and attachment lengths.
     /// Submeshes are keyed by material name and drawn with the game's own lit, glow and glass materials. When a
     /// file is missing the game falls back to the primitive guns in <see cref="GunModels"/>.
+    /// The Kestrel AR is Ivan's own Nightfall AR-01 (Guns/Nightfall, from tools/nightfall/pack_nightfall.py): the same
+    /// layout, but its "NF_" materials are textured and its "NFD_" ones are engraved markings drawn as decals.
     /// </summary>
     public static class GunArt
     {
         /// <summary>Which model each gun uses, by display name. The pack has nine guns for our ten: the Brennan DMR
-        /// borrows the sniper rifle, shorter and in its own colours.</summary>
+        /// borrows the sniper rifle, shorter and in its own colours. The Kestrel AR is Ivan's Nightfall AR-01.</summary>
         static readonly Dictionary<string, (string slug, float scale, bool ownColours)> s_ByGun = new Dictionary<string, (string, float, bool)>
         {
             { "Rook-9 Carbine", ("atlas5", 1f, false) },
@@ -28,7 +30,7 @@ namespace ZombiesFPS.Weapons
             { "Brennan DMR", ("specter308", 0.88f, true) },
             { "Talon LMG", ("grinder", 1f, false) },
             { "Mauler 12 Shotgun", ("riot12", 1f, false) },
-            { "Kestrel AR", ("kodiak7", 1f, false) },
+            { "Kestrel AR", ("Nightfall/nightfall", 1f, false) },
             { "Vanta .50 Sniper", ("specter308", 1f, false) },
             { "Ion Lance", ("helix", 1f, false) },
             { "Scrap Cannon", ("pulse", 1f, false) },
@@ -83,7 +85,56 @@ namespace ZombiesFPS.Weapons
             { "SightGlow", (new Color32(90, 255, 120, 255), Look.Glow) },
             { "EmissiveRed", (new Color32(255, 40, 30, 255), Look.Glow) },
             { "OpticGlass", (new Color32(150, 200, 220, 38), Look.Glass) },
+            // The Nightfall AR-01's materials, as flat colours for camos.
+            { "NF_Gunmetal_Worn", (new Color32(49, 51, 53, 255), Look.Metal) },
+            { "NF_Parkerized_Steel", (new Color32(30, 33, 35, 255), Look.Metal) },
+            { "NF_Edge_Burnished", (new Color32(105, 102, 94, 255), Look.Metal) },
+            { "NF_Grime_Bronze", (new Color32(87, 63, 38, 255), Look.Paint) },
+            { "NF_Walnut_Distressed", (new Color32(92, 51, 30, 255), Look.Wood) },
+            { "NF_Tactical_Polymer", (new Color32(35, 35, 32, 255), Look.Polymer) },
+            { "NF_Canvas_Wrap", (new Color32(90, 84, 69, 255), Look.Paint) },
         };
+
+        /// <summary>How metallic and glossy each Nightfall material is (from the pack's metallic/roughness maps).</summary>
+        static readonly Dictionary<string, (float metallic, float gloss)> s_Nightfall = new Dictionary<string, (float, float)>
+        {
+            { "Gunmetal_Worn", (0.75f, 0.5f) },
+            { "Parkerized_Steel", (0.8f, 0.42f) },
+            { "Edge_Burnished", (0.75f, 0.55f) },
+            { "Grime_Bronze", (0.6f, 0.4f) },
+            { "Walnut_Distressed", (0f, 0.3f) },
+            { "Tactical_Polymer", (0f, 0.22f) },
+            { "Canvas_Wrap", (0f, 0.07f) },
+        };
+
+        static readonly Dictionary<string, Material> s_Textured = new Dictionary<string, Material>();
+
+        /// <summary>A Nightfall material with its own textures, or an engraving drawn as a decal on the metal under it.</summary>
+        static Material NightfallMaterial(string key)
+        {
+            if (s_Textured.TryGetValue(key, out var cached) && cached != null) return cached;
+            Material mat;
+            if (key.StartsWith("NFD_"))
+            {
+                var decal = Resources.Load<Material>("Materials/Decal");
+                var tex = Resources.Load<Texture2D>("Guns/Nightfall/" + key.Substring(4));
+                if (decal != null && decal.shader != null && decal.shader.isSupported && tex != null)
+                {
+                    mat = new Material(decal) { name = "Gun " + key, mainTexture = tex };
+                    mat.SetFloat("_Glossiness", 0.3f);
+                }
+                else mat = Greybox.Unlit(new Color(0f, 0f, 0f, 0f));
+            }
+            else
+            {
+                var name = key.Substring(3);
+                var (metallic, gloss) = s_Nightfall.TryGetValue(name, out var mg) ? mg : (0.5f, 0.4f);
+                mat = PropModels.Textured("Gun " + name, Resources.Load<Texture2D>("Guns/Nightfall/" + name + "_albedo"),
+                    Resources.Load<Texture2D>("Guns/Nightfall/" + name + "_normal"), metallic, gloss);
+            }
+            s_Textured[key] = mat;
+            return mat;
+        }
 
         /// <summary>
         /// A material for one of the pack's material keys. A camo paints the gun as metal: its paint, polymer and
@@ -92,6 +143,8 @@ namespace ZombiesFPS.Weapons
         /// </summary>
         static Material MaterialFor(string key, Color? camo, Color? furniture)
         {
+            // The Nightfall's markings stay on through any camo; its textures give way to the camo's flat paint.
+            if (key.StartsWith("NFD_") || (key.StartsWith("NF_") && !camo.HasValue)) return NightfallMaterial(key);
             if (!s_Materials.TryGetValue(key, out var m)) m = (new Color32(60, 62, 66, 255), Look.Metal);
             Color c = m.color;
             switch (m.look)
@@ -124,9 +177,17 @@ namespace ZombiesFPS.Weapons
         {
             if (s_Info != null) return s_Info;
             s_Info = new Dictionary<string, Info>();
-            var text = Resources.Load<TextAsset>("Guns/guns");
-            if (text == null) return s_Info;
-            foreach (var raw in text.text.Split('\n'))
+            foreach (var file in new[] { "Guns/guns", "Guns/Nightfall/guns" })
+            {
+                var text = Resources.Load<TextAsset>(file);
+                if (text != null) ReadInfo(text.text);
+            }
+            return s_Info;
+        }
+
+        static void ReadInfo(string text)
+        {
+            foreach (var raw in text.Split('\n'))
             {
                 var line = raw.Trim();
                 if (line.Length == 0 || line[0] == '#') continue;
@@ -146,7 +207,6 @@ namespace ZombiesFPS.Weapons
                     Groups = groups,
                 };
             }
-            return s_Info;
         }
 
         static (Mesh mesh, string[] keys) MeshOf(string name)
@@ -155,6 +215,13 @@ namespace ZombiesFPS.Weapons
             (Mesh, string[]) loaded = (null, null);
             try { loaded = PropModels.LoadRaw("Guns/" + name); }
             catch (System.Exception e) { Debug.LogWarning($"Gun model {name} couldn't be loaded: {e.Message}"); }
+            // The decal shader multiplies by vertex colour, so meshes with engravings get white ones.
+            if (loaded.Item1 != null && System.Array.Exists(loaded.Item2, k => k.StartsWith("NFD_")))
+            {
+                var white = new Color32[loaded.Item1.vertexCount];
+                for (int i = 0; i < white.Length; i++) white[i] = new Color32(255, 255, 255, 255);
+                loaded.Item1.colors32 = white;
+            }
             s_Meshes[name] = loaded;
             return loaded;
         }
