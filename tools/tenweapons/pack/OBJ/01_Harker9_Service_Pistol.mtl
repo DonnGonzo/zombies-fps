@@ -1,0 +1,49 @@
+newmtl BlackSteel
+Kd 0.1137 0.1294 0.1451
+Ks 0.880 0.880 0.880
+Ns 6.93
+d 1.0000
+illum 2
+
+newmtl Brass
+Kd 0.7804 0.6431 0.3137
+Ks 0.910 0.910 0.910
+Ns 9.77
+d 1.0000
+illum 2
+
+newmtl BrushedMetal
+Kd 0.4549 0.4784 0.4980
+Ks 0.910 0.910 0.910
+Ns 10.41
+d 1.0000
+illum 2
+
+newmtl Gunmetal
+Kd 0.2196 0.2275 0.2471
+Ks 0.840 0.840 0.840
+Ns 5.67
+d 1.0000
+illum 2
+
+newmtl Polymer
+Kd 0.1647 0.1765 0.1804
+Ks 0.080 0.080 0.080
+Ns 5.00
+d 1.0000
+illum 2
+
+newmtl Rubber
+Kd 0.0941 0.0980 0.1098
+Ks 0.020 0.020 0.020
+Ns 5.00
+d 1.0000
+illum 2
+
+newmtl Warning
+Kd 0.8667 0.6471 0.2039
+Ks 0.280 0.280 0.280
+Ns 5.00
+d 1.0000
+illum 2
+

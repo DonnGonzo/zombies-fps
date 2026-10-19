@@ -1,0 +1,56 @@
+newmtl BlackSteel
+Kd 0.1137 0.1294 0.1451
+Ks 0.880 0.880 0.880
+Ns 6.93
+d 1.0000
+illum 2
+
+newmtl BluedSteel
+Kd 0.1843 0.2157 0.2667
+Ks 0.810 0.810 0.810
+Ns 9.18
+d 1.0000
+illum 2
+
+newmtl BrushedMetal
+Kd 0.4549 0.4784 0.4980
+Ks 0.910 0.910 0.910
+Ns 10.41
+d 1.0000
+illum 2
+
+newmtl Gunmetal
+Kd 0.2196 0.2275 0.2471
+Ks 0.840 0.840 0.840
+Ns 5.67
+d 1.0000
+illum 2
+
+newmtl Optics
+Kd 0.0745 0.1412 0.1647
+Ks 0.050 0.050 0.050
+Ns 51.02
+d 1.0000
+illum 2
+
+newmtl Polymer
+Kd 0.1647 0.1765 0.1804
+Ks 0.080 0.080 0.080
+Ns 5.00
+d 1.0000
+illum 2
+
+newmtl Rubber
+Kd 0.0941 0.0980 0.1098
+Ks 0.020 0.020 0.020
+Ns 5.00
+d 1.0000
+illum 2
+
+newmtl SandCerakote
+Kd 0.5961 0.5373 0.4314
+Ks 0.440 0.440 0.440
+Ns 5.00
+d 1.0000
+illum 2
+

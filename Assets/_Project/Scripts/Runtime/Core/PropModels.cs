@@ -1,0 +1,153 @@
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+namespace ZombiesFPS.Core
+{
+    /// <summary>
+    /// Scanned CC0 prop models (Poly Haven: barrels, crates, lanterns and so on) for dressing the map.
+    ///
+    /// Each prop lives in Resources/CC0/Props/slug as slug_mesh.bytes (made from the glTF by a converter, already
+    /// in Unity's axes and metres, its origin at the middle of its base) and per material key_albedo and
+    /// key_normal textures. A plain binary mesh needs no model import settings, so it looks the same on every
+    /// machine. A key ending in _glass is drawn glowing (lantern panes).
+    /// </summary>
+    public static class PropModels
+    {
+        public sealed class Model
+        {
+            public Mesh Mesh;
+            /// <summary>One per submesh, with the material key each was made from.</summary>
+            public Material[] Materials;
+            public string[] Keys;
+            public Bounds Bounds => Mesh.bounds;
+        }
+
+        public const string Barrel = "wine_barrel_01";
+        public const string Chest = "wooden_crate_01";
+        public const string LongCrate = "wooden_crate_02";
+        public const string Bucket = "wooden_bucket_01";
+        public const string Table = "WoodenTable_01";
+        public const string Shield = "kite_shield";
+        public const string Lantern = "wooden_lantern_01";
+        public const string Basket = "wicker_basket_02";
+        public const string FirePit = "stone_fire_pit";
+
+        static readonly Color GlassGlow = new Color(1f, 0.7f, 0.38f);
+
+        static readonly Dictionary<string, Model> s_Models = new Dictionary<string, Model>();
+        static Material s_Base;
+
+        /// <summary>The prop, or null when the map art is off or its files aren't in the project.</summary>
+        public static Model Get(string slug)
+        {
+            if (!SurfaceTextures.PhotosEnabled) return null;
+            if (s_Models.TryGetValue(slug, out var cached)) return cached != null && cached.Mesh != null ? cached : null;
+            Model model = null;
+            try { model = Load(slug); }
+            catch (System.Exception e) { Debug.LogWarning($"Prop {slug} couldn't be loaded: {e.Message}"); }
+            s_Models[slug] = model;
+            return model;
+        }
+
+        static readonly Dictionary<string, Model> s_Packs = new Dictionary<string, Model>();
+
+        /// <summary>
+        /// A model from one of Ivan's packs (Resources/CC0/pack/name.bytes, made by tools/packs/pack_obj.py), its
+        /// materials picked by key, or null when the map art is off or the file isn't there.
+        /// </summary>
+        public static Model GetPack(string path, System.Func<string, Material> materialFor)
+        {
+            if (!SurfaceTextures.PhotosEnabled) return null;
+            if (s_Packs.TryGetValue(path, out var cached)) return cached != null && cached.Mesh != null ? cached : null;
+            Model model = null;
+            try
+            {
+                var (mesh, keys) = LoadRaw("CC0/" + path);
+                if (mesh != null)
+                {
+                    var mats = new Material[keys.Length];
+                    for (int i = 0; i < keys.Length; i++) mats[i] = materialFor(keys[i]);
+                    model = new Model { Mesh = mesh, Materials = mats, Keys = keys };
+                }
+            }
+            catch (System.Exception e) { Debug.LogWarning($"Model {path} couldn't be loaded: {e.Message}"); }
+            s_Packs[path] = model;
+            return model;
+        }
+
+        static Model Load(string slug)
+        {
+            var (mesh, keys) = LoadRaw($"CC0/Props/{slug}/{slug}_mesh");
+            if (mesh == null) return null;
+            var mats = new Material[keys.Length];
+            for (int s = 0; s < keys.Length; s++) mats[s] = MaterialFor(slug, keys[s]);
+            return new Model { Mesh = mesh, Materials = mats, Keys = keys };
+        }
+
+        /// <summary>A mesh in the converters' binary format (see tools/cc0/pack_props.py) and its submeshes' material keys.</summary>
+        public static (Mesh mesh, string[] keys) LoadRaw(string resourcePath)
+        {
+            var data = Resources.Load<TextAsset>(resourcePath);
+            if (data == null) return (null, null);
+            using var reader = new BinaryReader(new MemoryStream(data.bytes));
+            if (new string(reader.ReadChars(4)) != "PRP1") return (null, null);
+            int subCount = reader.ReadInt32();
+            var keys = new string[subCount];
+            for (int i = 0; i < subCount; i++) keys[i] = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(reader.ReadInt32()));
+            int n = reader.ReadInt32();
+            var pos = new Vector3[n];
+            var nrm = new Vector3[n];
+            var uv = new Vector2[n];
+            for (int i = 0; i < n; i++) pos[i] = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+            for (int i = 0; i < n; i++) nrm[i] = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+            for (int i = 0; i < n; i++) uv[i] = new Vector2(reader.ReadSingle(), reader.ReadSingle());
+
+            var mesh = new Mesh { name = System.IO.Path.GetFileName(resourcePath), indexFormat = n > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
+            mesh.SetVertices(pos);
+            mesh.SetNormals(nrm);
+            mesh.SetUVs(0, uv);
+            mesh.subMeshCount = subCount;
+            for (int s = 0; s < subCount; s++)
+            {
+                var tris = new int[reader.ReadInt32()];
+                for (int i = 0; i < tris.Length; i++) tris[i] = reader.ReadInt32();
+                mesh.SetTriangles(tris, s);
+            }
+            // A model exported without normals would be lit as pure black; work them out instead.
+            if (n > 0 && nrm[0].sqrMagnitude < 0.5f) mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return (mesh, keys);
+        }
+
+        static Material MaterialFor(string slug, string key)
+        {
+            if (key.EndsWith("_glass")) return Greybox.Unlit(GlassGlow);
+            var albedo = Resources.Load<Texture2D>($"CC0/Props/{slug}/{key}_albedo");
+            var normal = Resources.Load<Texture2D>($"CC0/Props/{slug}/{key}_normal");
+            bool clamps = key.Contains("clamps");
+            return Textured("Prop " + key, albedo, normal, clamps ? 0.6f : 0f, clamps ? 0.4f : 0.18f);
+        }
+
+        /// <summary>A lit prop material (Standard with a normal map) from a colour and a normal texture, either of which may be missing.</summary>
+        public static Material Textured(string name, Texture2D albedo, Texture2D normal, float metallic, float gloss)
+        {
+            if (s_Base == null) s_Base = Resources.Load<Material>("Materials/PropLit") ?? Resources.Load<Material>("Materials/GreyboxLit");
+            var mat = s_Base != null ? new Material(s_Base) : new Material(Shader.Find("Standard"));
+            mat.name = name;
+            mat.color = Color.white;
+            if (albedo != null) mat.mainTexture = albedo;
+            if (normal != null)
+            {
+                mat.SetTexture("_BumpMap", normal);
+                mat.EnableKeyword("_NORMALMAP");
+            }
+            mat.SetFloat("_Glossiness", gloss);
+            mat.SetFloat("_Metallic", metallic);
+            mat.enableInstancing = true;
+            return mat;
+        }
+    }
+}

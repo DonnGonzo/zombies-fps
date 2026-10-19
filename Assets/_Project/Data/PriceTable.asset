@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fff5b17a3cbf4a55909f7817fcfea03f, type: 3}
+  m_Name: PriceTable
+  m_EditorClassIdentifier: 
+  doorCosts:
+  - 750
+  - 750
+  - 1000
+  - 1000
+  - 1000
+  - 1250
+  - 1250
+  - 1250
+  - 1500
+  - 1500
+  - 1500
+  - 1750
+  - 1750
+  - 2000
+  - 2000
+  - 2000
+  - 2250
+  - 1500
+  - 2000
+  - 1750
+  - 2000
+  - 2250
+  - 2250
+  - 2500
+  - 2500
+  - 2500
+  - 2750
+  - 2250
+  - 2500
+  wallGuns:
+  - gun: {fileID: 11400000, guid: aa74712322ac450a97d1f8f30d592622, type: 2}
+    price: 500
+    ammoPrice: 250
+  - gun: {fileID: 11400000, guid: 51ec21295fc040d69e2554f4920be799, type: 2}
+    price: 750
+    ammoPrice: 375
+  - gun: {fileID: 11400000, guid: 0c5c9c107a544ce79facf720edd619b3, type: 2}
+    price: 1000
+    ammoPrice: 500
+  - gun: {fileID: 11400000, guid: 905aeebb527d4bd6b70f90bcb38d9c3d, type: 2}
+    price: 1500
+    ammoPrice: 750
+  - gun: {fileID: 11400000, guid: aa74712322ac450a97d1f8f30d592622, type: 2}
+    price: 500
+    ammoPrice: 250
+  - gun: {fileID: 11400000, guid: 6df52d1c645d4363bfe0e949a2ee0d43, type: 2}
+    price: 2500
+    ammoPrice: 1250
+  - gun: {fileID: 11400000, guid: ca2a73f8cbd4475da411d771d7f206eb, type: 2}
+    price: 1250
+    ammoPrice: 600
+  - gun: {fileID: 11400000, guid: adf75d995b32462fb6ad47ebfe2c1d1f, type: 2}
+    price: 2000
+    ammoPrice: 1000
+  - gun: {fileID: 11400000, guid: 21003e671b5d4b42a78e1fc0cc7d583b, type: 2}
+    price: 2250
+    ammoPrice: 1100
+  rareGuns:
+  - {fileID: 11400000, guid: c740941ac31b46d18a037b3317b9ee84, type: 2}
+  - {fileID: 11400000, guid: db5ddce85ae74f5f93b2abd820a36265, type: 2}
