@@ -19,6 +19,7 @@ Shader "Hidden/ZombiesFPS/Post"
     half _Exposure;
     half _Saturation;
     half _Contrast;
+    half _Lift;                 // gamma on the graded image: below 1 opens up the shadows
     half _Vignette;
     half _Grain;
     half4 _ShadowTint;
@@ -116,6 +117,7 @@ Shader "Hidden/ZombiesFPS/Post"
         luma = dot(c, half3(0.2126, 0.7152, 0.0722));
         c = lerp(luma.xxx, c, _Saturation);
         c = saturate((c - 0.18) * _Contrast + 0.18);
+        if (_Lift > 0) c = pow(c, _Lift);
 
         // Vignette.
         float2 d = (i.uv - 0.5) * float2(_MainTex_TexelSize.y * _MainTex_TexelSize.z, 1);

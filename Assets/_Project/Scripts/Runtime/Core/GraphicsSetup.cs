@@ -10,9 +10,10 @@ namespace ZombiesFPS.Core
     public static class GraphicsSetup
     {
         public static readonly Color FogColor = new Color(0.055f, 0.065f, 0.09f);
-        static readonly Color AmbientSky = new Color(0.2f, 0.23f, 0.32f);
-        static readonly Color AmbientEquator = new Color(0.13f, 0.13f, 0.15f);
-        static readonly Color AmbientGround = new Color(0.07f, 0.06f, 0.055f);
+        // Moonlit night, but bright enough in the shadows to read the room and see what's coming.
+        static readonly Color AmbientSky = new Color(0.3f, 0.33f, 0.43f);
+        static readonly Color AmbientEquator = new Color(0.22f, 0.21f, 0.23f);
+        static readonly Color AmbientGround = new Color(0.13f, 0.11f, 0.1f);
 
         static Light s_Moon;
         static Material s_Sky;
@@ -30,13 +31,14 @@ namespace ZombiesFPS.Core
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = FogColor;
-            RenderSettings.fogDensity = 0.026f;
+            RenderSettings.fogDensity = 0.019f;
 
             s_Moon = new GameObject("Moonlight").AddComponent<Light>();
             s_Moon.type = LightType.Directional;
-            s_Moon.transform.rotation = Quaternion.Euler(42f, -35f, 0f);
-            s_Moon.color = new Color(0.62f, 0.72f, 1f);
-            s_Moon.intensity = 0.55f;
+            // High enough that moonlight reaches down past the 7 m walls into the rooms, not just the wall tops.
+            s_Moon.transform.rotation = Quaternion.Euler(56f, -35f, 0f);
+            s_Moon.color = new Color(0.66f, 0.75f, 1f);
+            s_Moon.intensity = 0.8f;
             s_Moon.shadows = LightShadows.Soft;
             s_Moon.shadowStrength = 0.85f;
             s_Moon.shadowBias = 0.04f;
@@ -74,8 +76,9 @@ namespace ZombiesFPS.Core
             QualitySettings.shadowCascades = q == 0 ? 1 : q == 1 ? 2 : 4;
             QualitySettings.shadowResolution = q == 0 ? ShadowResolution.Low : q == 1 ? ShadowResolution.Medium : ShadowResolution.High;
             QualitySettings.antiAliasing = q == 0 ? 0 : q == 1 ? 2 : 4;
-            // Every extra per-pixel light is another draw for each lit part, and zombies have dozens of parts.
-            QualitySettings.pixelLightCount = q == 0 ? 2 : q == 1 ? 3 : 4;
+            // Every extra per-pixel light is another draw for each lit part, and zombies have dozens of parts; the
+            // map is cut into small pieces so a few each are enough.
+            QualitySettings.pixelLightCount = q == 0 ? 3 : q == 1 ? 4 : 6;
             QualitySettings.anisotropicFiltering = q == 0 ? AnisotropicFiltering.Enable : AnisotropicFiltering.ForceEnable;
             QualitySettings.softParticles = false;
             if (s_Moon != null) s_Moon.shadows = q == 0 ? LightShadows.Hard : LightShadows.Soft;

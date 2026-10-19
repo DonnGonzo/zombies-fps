@@ -42,10 +42,14 @@ namespace ZombiesFPS.Core
             }
 
             int quality = GameSettings.Quality;
-            mat.SetFloat("_Exposure", 1.05f * GameSettings.Brightness * Flash);
-            mat.SetFloat("_Saturation", 0.86f);
-            mat.SetFloat("_Contrast", 1.08f);
-            mat.SetFloat("_Vignette", 0.42f);
+            // Brightness raises exposure and also lifts the shadows (a gamma below 1), since exposure alone
+            // barely moves near-black corners.
+            float brightness = GameSettings.Brightness;
+            mat.SetFloat("_Exposure", 1.12f * brightness * Flash);
+            mat.SetFloat("_Lift", 0.88f / Mathf.Pow(brightness, 0.6f));
+            mat.SetFloat("_Saturation", 0.88f);
+            mat.SetFloat("_Contrast", 1.04f);
+            mat.SetFloat("_Vignette", 0.3f);
             mat.SetFloat("_Grain", GameSettings.FilmGrain ? 0.035f : 0f);
             mat.SetColor("_ShadowTint", new Color(0.9f, 0.97f, 1.12f));
             mat.SetColor("_HighlightTint", new Color(1.06f, 1.0f, 0.92f));

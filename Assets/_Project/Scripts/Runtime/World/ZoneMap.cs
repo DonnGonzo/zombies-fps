@@ -132,6 +132,13 @@ namespace ZombiesFPS.World
         static readonly Color CoreGlow = new Color(0.5f, 0.85f, 1f);
         /// <summary>The Lantern Core's drum, sized to the reactor model that stands in its place.</summary>
         const float CoreDiameter = Reactor.Diameter + 0.04f;
+        /// <summary>Height of the Archives' book stacks: well over head height, so the aisles read as a maze of shelves.</summary>
+        const float StackHeight = 4.4f;
+        /// <summary>
+        /// Ceiling lamps: about this far apart, so nowhere is more than about 7 m from one, and how far and bright
+        /// each shines. Floors are drawn in tiles about FloorTile across so each tile takes the lamps over it.
+        /// </summary>
+        const float LampSpacing = 10f, LampRange = 15f, LampIntensity = 1.8f, FloorTile = 8f;
         /// <summary>Whether the reactor model went in (the drum's own trim is left off then).</summary>
         bool _reactor;
 
@@ -217,11 +224,24 @@ namespace ZombiesFPS.World
             // Colliderless dressing collects here as it's made and is merged into a few meshes at the end.
             _decor = new DecorBatch();
 
-            // Floors, one per rectangle, in each zone's own material.
+            // Floors, one collider per rectangle, in each zone's own material. They're drawn as tiles through the
+            // dressing, so each patch of floor is lit by the lamps over it: one huge floor only takes its few
+            // nearest lights per pixel and goes dark between them.
             for (int i = 0; i < ZoneCount; i++)
                 foreach (var r in ZoneRects(i))
-                    Greybox.Box("Floor " + ZoneNames[i], Root, new Vector3(r.center.x, -0.5f, r.center.y), new Vector3(r.width, 1f, r.height),
+                {
+                    var floor = Greybox.Box("Floor " + ZoneNames[i], Root, new Vector3(r.center.x, -0.5f, r.center.y), new Vector3(r.width, 1f, r.height),
                         Looks[i].FloorColor, surface: Looks[i].Floor);
+                    floor.GetComponent<Renderer>().enabled = false;
+                    int nx = Mathf.CeilToInt(r.width / FloorTile), nz = Mathf.CeilToInt(r.height / FloorTile);
+                    for (int a = 0; a < nx; a++)
+                        for (int b = 0; b < nz; b++)
+                        {
+                            float x0 = r.xMin + a * r.width / nx, z0 = r.yMin + b * r.height / nz;
+                            Deco(new Vector3(x0 + r.width / nx / 2f, -0.5f, z0 + r.height / nz / 2f), new Vector3(r.width / nx, 1f, r.height / nz),
+                                Looks[i].FloorColor, Looks[i].Floor);
+                        }
+                }
 
             BuildWalls();
             foreach (var w in WindowSpots) AddWindow(w.Zone, w.Resolve());
@@ -463,8 +483,8 @@ namespace ZombiesFPS.World
             var pew = new Color(0.3f, 0.19f, 0.11f);
             foreach (float z in new[] { -18f, -15f, -12f })
             {
-                Greybox.Box("Pew", Root, L(3, -4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood);
-                Greybox.Box("Pew", Root, L(3, 4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood);
+                Reskin(Greybox.Box("Pew", Root, L(3, -4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood), Pew, false, Pew.Size.y);
+                Reskin(Greybox.Box("Pew", Root, L(3, 4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood), Pew, false, Pew.Size.y);
             }
             Greybox.Box("Lectern", Root, L(3, 0f, 0.6f, 10f), new Vector3(1f, 1.2f, 0.8f), pew, surface: Surface.Wood);
 
@@ -484,6 +504,14 @@ namespace ZombiesFPS.World
             Object.DestroyImmediate(fountain.GetComponent<Collider>());
             var fountainCollider = fountain.AddComponent<MeshCollider>();
             fountainCollider.convex = true;
+            // A marble basin standing in the middle (solid either way).
+            var basin = PropModels.GetPack(Fountain.Path, PackMaterial);
+            var column = Greybox.Box("Fountain Column", Root, L(5, 4f, 0.8f + 0.55f, -1f), new Vector3(1.3f, 1.1f, 1.3f), stone, surface: Surface.Concrete);
+            if (basin != null)
+            {
+                column.GetComponent<Renderer>().enabled = false;
+                AddModel(basin, L(5, 4f, 0.8f, -1f), Quaternion.identity, true);
+            }
             foreach (var p in new[] { new Vector2(-3f, -8f), new Vector2(11f, -8f), new Vector2(-3f, 6f), new Vector2(11f, 6f) })
                 Greybox.Box("Pillar", Root, L(5, p.x, WallHeight / 2f, p.y), new Vector3(1.4f, WallHeight, 1.4f), new Color(0.42f, 0.28f, 0.2f), surface: Surface.Brick);
             Block("Ruined Ledge", 5, -18.7f, -14.7f, -13.7f, -9.7f, 3.2f, stone);
@@ -561,16 +589,17 @@ namespace ZombiesFPS.World
             Stairs(9, -5.5f, 16f, Vector3.back, 3f, 2f);
             AddLadder(9, 5.5f, 16f, Vector3.back, 3f);
 
-            // Archives: stacks either side of a central aisle, and a records loft up a ladder at the far end of the north wing.
+            // Archives: tall double-sided stacks either side of a central aisle, and a records loft up a ladder at the far
+            // end of the north wing.
             Block("Records Loft", 10, 1.3f, 17f, 16.7f, 22.7f, 4f, DarkWood, Surface.Wood);
             AddLadder(10, 9f, 17f, Vector3.back, 4f);
             var bookcase = new Color(0.33f, 0.22f, 0.13f);
             foreach (float x in new[] { -10f, -1f })
-                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, 4.7f), new Vector3(0.8f, 2.2f, 4f), bookcase, surface: Surface.Wood);
+                Reskin(Greybox.Box("Bookshelf", Root, L(10, x, StackHeight / 2f, 4.7f), new Vector3(0.8f, StackHeight, 4f), bookcase, surface: Surface.Wood), Bookcase, true);
             foreach (float x in new[] { -10f, 3f, 7f })
-                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, -4.7f), new Vector3(0.8f, 2.2f, 4f), bookcase, surface: Surface.Wood);
+                Reskin(Greybox.Box("Bookshelf", Root, L(10, x, StackHeight / 2f, -4.7f), new Vector3(0.8f, StackHeight, 4f), bookcase, surface: Surface.Wood), Bookcase, true);
             foreach (float x in new[] { 5f, 13f })
-                Greybox.Box("Bookshelf", Root, L(10, x, 1.1f, 11.5f), new Vector3(0.8f, 2.2f, 5f), bookcase, surface: Surface.Wood);
+                Reskin(Greybox.Box("Bookshelf", Root, L(10, x, StackHeight / 2f, 11.5f), new Vector3(0.8f, StackHeight, 5f), bookcase, surface: Surface.Wood), Bookcase, true);
 
             // Greenhouse: planters, glass frames, and a potting shed whose roof (up a ladder) holds the second build station.
             Block("Potting Shed", 11, -14f, 1f, -5f, 10.7f, 4.5f, new Color(0.36f, 0.27f, 0.18f), Surface.Wood);
@@ -613,22 +642,23 @@ namespace ZombiesFPS.World
         }
 
         /// <summary>
-        /// Ceiling lamps over every rectangle of floor big enough to need one, about 14 m apart, each hanging from a
+        /// Ceiling lamps over every rectangle of floor, about LampSpacing apart, each hanging from a
         /// steel beam spanning the rectangle's short way at the top of the walls.
         /// </summary>
         void BuildLamps()
         {
+            Physics.SyncTransforms();
             for (int i = 0; i < ZoneCount; i++)
                 foreach (var r in ZoneRects(i))
                 {
-                    if (r.width < 8 || r.height < 8) continue;
-                    int nx = Mathf.Max(1, Mathf.RoundToInt(r.width / 14f)), nz = Mathf.Max(1, Mathf.RoundToInt(r.height / 14f));
+                    if (r.width < 4 || r.height < 4) continue;
+                    int nx = Mathf.Max(1, Mathf.RoundToInt(r.width / LampSpacing)), nz = Mathf.Max(1, Mathf.RoundToInt(r.height / LampSpacing));
                     bool beamsAlongX = r.width <= r.height;
                     for (int a = 0; a < nx; a++)
                         for (int b = 0; b < nz; b++)
                         {
                             var at = new Vector3(r.xMin + (a + 0.5f) * r.width / nx, WallHeight - 0.4f, r.yMin + (b + 0.5f) * r.height / nz);
-                            AddLamp(at);
+                            AddLamp(at, i);
                             // One beam per row of lamps.
                             if (beamsAlongX && a == 0)
                                 Deco(new Vector3(r.center.x, WallHeight - 0.14f, at.z), new Vector3(r.width, 0.24f, 0.18f), Girder, Surface.Rust);
@@ -639,10 +669,12 @@ namespace ZombiesFPS.World
         }
 
         /// <summary>An enamelled shade on a short rod with a glowing bulb under it, and its light.</summary>
-        void AddLamp(Vector3 position)
+        void AddLamp(Vector3 position, int zone)
         {
             bool lantern = PropModels.Get(PropModels.Lantern) != null;
-            if (lantern) CeilingLantern(position);
+            bool chandelier = ChandelierZones.Contains(zone) && HangChandelier(position);
+            if (chandelier) lantern = true;
+            else if (lantern) CeilingLantern(position);
             else
             {
                 Deco(position + Vector3.up * 0.17f, new Vector3(0.05f, 0.18f, 0.05f), Girder, Surface.Metal);
@@ -652,11 +684,11 @@ namespace ZombiesFPS.World
             }
             var go = new GameObject("Lamp Light");
             go.transform.SetParent(Root, false);
-            go.transform.localPosition = position + Vector3.down * (lantern ? 0.45f : 0.3f);
+            go.transform.localPosition = position + Vector3.down * (chandelier ? 1.9f : lantern ? 0.45f : 0.3f);
             var light = go.AddComponent<Light>();
             light.type = LightType.Point;
-            light.range = 17f;
-            light.intensity = 1.5f;
+            light.range = LampRange;
+            light.intensity = LampIntensity;
             light.color = Lamp;
             light.shadows = LightShadows.None;
         }

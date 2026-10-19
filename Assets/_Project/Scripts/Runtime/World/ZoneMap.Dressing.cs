@@ -1053,9 +1053,10 @@ namespace ZombiesFPS.World
             Deco(L(3, 0f, 0.006f, -5.15f), new Vector3(1.6f, 0.01f, 27.3f), new Color(0.3f, 0.07f, 0.06f), Surface.Fabric);
             foreach (float x in new[] { -0.82f, 0.82f })
                 Deco(L(3, x, 0.008f, -5.15f), new Vector3(0.06f, 0.012f, 27.3f), new Color(0.42f, 0.32f, 0.12f), Surface.Fabric);
-            foreach (float z in new[] { -18f, -15f, -12f })
-                foreach (float x in new[] { -4.2f, 4.2f })
-                    Deco(L(3, x, 0.92f, z), new Vector3(4.5f, 0.04f, 0.7f), Shade(DarkWood, 0.8f), Surface.Wood);
+            if (PropModels.GetPack(Pew.Path, PackMaterial) == null)
+                foreach (float z in new[] { -18f, -15f, -12f })
+                    foreach (float x in new[] { -4.2f, 4.2f })
+                        Deco(L(3, x, 0.92f, z), new Vector3(4.5f, 0.04f, 0.7f), Shade(DarkWood, 0.8f), Surface.Wood);
             foreach (float x in new[] { -0.3f, 0f, 0.3f })
             {
                 float h = 0.12f + Mathf.Abs(x) * 0.3f;
@@ -1092,13 +1093,19 @@ namespace ZombiesFPS.World
                     }
                 }
 
-            // Archives: books on every case, filing cabinets along the records loft, and a rug in the reading room.
-            foreach (float x in new[] { -10f, -1f })
-                Books(L(10, x, 0f, 4.7f), 0.8f, 4f, 2.2f, rng);
-            foreach (float x in new[] { -10f, 3f, 7f })
-                Books(L(10, x, 0f, -4.7f), 0.8f, 4f, 2.2f, rng);
-            foreach (float x in new[] { 5f, 13f })
-                Books(L(10, x, 0f, 11.5f), 0.8f, 5f, 2.2f, rng);
+            // Archives: books on every case (the bookcase models come with their own), filing cabinets along the
+            // records loft, and a rug in the reading room. The books draw from their own generator, so the rest
+            // comes out the same with or without the models.
+            var bookRng = new System.Random(rng.Next());
+            if (PropModels.GetPack(Bookcase.Path, PackMaterial) == null)
+            {
+                foreach (float x in new[] { -10f, -1f })
+                    Books(L(10, x, 0f, 4.7f), 0.8f, 4f, StackHeight, bookRng);
+                foreach (float x in new[] { -10f, 3f, 7f })
+                    Books(L(10, x, 0f, -4.7f), 0.8f, 4f, StackHeight, bookRng);
+                foreach (float x in new[] { 5f, 13f })
+                    Books(L(10, x, 0f, 11.5f), 0.8f, 5f, StackHeight, bookRng);
+            }
             var cabinet = new Color(0.3f, 0.33f, 0.3f);
             foreach (float x in new[] { 2.5f, 3.5f, 4.5f, 5.5f, 12.5f, 13.5f, 14.5f, 15.5f })
             {
@@ -1404,7 +1411,9 @@ namespace ZombiesFPS.World
         /// </summary>
         sealed class DecorBatch
         {
-            const float CellSize = 48f;
+            // Small enough that each merged piece is lit by the lamps near it (forward rendering gives an object
+            // only its few strongest lights per pixel), big enough to keep the draw count down.
+            const float CellSize = 16f;
             static readonly Dictionary<PrimitiveType, Mesh> s_Meshes = new Dictionary<PrimitiveType, Mesh>();
             readonly Dictionary<(Material, int, int), List<CombineInstance>> _parts = new Dictionary<(Material, int, int), List<CombineInstance>>();
             readonly HashSet<Material> _shadowed = new HashSet<Material>();

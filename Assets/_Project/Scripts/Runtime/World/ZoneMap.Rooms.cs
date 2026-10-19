@@ -50,16 +50,41 @@ namespace ZombiesFPS.World
         static readonly PackItem Aura = new PackItem(Lab + "SpellAura_Activated", new Vector3(-2f, -0.01f, -2f), new Vector3(2f, 0.58f, 2f), Mount.Open);
         static readonly PackItem Torch = new PackItem(Lab + "WallTorch_Gothic", new Vector3(-0.37f, 0f, -0.04f), new Vector3(0.11f, 0.66f, 0.33f), Mount.Wall);
 
+        // Ivan's Ten Worlds pack (see ZoneMap.Worlds.cs). Declared here, ahead of the tables that use them, since
+        // static fields in different files of a partial class have no set order.
+        const string Worlds = "TenWorlds/";
+        static readonly PackItem Pew = new PackItem(Worlds + "ChurchPew", new Vector3(-1.55f, 0f, -0.3f), new Vector3(1.55f, 1.6f, 0.3f), Mount.Floor);
+        static readonly PackItem AltarDais = new PackItem(Worlds + "AltarDais", new Vector3(-2.7f, 0f, -1.1f), new Vector3(2.7f, 1.7f, 1.1f), Mount.Floor);
+        static readonly PackItem Organ = new PackItem(Worlds + "PipeOrgan", new Vector3(-1.06f, 0f, -0.07f), new Vector3(1.06f, 3.82f, 0.07f), Mount.Floor);
+        static readonly PackItem Chandelier = new PackItem(Worlds + "LanternSuspension", new Vector3(-1.43f, 0f, -1.43f), new Vector3(1.43f, 2.47f, 1.43f), Mount.Open);
+        static readonly PackItem Bookcase = new PackItem(Worlds + "Bookcase", new Vector3(-0.89f, 0f, -0.27f), new Vector3(0.89f, 5.9f, 0.27f), Mount.Floor);
+        static readonly PackItem ReadingTable = new PackItem(Worlds + "ReadingTable", new Vector3(-1.12f, 0f, -0.47f), new Vector3(1.12f, 0.82f, 0.47f), Mount.Floor);
+        static readonly PackItem Globe = new PackItem(Worlds + "CelestialGlobe", new Vector3(-0.9f, 0f, -0.9f), new Vector3(0.9f, 2.76f, 0.9f), Mount.Floor);
+        static readonly PackItem Pylon = new PackItem(Worlds + "ArcanePylon", new Vector3(-0.3f, 0f, -0.3f), new Vector3(0.3f, 1.7f, 0.3f), Mount.Floor);
+        static readonly PackItem Tapestry = new PackItem(Worlds + "OccultTapestry", new Vector3(-0.65f, 0f, -0.03f), new Vector3(0.65f, 3.5f, 0.03f), Mount.Wall);
+        static readonly PackItem Worktable = new PackItem(Worlds + "Worktable", new Vector3(-1.25f, 0f, -0.68f), new Vector3(1.25f, 1.44f, 0.68f), Mount.Floor);
+        static readonly PackItem GardenBench = new PackItem(Worlds + "GardenBench", new Vector3(-1.05f, 0f, -0.29f), new Vector3(1.05f, 1.6f, 0.29f), Mount.Floor);
+        static readonly PackItem Fountain = new PackItem(Worlds + "FountainColumn", new Vector3(-0.83f, 0f, -0.83f), new Vector3(0.83f, 1.14f, 0.83f), Mount.Floor);
+        static readonly PackItem Planter = new PackItem(Worlds + "RaisedPlanter", new Vector3(-1.23f, 0f, -1.42f), new Vector3(1.23f, 5.33f, 1.42f), Mount.Floor);
+
         /// <summary>What each room gets along its walls, by weight. Zones not listed keep just the barrels and crates.</summary>
         static readonly Dictionary<int, (PackItem item, int weight)[]> RoomSets = new Dictionary<int, (PackItem, int)[]>
         {
             [0] = new[] { (Barricade, 3), (Crate, 2) },                                                   // Gate Yard
             [1] = new[] { (Crate, 3), (Barricade, 1), (Cabinet, 2) },                                     // Depot
             [3] = new[] { (Bench, 3), (Chair, 1), (Candles, 2), (Bones, 1) },                             // Chapel
+            [5] = new[] { (GardenBench, 3), (Planter, 2), (Barricade, 1) },                               // Courtyard
             [4] = new[] { (Chair, 3), (BrokenTable, 2), (Sofa, 2), (Cabinet, 1), (Bench, 1) },            // Barracks
             [6] = new[] { (Barricade, 2), (Crate, 3) },                                                   // Loading Dock
-            [9] = new[] { (Desk, 2), (Jars, 2), (Bones, 2), (Candles, 2) },                               // Lantern Core
-            [10] = new[] { (Bookshelf, 3), (Cabinet, 2), (Chair, 1), (BrokenTable, 1) },                  // Archives
+            [9] = new[] { (Desk, 2), (Jars, 2), (Bones, 2), (Candles, 2), (Worktable, 2), (Pylon, 2) },   // Lantern Core
+            [10] = new[] { (Bookcase, 4), (ReadingTable, 2), (Bookshelf, 1), (Cabinet, 1), (Chair, 1) },  // Archives
+            [11] = new[] { (Planter, 3), (GardenBench, 2), (Crate, 1) },                                  // Greenhouse
+        };
+
+        /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the chapel's altar dais and organ, the globe.</summary>
+        static readonly (PackItem item, int zone)[] Centrepieces =
+        {
+            (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (AltarDais, 3), (Organ, 3), (Globe, 10), (Fountain, 11),
         };
 
         /// <summary>Rooms with torches on the walls (each a flickering light), and at most how many.</summary>
@@ -71,9 +96,9 @@ namespace ZombiesFPS.World
 
         void DressRooms()
         {
-            // The lab's centrepieces first, so they get the pick of the Lantern Core's walls.
-            foreach (var big in new[] { Altar, Slab, Desk })
-                for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], LabZone, new System.Random(4400 + i)); i++) { }
+            // Each room's centrepieces first, so they get the pick of its walls.
+            foreach (var (big, zone) in Centrepieces)
+                for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 
             for (int i = 0; i < _faces.Count; i++)
             {
@@ -92,6 +117,7 @@ namespace ZombiesFPS.World
             }
 
             WallHangings();
+            HangTapestries();
             HangChains();
             SpellCircle();
             Physics.SyncTransforms();
@@ -232,9 +258,11 @@ namespace ZombiesFPS.World
             go.AddComponent<SpellCircle>().Glow = light;
         }
 
-        /// <summary>Materials for the packs' keys: lab materials by name, furniture by vertex colour ("#rrggbb").</summary>
+        /// <summary>Materials for the packs' keys: Ten Worlds and lab materials by name, furniture by vertex colour ("#rrggbb").</summary>
         static Material PackMaterial(string key)
         {
+            // The Ten Worlds pack names its materials in lower case (wood_dark, brass).
+            if (key.Length > 0 && char.IsLower(key[0])) return WorldsMaterial(key);
             if (key.StartsWith("#") && ColorUtility.TryParseHtmlString(key, out var c))
             {
                 // The sofa's cushions and foam and the books are cloth; other browns are wood, the greys metal fittings.

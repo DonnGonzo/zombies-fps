@@ -123,11 +123,18 @@ namespace ZombiesFPS.Core
         static Material MaterialFor(string slug, string key)
         {
             if (key.EndsWith("_glass")) return Greybox.Unlit(GlassGlow);
-            if (s_Base == null) s_Base = Resources.Load<Material>("Materials/PropLit") ?? Resources.Load<Material>("Materials/GreyboxLit");
             var albedo = Resources.Load<Texture2D>($"CC0/Props/{slug}/{key}_albedo");
             var normal = Resources.Load<Texture2D>($"CC0/Props/{slug}/{key}_normal");
+            bool clamps = key.Contains("clamps");
+            return Textured("Prop " + key, albedo, normal, clamps ? 0.6f : 0f, clamps ? 0.4f : 0.18f);
+        }
+
+        /// <summary>A lit prop material (Standard with a normal map) from a colour and a normal texture, either of which may be missing.</summary>
+        public static Material Textured(string name, Texture2D albedo, Texture2D normal, float metallic, float gloss)
+        {
+            if (s_Base == null) s_Base = Resources.Load<Material>("Materials/PropLit") ?? Resources.Load<Material>("Materials/GreyboxLit");
             var mat = s_Base != null ? new Material(s_Base) : new Material(Shader.Find("Standard"));
-            mat.name = "Prop " + key;
+            mat.name = name;
             mat.color = Color.white;
             if (albedo != null) mat.mainTexture = albedo;
             if (normal != null)
@@ -135,8 +142,8 @@ namespace ZombiesFPS.Core
                 mat.SetTexture("_BumpMap", normal);
                 mat.EnableKeyword("_NORMALMAP");
             }
-            mat.SetFloat("_Glossiness", key.Contains("clamps") ? 0.4f : 0.18f);
-            mat.SetFloat("_Metallic", key.Contains("clamps") ? 0.6f : 0f);
+            mat.SetFloat("_Glossiness", gloss);
+            mat.SetFloat("_Metallic", metallic);
             mat.enableInstancing = true;
             return mat;
         }
