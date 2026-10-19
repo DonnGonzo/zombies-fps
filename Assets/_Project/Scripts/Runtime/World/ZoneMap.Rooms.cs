@@ -66,29 +66,58 @@ namespace ZombiesFPS.World
         static readonly PackItem GardenBench = new PackItem(Worlds + "GardenBench", new Vector3(-1.05f, 0f, -0.29f), new Vector3(1.05f, 1.6f, 0.29f), Mount.Floor);
         static readonly PackItem Fountain = new PackItem(Worlds + "FountainColumn", new Vector3(-0.83f, 0f, -0.83f), new Vector3(0.83f, 1.14f, 0.83f), Mount.Floor);
         static readonly PackItem Planter = new PackItem(Worlds + "RaisedPlanter", new Vector3(-1.23f, 0f, -1.42f), new Vector3(1.23f, 5.33f, 1.42f), Mount.Floor);
+        static readonly PackItem TempleChandelier = new PackItem(Worlds + "TempleChandelier", new Vector3(-1.46f, 0f, -1.46f), new Vector3(1.46f, 2.8f, 1.46f), Mount.Open);
+        static readonly PackItem LatticeScreen = new PackItem(Worlds + "LatticeScreen", new Vector3(-1.15f, 0f, -0.15f), new Vector3(1.15f, 3.3f, 0.15f), Mount.Floor);
+        static readonly PackItem WritingDesk = new PackItem(Worlds + "WritingDesk", new Vector3(-0.62f, 0f, -0.25f), new Vector3(0.62f, 0.79f, 0.25f), Mount.Floor);
+        static readonly PackItem Stool = new PackItem(Worlds + "Stool", new Vector3(-0.42f, 0f, -0.29f), new Vector3(0.42f, 0.83f, 0.29f), Mount.Floor);
+        static readonly PackItem LecternStage = new PackItem(Worlds + "LecternStage", new Vector3(-5f, 0f, -1.09f), new Vector3(5f, 1.99f, 1.09f), Mount.Floor);
+        static readonly PackItem FurnaceCore = new PackItem(Worlds + "FurnaceCore", new Vector3(-2.38f, 0f, -2.38f), new Vector3(2.38f, 6.2f, 2.38f), Mount.Open);
+        static readonly PackItem GaolCell = new PackItem(Worlds + "GaolCell", new Vector3(-1.26f, 0f, -1.35f), new Vector3(1.26f, 4.1f, 1.35f), Mount.Floor);
+        static readonly PackItem SickBed = new PackItem(Worlds + "SickBed", new Vector3(-1.22f, 0f, -1.59f), new Vector3(1.22f, 2.9f, 1.59f), Mount.Floor);
+        static readonly PackItem ApothecaryCabinet = new PackItem(Worlds + "ApothecaryCabinet", new Vector3(-0.57f, 0f, -0.27f), new Vector3(0.57f, 2.9f, 0.27f), Mount.Floor);
+
+        /// <summary>Rooms whose ceiling lamps are chandeliers, and which.</summary>
+        static readonly Dictionary<int, PackItem> ChandelierZones = new Dictionary<int, PackItem>
+        {
+            [3] = Chandelier, [10] = Chandelier, [14] = Chandelier, [17] = TempleChandelier,
+        };
 
         /// <summary>What each room gets along its walls, by weight. Zones not listed keep just the barrels and crates.</summary>
         static readonly Dictionary<int, (PackItem item, int weight)[]> RoomSets = new Dictionary<int, (PackItem, int)[]>
         {
             [0] = new[] { (Barricade, 3), (Crate, 2) },                                                   // Gate Yard
             [1] = new[] { (Crate, 3), (Barricade, 1), (Cabinet, 2) },                                     // Depot
+            [2] = new[] { (Worktable, 2), (Crate, 2), (Barricade, 1) },                                   // Garage (smithy)
             [3] = new[] { (Bench, 3), (Chair, 1), (Candles, 2), (Bones, 1) },                             // Chapel
             [5] = new[] { (GardenBench, 3), (Planter, 2), (Barricade, 1) },                               // Courtyard
             [4] = new[] { (Chair, 3), (BrokenTable, 2), (Sofa, 2), (Cabinet, 1), (Bench, 1) },            // Barracks
             [6] = new[] { (Barricade, 2), (Crate, 3) },                                                   // Loading Dock
+            [7] = new[] { (Crate, 2), (Barricade, 1), (Cabinet, 1) },                                     // Pump Station
+            [8] = new[] { (Barricade, 3), (Crate, 3) },                                                   // Crane Yard
             [9] = new[] { (Desk, 2), (Jars, 2), (Bones, 2), (Candles, 2), (Worktable, 2), (Pylon, 2) },   // Lantern Core
             [10] = new[] { (Bookcase, 4), (ReadingTable, 2), (Bookshelf, 1), (Cabinet, 1), (Chair, 1) },  // Archives
             [11] = new[] { (Planter, 3), (GardenBench, 2), (Crate, 1) },                                  // Greenhouse
+            [12] = new[] { (GaolCell, 5), (Bones, 2), (Candles, 1), (Barricade, 1) },                     // Gaol
+            [13] = new[] { (SickBed, 5), (ApothecaryCabinet, 2), (Candles, 1), (Crate, 1) },              // Plague Ward
+            [14] = new[] { (Bookcase, 3), (ReadingTable, 2), (Candles, 2), (Cabinet, 1) },                // Scriptorium
+            [15] = new[] { (Worktable, 2), (Jars, 2), (Crate, 2), (Barricade, 1) },                      // Alchemist's Furnace
+            [16] = new[] { (Barricade, 3), (Crate, 2), (Bones, 1) },                                      // Rampart Ruins
+            [17] = new[] { (LatticeScreen, 4), (Candles, 2), (Bench, 1) },                                // Sunken Temple
         };
 
         /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the chapel's altar dais and organ, the globe.</summary>
         static readonly (PackItem item, int zone)[] Centrepieces =
         {
             (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (AltarDais, 3), (Organ, 3), (Globe, 10), (Fountain, 11),
+            (LecternStage, 14),
         };
 
         /// <summary>Rooms with torches on the walls (each a flickering light), and at most how many.</summary>
-        static readonly Dictionary<int, int> TorchZones = new Dictionary<int, int> { [3] = 4, [9] = 6, [10] = 3 };
+        static readonly Dictionary<int, int> TorchZones = new Dictionary<int, int>
+        {
+            [0] = 4, [1] = 3, [2] = 3, [3] = 4, [4] = 4, [5] = 4, [6] = 3, [7] = 3, [8] = 4, [9] = 6, [10] = 3, [11] = 2,
+            [12] = 6, [13] = 4, [15] = 3, [16] = 4, [17] = 4,
+        };
 
         const int LabZone = 9;
         static readonly Color TorchLight = new Color(1f, 0.58f, 0.25f);
@@ -118,6 +147,7 @@ namespace ZombiesFPS.World
 
             WallHangings();
             HangTapestries();
+            HangBanners();
             HangChains();
             SpellCircle();
             Physics.SyncTransforms();
@@ -207,13 +237,14 @@ namespace ZombiesFPS.World
             }
         }
 
-        /// <summary>Chains hanging from the lab's lamp beams, well above head height.</summary>
+        /// <summary>Chains hanging from the lab's and the Gaol's ceilings, well above head height.</summary>
         void HangChains()
         {
             var chains = PropModels.GetPack(Chains.Path, PackMaterial);
             if (chains == null) return;
             var rng = new System.Random(5150);
-            foreach (var r in ZoneRects(LabZone))
+            foreach (int zone in new[] { LabZone, 12 })
+            foreach (var r in ZoneRects(zone))
             {
                 if (r.width < 8 || r.height < 8) continue;
                 for (int k = 0; k < 4; k++)

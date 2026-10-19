@@ -16,9 +16,20 @@ namespace ZombiesFPS.World
     /// </summary>
     public partial class ZoneMap
     {
-        /// <summary>Rooms whose ceiling lamps are iron chandeliers, and rooms with tapestries on the walls (at most how many).</summary>
-        static readonly HashSet<int> ChandelierZones = new HashSet<int> { 3, 10 };
-        static readonly Dictionary<int, int> TapestryZones = new Dictionary<int, int> { [3] = 4, [9] = 3, [10] = 2 };
+        /// <summary>Rooms with tapestries on the walls (at most how many).</summary>
+        static readonly Dictionary<int, int> TapestryZones = new Dictionary<int, int> { [3] = 4, [9] = 3, [10] = 2, [12] = 2, [14] = 3, [15] = 2 };
+
+        /// <summary>
+        /// The pack's hospital, gaol and furnace pieces were steel and white paint; in this map they're iron and
+        /// wood, so those materials draw with these textures instead.
+        /// </summary>
+        static string TextureKey(string key) => key switch
+        {
+            "brushed_steel" => "rusted_iron",
+            "white_paint" => "wood_pale",
+            "concrete" => "limestone",
+            _ => key,
+        };
 
         static readonly Dictionary<string, Material> s_WorldMaterials = new Dictionary<string, Material>();
 
@@ -30,7 +41,8 @@ namespace ZombiesFPS.World
             if (key == "clean_glass") mat = Greybox.Unlit(new Color(0.55f, 0.7f, 0.72f, 0.3f));
             else
             {
-                var (metallic, gloss) = key switch
+                string tex = TextureKey(key);
+                var (metallic, gloss) = tex switch
                 {
                     "black_steel" => (0.8f, 0.45f),
                     "brass" => (0.85f, 0.62f),
@@ -38,11 +50,12 @@ namespace ZombiesFPS.World
                     "marble" => (0f, 0.6f),
                     "stained_blue" => (0f, 0.8f),
                     "wood_mid" => (0f, 0.25f),
+                    "copper" => (0.8f, 0.4f),
                     _ => (0f, 0.15f),
                 };
                 mat = PropModels.Textured("Worlds " + key,
-                    Resources.Load<Texture2D>($"CC0/TenWorlds/Textures/{key}_albedo"),
-                    Resources.Load<Texture2D>($"CC0/TenWorlds/Textures/{key}_normal"), metallic, gloss);
+                    Resources.Load<Texture2D>($"CC0/TenWorlds/Textures/{tex}_albedo"),
+                    Resources.Load<Texture2D>($"CC0/TenWorlds/Textures/{tex}_normal"), metallic, gloss);
             }
             s_WorldMaterials[key] = mat;
             return mat;
@@ -88,9 +101,9 @@ namespace ZombiesFPS.World
         /// An iron chandelier hanging from the beam at a lamp's spot, in place of the lantern, if the model's there and
         /// nothing below reaches up into it (a loft or a tall stack, where it would hang in players' faces).
         /// </summary>
-        bool HangChandelier(Vector3 lampPosition)
+        bool HangChandelier(Vector3 lampPosition, PackItem item)
         {
-            var model = PropModels.GetPack(Chandelier.Path, PackMaterial);
+            var model = PropModels.GetPack(item.Path, PackMaterial);
             if (model == null) return false;
             float bottom = lampPosition.y - 0.1f - model.Bounds.size.y;
             // Anything solid between head height on the floor and the chandelier's foot.

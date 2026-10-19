@@ -588,6 +588,12 @@ namespace ZombiesFPS.World
             new[] { 1, 1, 1, 2, 0, 0, 1, 0, 0, 2, 0, 0 }, // Lantern Core
             new[] { 1, 6, 0, 0, 1, 0, 1, 0, 0, 0, 0, 2 }, // Archives
             new[] { 1, 0, 1, 0, 4, 0, 1, 5, 1, 0, 0, 1 }, // Greenhouse
+            new[] { 3, 0, 4, 0, 0, 3, 2, 1, 1, 2, 0, 1 }, // Gaol
+            new[] { 1, 3, 1, 0, 0, 1, 3, 0, 0, 0, 0, 1 }, // Plague Ward
+            new[] { 1, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }, // Scriptorium
+            new[] { 3, 0, 1, 3, 0, 2, 1, 0, 2, 1, 0, 1 }, // Alchemist's Furnace
+            new[] { 5, 0, 1, 0, 3, 3, 1, 4, 3, 0, 0, 2 }, // Rampart Ruins
+            new[] { 1, 1, 1, 0, 2, 1, 1, 0, 0, 0, 0, 0 }, // Sunken Temple
         };
 
         static float LitterRadius(Litter kind) => kind switch
@@ -924,6 +930,7 @@ namespace ZombiesFPS.World
             DressYards();
             DressHalls();
             DressWorks();
+            DressNewRooms();
             for (int z = 0; z < ZoneCount; z++) ScatterFloor(z);
         }
 
@@ -1020,20 +1027,20 @@ namespace ZombiesFPS.World
             {
                 var side = Vector3.Cross(Vector3.up, n);
                 var face = mast + n * 0.77f;
-                for (float y = 0.2f; y < 8.6f; y += 1.4f)
+                for (float y = 0.2f; y < 5.4f; y += 1.3f)
                 {
-                    Bar(face + side * -0.65f + Vector3.up * y, face + side * 0.65f + Vector3.up * (y + 1.4f), 0.08f, 0.04f, n, brace, Surface.Metal);
-                    Bar(face + side * 0.65f + Vector3.up * y, face + side * -0.65f + Vector3.up * (y + 1.4f), 0.08f, 0.04f, n, brace, Surface.Metal);
+                    Bar(face + side * -0.65f + Vector3.up * y, face + side * 0.65f + Vector3.up * (y + 1.3f), 0.08f, 0.04f, n, brace, Surface.Metal);
+                    Bar(face + side * 0.65f + Vector3.up * y, face + side * -0.65f + Vector3.up * (y + 1.3f), 0.08f, 0.04f, n, brace, Surface.Metal);
                 }
             }
             // Cab on top, a counter-jib with its concrete weight, and the hook block on the cable.
-            Deco(L(8, 11.4f, 9.75f, -10f), new Vector3(1.8f, 1.5f, 1.7f), CraneYellow, Surface.Metal);
-            Deco(L(8, 10.49f, 9.9f, -10f), new Vector3(0.02f, 0.8f, 1.4f), Glass, Surface.Metal);
-            Deco(L(8, 14f, 8.8f, -10f), new Vector3(3.2f, 0.5f, 0.5f), CraneYellow, Surface.Metal);
-            Deco(L(8, 15f, 8.1f, -10f), new Vector3(1.3f, 1.1f, 1.1f), new Color(0.4f, 0.39f, 0.36f), Surface.Concrete);
+            Deco(L(8, 11.4f, 5.05f, -10f), new Vector3(1.8f, 1.3f, 1.7f), CraneYellow, Surface.Metal);
+            Deco(L(8, 10.49f, 5.15f, -10f), new Vector3(0.02f, 0.7f, 1.4f), Glass, Surface.Metal);
+            Deco(L(8, 14f, 5.9f, -10f), new Vector3(3.2f, 0.5f, 0.5f), CraneYellow, Surface.Metal);
+            Deco(L(8, 15f, 5.2f, -10f), new Vector3(1.3f, 1.1f, 1.1f), new Color(0.4f, 0.39f, 0.36f), Surface.Concrete);
             Deco(L(8, 2.5f, 4.35f, -10f), new Vector3(0.45f, 0.35f, 0.3f), new Color(0.15f, 0.15f, 0.15f), Surface.Metal);
             Deco(L(8, 2.5f, 4.05f, -10f), new Vector3(0.08f, 0.3f, 0.08f), new Color(0.15f, 0.15f, 0.15f), Surface.Rust);
-            Glow(PrimitiveType.Sphere, L(8, 13f, 10.6f, -10f), Vector3.one * 0.18f, Quaternion.identity, new Color(1f, 0.15f, 0.08f));
+            Glow(PrimitiveType.Sphere, L(8, 13f, 6.35f, -10f), Vector3.one * 0.18f, Quaternion.identity, new Color(1f, 0.15f, 0.08f));
         }
 
         /// <summary>The indoor zones: Depot, Chapel, Barracks, Archives.</summary>
@@ -1150,7 +1157,7 @@ namespace ZombiesFPS.World
                 DecoPrim(PrimitiveType.Cylinder, L(7, x, 1.4f, -1.48f), new Vector3(0.3f, 0.015f, 0.3f), Quaternion.Euler(90f, 0f, 0f), new Color(0.6f, 0.58f, 0.52f), Surface.Plain);
                 Glow(L(7, x + 0.25f, 1.4f, -1.48f), new Vector3(0.04f, 0.04f, 0.01f), Quaternion.identity, new Color(0.2f, 1f, 0.3f));
             }
-            foreach (float y in new[] { 3.3f, 4.9f })
+            foreach (float y in new[] { 1.85f, 3.15f })
                 DecoPrim(PrimitiveType.Cylinder, L(7, 4.2f, y, 16.5f), new Vector3(3.68f, 0.05f, 3.68f), Quaternion.identity, dark, Surface.Rust);
 
             // Lantern Core: metal and glowing bands on the core, a glowing ring and spokes on the floor, cables to the

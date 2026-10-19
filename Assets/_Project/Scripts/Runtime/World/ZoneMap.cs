@@ -108,6 +108,18 @@ namespace ZombiesFPS.World
             new ZoneLook(Surface.Wood, new Color(0.38f, 0.27f, 0.17f), Surface.Plaster, new Color(0.52f, 0.47f, 0.38f), Surface.Wood, new Color(0.29f, 0.19f, 0.11f), 1.2f),
             // Greenhouse: soil floor, brick walls on a low concrete kerb.
             new ZoneLook(Surface.Dirt, new Color(0.27f, 0.21f, 0.15f), Surface.Brick, new Color(0.4f, 0.28f, 0.22f), Surface.Concrete, new Color(0.32f, 0.31f, 0.29f), 0.6f),
+            // Gaol: wet, dark flagstones and bare castle stone, blackened at the foot.
+            new ZoneLook(Surface.Tile, new Color(0.26f, 0.26f, 0.26f), Surface.Concrete, new Color(0.34f, 0.33f, 0.31f), Surface.Concrete, new Color(0.2f, 0.2f, 0.2f), 1.2f),
+            // Plague Ward: scrubbed boards, limewashed walls over a tiled dado.
+            new ZoneLook(Surface.Wood, new Color(0.42f, 0.33f, 0.23f), Surface.Plaster, new Color(0.62f, 0.6f, 0.53f), Surface.Tile, new Color(0.42f, 0.48f, 0.45f), 1.4f),
+            // Scriptorium: warm boards, ochre plaster above tall dark panelling.
+            new ZoneLook(Surface.Wood, new Color(0.4f, 0.28f, 0.18f), Surface.Plaster, new Color(0.6f, 0.52f, 0.38f), Surface.Wood, new Color(0.25f, 0.16f, 0.1f), 1.6f),
+            // Alchemist's Furnace: sooty flags and scorched brick on an iron-banded plinth.
+            new ZoneLook(Surface.Tile, new Color(0.24f, 0.22f, 0.2f), Surface.Brick, new Color(0.34f, 0.2f, 0.15f), Surface.Rust, new Color(0.3f, 0.17f, 0.1f), 1f),
+            // Rampart Ruins: trampled earth inside old grey curtain walls.
+            new ZoneLook(Surface.Dirt, new Color(0.3f, 0.27f, 0.2f), Surface.Concrete, new Color(0.46f, 0.44f, 0.4f)),
+            // Sunken Temple: pale sandstone floor, warm plaster over a band of teal tiles.
+            new ZoneLook(Surface.Tile, new Color(0.5f, 0.45f, 0.36f), Surface.Plaster, new Color(0.62f, 0.55f, 0.43f), Surface.Tile, new Color(0.18f, 0.36f, 0.38f), 1.3f),
         };
 
         /// <summary>The wall core: shows only on wall ends, tops and the outside, since every zone face gets its own skin.</summary>
@@ -148,6 +160,7 @@ namespace ZombiesFPS.World
             2 => (Surface.Metal, new Color(0.3f, 0.34f, 0.36f)),
             5 => (Surface.Concrete, new Color(0.45f, 0.43f, 0.39f)),
             8 => (Surface.Rust, new Color(0.45f, 0.26f, 0.15f)),
+            16 => (Surface.Concrete, new Color(0.46f, 0.44f, 0.4f)),
             _ => (Surface.Wood, Wood),
         };
 
@@ -156,7 +169,8 @@ namespace ZombiesFPS.World
         {
             3 => (Surface.Wood, new Color(0.3f, 0.21f, 0.13f)),
             4 => (Surface.Wood, new Color(0.33f, 0.24f, 0.15f)),
-            9 => (Surface.Metal, new Color(0.3f, 0.32f, 0.35f)),
+            9 or 15 => (Surface.Metal, new Color(0.3f, 0.32f, 0.35f)),
+            13 or 14 => (Surface.Wood, new Color(0.33f, 0.24f, 0.15f)),
             _ => (Surface.Concrete, Concrete),
         };
 
@@ -247,6 +261,7 @@ namespace ZombiesFPS.World
             foreach (var w in WindowSpots) AddWindow(w.Zone, w.Resolve());
             BuildZones();
             BuildLamps();
+            BuildRoof();
             BuildGenerators();
             BuildBeacons();
             BuildShop();
@@ -266,6 +281,7 @@ namespace ZombiesFPS.World
             surface.BuildNavMesh();
             AddNavLinks();
             SealWallTops();
+            RoofColliders();
 
             // Doors and wall-buy panels go in after the bake: closed doors carve the NavMesh instead.
             var buyables = new List<Buyable>();
@@ -535,10 +551,10 @@ namespace ZombiesFPS.World
             Block("Container", 6, 1f, -7f, 7f, -4.4f, 2.6f, ContainerBlue, Surface.Metal);
 
             // Pump Station: the pump hall with a pump house up stairs, and a water tower up a tall ladder in the north yard.
-            Deck("Water Tower", 7, 1.7f, 14f, 6.7f, 19f, 6f, Metal);
-            var tank = Greybox.Prim(PrimitiveType.Cylinder, "Tank", Root, L(7, 4.2f, 4.1f, 16.5f), new Vector3(3.6f, 1.2f, 3.6f), new Color(0.44f, 0.27f, 0.16f), collider: false, surface: Surface.Rust);
+            Deck("Water Tower", 7, 1.7f, 14f, 6.7f, 19f, TowerHeight, Metal);
+            var tank = Greybox.Prim(PrimitiveType.Cylinder, "Tank", Root, L(7, 4.2f, 2.5f, 16.5f), new Vector3(3.6f, 1.1f, 3.6f), new Color(0.44f, 0.27f, 0.16f), collider: false, surface: Surface.Rust);
             tank.name = "Tank";
-            AddLadder(7, 4.2f, 14f, Vector3.back, 6f);
+            AddLadder(7, 4.2f, 14f, Vector3.back, TowerHeight);
             Block("Pump House", 7, 13f, 0f, 18.7f, 6.7f, 2.4f, new Color(0.4f, 0.42f, 0.4f));
             Stairs(7, 13f, 3.35f, Vector3.left, 2.4f, 2.4f);
             Greybox.Box("Pump", Root, L(7, -10f, 1f, -3f), new Vector3(4f, 2f, 3f), new Color(0.2f, 0.32f, 0.4f), surface: Surface.Metal);
@@ -554,9 +570,10 @@ namespace ZombiesFPS.World
             Jump(8, -5.4f, 0.9f, 7.5f, -3.1f, 1.8f, 7.5f);
             Jump(8, -1.5f, 1.8f, 7.5f, 0.8f, 2.7f, 7.5f);
             Jump(8, 2.4f, 2.7f, 7.5f, 4.7f, 3.6f, 7.5f);
-            Greybox.Box("Crane", Root, L(8, 12f, 4.5f, -10f), new Vector3(1.5f, 9f, 1.5f), CraneYellow, surface: Surface.Metal);
-            Greybox.Box("Boom", Root, L(8, 7f, 8.8f, -10f), new Vector3(11f, 0.6f, 0.6f), CraneYellow, collider: false, surface: Surface.Metal);
-            Greybox.Box("Cable", Root, L(8, 2.5f, 6.5f, -10f), new Vector3(0.05f, 4f, 0.05f), new Color(0.12f, 0.12f, 0.12f), collider: false, surface: Surface.Metal);
+            // Low enough to stand under the roof.
+            Greybox.Box("Crane", Root, L(8, 12f, 3.1f, -10f), new Vector3(1.5f, 6.2f, 1.5f), CraneYellow, surface: Surface.Metal);
+            Greybox.Box("Boom", Root, L(8, 7f, 5.9f, -10f), new Vector3(11f, 0.6f, 0.6f), CraneYellow, collider: false, surface: Surface.Metal);
+            Greybox.Box("Cable", Root, L(8, 2.5f, 5.1f, -10f), new Vector3(0.05f, 1.6f, 0.05f), new Color(0.12f, 0.12f, 0.12f), collider: false, surface: Surface.Metal);
             Block("Container", 8, -11f, -9.3f, -5f, -6.7f, 2.6f, ContainerGreen, Surface.Metal);
             Block("Container", 8, 4.7f, -9f, 7.3f, -3f, 2.6f, Rust, Surface.Rust);
             Block("Container", 8, -20f, 2f, -14f, 4.6f, 2.6f, ContainerBlue, Surface.Metal);
@@ -614,10 +631,12 @@ namespace ZombiesFPS.World
                 Greybox.Box("Frame", Root, L(11, x, 3f, -9.5f), new Vector3(0.15f, 6f, 0.15f), frame, collider: false, surface: Surface.Metal);
             Greybox.Box("Frame", Root, L(11, 0f, 6f, -9.5f), new Vector3(24f, 0.15f, 0.15f), frame, collider: false, surface: Surface.Metal);
 
+            BuildNewRooms();
+
             // Names over the high spots, so players know where to look.
             for (int i = 0; i < HighSpotCount; i++)
             {
-                var label = Greybox.Label("High Spot", Root, HighSpotPoints[i] + Vector3.up * 2.6f, HighSpotNames[i].ToUpperInvariant(), sign, 0.5f);
+                var label = Greybox.Label("High Spot", Root, HighSpotPoints[i] + Vector3.up * 1.9f, HighSpotNames[i].ToUpperInvariant(), sign, 0.5f);
                 label.gameObject.AddComponent<Billboard>();
             }
         }
@@ -672,7 +691,7 @@ namespace ZombiesFPS.World
         void AddLamp(Vector3 position, int zone)
         {
             bool lantern = PropModels.Get(PropModels.Lantern) != null;
-            bool chandelier = ChandelierZones.Contains(zone) && HangChandelier(position);
+            bool chandelier = ChandelierZones.TryGetValue(zone, out var hanging) && HangChandelier(position, hanging);
             if (chandelier) lantern = true;
             else if (lantern) CeilingLantern(position);
             else
@@ -689,7 +708,7 @@ namespace ZombiesFPS.World
             light.type = LightType.Point;
             light.range = LampRange;
             light.intensity = LampIntensity;
-            light.color = Lamp;
+            light.color = LampTint(zone);
             light.shadows = LightShadows.None;
         }
 
@@ -745,10 +764,10 @@ namespace ZombiesFPS.World
                 var go = Greybox.Empty("Beacon " + HighSpotNames[i], Root, HighSpotPoints[i]).gameObject;
                 Beacons[i] = go.AddComponent<Generator>();
                 Beacons[i].Init();
-                Greybox.Box("Mast", go.transform, new Vector3(-0.5f, 2f, 0.2f), new Vector3(0.1f, 1.6f, 0.1f), Metal, collider: false, surface: Surface.Metal);
-                Greybox.Prim(PrimitiveType.Sphere, "Dish", go.transform, new Vector3(-0.5f, 2.8f, 0.2f), new Vector3(0.5f, 0.5f, 0.15f), Metal, collider: false, surface: Surface.Metal);
+                Greybox.Box("Mast", go.transform, new Vector3(-0.5f, 1.4f, 0.2f), new Vector3(0.1f, 1.6f, 0.1f), Metal, collider: false, surface: Surface.Metal);
+                Greybox.Prim(PrimitiveType.Sphere, "Dish", go.transform, new Vector3(-0.5f, 2.15f, 0.2f), new Vector3(0.5f, 0.5f, 0.15f), Metal, collider: false, surface: Surface.Metal);
                 // A red tip light, so the beacon reads from across the map.
-                Greybox.Prim(PrimitiveType.Sphere, "Tip", go.transform, new Vector3(-0.5f, 2.85f, 0.2f), Vector3.one * 0.08f, new Color(1f, 0.15f, 0.08f), collider: false, unlit: true);
+                Greybox.Prim(PrimitiveType.Sphere, "Tip", go.transform, new Vector3(-0.5f, 2.2f, 0.2f), Vector3.one * 0.08f, new Color(1f, 0.15f, 0.08f), collider: false, unlit: true);
             }
         }
 

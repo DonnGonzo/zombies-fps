@@ -13,13 +13,17 @@ namespace ZombiesFPS.World
     /// stepped octagon round the Lantern Core. Walls go wherever two zones (or a zone and the outside) meet,
     /// with a gap for each door. Rough plan, north up:
     ///
-    ///   Greenhouse   Archives    Lantern Core   Crane Yard
-    ///   Barracks     Chapel      Garage         Pump Station
-    ///   Courtyard    Gate Yard   Depot          Loading Dock
+    ///                       Scriptorium    Alchemist's Furnace
+    ///                Greenhouse   Archives    Lantern Core   Crane Yard
+    ///   Sunken       Barracks     Chapel      Garage         Pump Station    Rampart
+    ///   Temple       Courtyard    Gate Yard   Depot          Loading Dock    Ruins
+    ///                             Gaol        Plague Ward
+    ///
+    /// The whole map is roofed over at wall height.
     /// </summary>
     public partial class ZoneMap
     {
-        public const int ZoneCount = 12;
+        public const int ZoneCount = 18;
         public const int StartZone = 0;
         public const float WallHeight = 7f;
         /// <summary>Every wall is this thick, centred on the line between two zones.</summary>
@@ -32,6 +36,7 @@ namespace ZombiesFPS.World
         {
             "Gate Yard", "Depot", "Garage", "Chapel", "Barracks", "Courtyard",
             "Loading Dock", "Pump Station", "Crane Yard", "Lantern Core", "Archives", "Greenhouse",
+            "Gaol", "Plague Ward", "Scriptorium", "Alchemist's Furnace", "Rampart Ruins", "Sunken Temple",
         };
 
         /// <summary>
@@ -43,6 +48,8 @@ namespace ZombiesFPS.World
             new Vector3(0f, 0f, 0f), new Vector3(37f, 0f, 0f), new Vector3(33f, 0f, 27f), new Vector3(-4f, 0f, 37f),
             new Vector3(-35f, 0f, 35f), new Vector3(-35f, 0f, -3f), new Vector3(73f, 0f, -12f), new Vector3(69f, 0f, 27f),
             new Vector3(67f, 0f, 71f), new Vector3(28f, 0f, 68f), new Vector3(-5f, 0f, 65f), new Vector3(-39f, 0f, 69f),
+            new Vector3(0f, 0f, -34f), new Vector3(38f, 0f, -21f), new Vector3(-13f, 0f, 84f), new Vector3(42f, 0f, 97f),
+            new Vector3(101f, 0f, 40f), new Vector3(-66f, 0f, 0f),
         };
 
         /// <summary>The rectangles each zone is made of, in world metres: x0, z0, x1, z1. They never overlap.</summary>
@@ -72,6 +79,18 @@ namespace ZombiesFPS.World
             new[] { -22, 58, 12, 72, -4, 72, 12, 88 },
             // Greenhouse.
             new[] { -56, 58, -22, 80 },
+            // Gaol: a vaulted cell block under the old gate, its guard hall up against the gate passage.
+            new[] { -16, -40, 18, -28, -10, -28, 10, -22 },
+            // Plague Ward: the long infirmary hall, with the sick wing off the south-west.
+            new[] { 18, -30, 58, -12, 18, -40, 40, -30 },
+            // Scriptorium: the copying hall, its lectern gallery reaching east over the Archives' stacks.
+            new[] { -22, 72, -4, 96, -4, 88, 10, 96 },
+            // Alchemist's Furnace: the furnace hall behind the Lantern Core, with a coal chute down to the Crane Yard.
+            new[] { 20, 88, 64, 106, 44, 86, 64, 88 },
+            // Rampart Ruins: the broken east wall, a long climb of fallen masonry.
+            new[] { 88, 20, 112, 56, 90, 56, 112, 86 },
+            // Sunken Temple: the old temple west of the Courtyard, its prayer hall reaching to the Barracks.
+            new[] { -78, -18, -54, 20, -78, 20, -46, 34 },
         };
 
         static RectInt[][] s_Rects;
@@ -94,7 +113,7 @@ namespace ZombiesFPS.World
             return s_Rects[Mathf.Clamp(zone, 0, ZoneCount - 1)];
         }
 
-        const int MinX = -56, MaxX = 90, MinZ = -22, MaxZ = 88;
+        const int MinX = -78, MaxX = 112, MinZ = -40, MaxZ = 106;
 
         /// <summary>The map's outer edge, for the map screen (x, y here are world x, z).</summary>
         public static readonly Rect Bounds = new Rect(MinX, MinZ, MaxX - MinX, MaxZ - MinZ);
@@ -125,7 +144,10 @@ namespace ZombiesFPS.World
             new Vector2Int(5, 4), new Vector2Int(1, 6), new Vector2Int(3, 2), new Vector2Int(4, 3),
             new Vector2Int(6, 7), new Vector2Int(2, 7), new Vector2Int(4, 11), new Vector2Int(3, 10),
             new Vector2Int(11, 10), new Vector2Int(7, 8), new Vector2Int(10, 9), new Vector2Int(9, 8),
-            new Vector2Int(2, 9),
+            new Vector2Int(2, 9), new Vector2Int(0, 12), new Vector2Int(12, 13), new Vector2Int(1, 13),
+            new Vector2Int(13, 6), new Vector2Int(10, 14), new Vector2Int(11, 14), new Vector2Int(9, 15),
+            new Vector2Int(8, 15), new Vector2Int(7, 16), new Vector2Int(8, 16), new Vector2Int(5, 17),
+            new Vector2Int(4, 17),
         };
 
         /// <summary>Where each door stands (x, z), on the wall its two zones share.</summary>
@@ -135,7 +157,10 @@ namespace ZombiesFPS.World
             new Vector2(-34f, 12f), new Vector2(58f, -7f), new Vector2(16f, 37f), new Vector2(-24f, 37f),
             new Vector2(80f, 20f), new Vector2(50f, 27f), new Vector2(-35f, 58f), new Vector2(-8f, 58f),
             new Vector2(-22f, 65f), new Vector2(69f, 50f), new Vector2(12f, 68f), new Vector2(44f, 68f),
-            new Vector2(28f, 42f),
+            new Vector2(28f, 42f), new Vector2(0f, -22f), new Vector2(18f, -34f), new Vector2(24f, -12f),
+            new Vector2(58f, -17f), new Vector2(-14f, 72f), new Vector2(-22f, 77f), new Vector2(29.9f, 88f),
+            new Vector2(54f, 86f), new Vector2(88f, 30f), new Vector2(90f, 72f), new Vector2(-54f, 1f),
+            new Vector2(-46f, 22.5f),
         };
 
         public static Vector3 DoorCenter(int door) => new Vector3(DoorPoints[door].x, 0f, DoorPoints[door].y);
@@ -304,7 +329,7 @@ namespace ZombiesFPS.World
         /// <summary>Boarded windows zombies climb in through, three per zone.</summary>
         public static readonly WallSpot[] WindowSpots =
         {
-            W(0, Side.South, -22, 0), W(0, Side.South, -14, 12), W(0, Side.North, 16, 11),
+            W(0, Side.East, 5, -18), W(0, Side.South, -14, 12), W(0, Side.North, 16, 11),
             W(1, Side.South, -12, 0), W(1, Side.South, -12, 17), W(1, Side.East, 21, 1),
             W(2, Side.South, -15, -12), W(2, Side.East, 17, -11), W(2, Side.North, 15, -13),
             W(3, Side.North, 7, -14), W(3, Side.South, -7, 14), W(3, Side.West, -8, -9.5f),
@@ -315,7 +340,13 @@ namespace ZombiesFPS.World
             W(8, Side.North, 15, 14), W(8, Side.East, 23, -6), W(8, Side.West, -23, 10),
             W(9, Side.West, -16, -8), W(9, Side.South, -16, -10), W(9, Side.North, 16, -10),
             W(10, Side.North, 7, -14.5f), W(10, Side.West, 1, 12), W(10, Side.South, -7, -13),
-            W(11, Side.West, -17, -6), W(11, Side.North, 11, 0), W(11, Side.East, 17, 6),
+            W(11, Side.West, -17, -6), W(11, Side.North, 11, 0), W(11, Side.South, -11, 10),
+            W(12, Side.South, -6, -10), W(12, Side.West, -16, 3), W(12, Side.South, -6, 12),
+            W(13, Side.South, -9, 12), W(13, Side.South, -19, -10), W(13, Side.East, 20, -3),
+            W(14, Side.North, 12, -4), W(14, Side.North, 12, 16), W(14, Side.West, -9, 4),
+            W(15, Side.North, 9, -12), W(15, Side.North, 9, 12), W(15, Side.West, -22, 6),
+            W(16, Side.East, 11, -16), W(16, Side.North, 46, 0), W(16, Side.East, 11, 30),
+            W(17, Side.West, -12, -10), W(17, Side.South, -18, 0), W(17, Side.North, 34, 10),
         };
 
         /// <summary>One mission generator per zone (zone order), against a wall and clear of windows and doors.</summary>
@@ -324,6 +355,8 @@ namespace ZombiesFPS.World
             W(0, Side.South, -14, 8), W(1, Side.North, 12, -14), W(2, Side.South, -15, 10), W(3, Side.East, 8, 10),
             W(4, Side.East, 11, 20), W(5, Side.East, 19, -10), W(6, Side.North, 10, -13), W(7, Side.North, 7, -10),
             W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 7, -5.5f), W(11, Side.South, -11, 0),
+            W(12, Side.North, 6, -13), W(13, Side.East, 2, -14), W(14, Side.East, 23, 8), W(15, Side.East, 22, 0),
+            W(16, Side.South, -20, 0), W(17, Side.West, -12, 14),
         };
 
         static Vector3 GeneratorPosition(int zone)
@@ -335,13 +368,15 @@ namespace ZombiesFPS.World
         // ---------------------------------------------------------------- high spots, parts and build stations
 
         public const int HighSpotCount = 6;
+        /// <summary>The Water Tower's deck, low enough to stand on under the roof.</summary>
+        const float TowerHeight = 4.4f;
         public static readonly string[] HighSpotNames = { "Depot Loft", "Garage Roof", "Water Tower", "Container Stack", "Records Loft", "Greenhouse Roof" };
         /// <summary>The zone each high spot is in.</summary>
         public static readonly int[] HighSpotZones = { 1, 2, 7, 8, 10, 11 };
         /// <summary>Where each high spot's signal beacon stands, on top.</summary>
         static readonly Vector3[] HighSpotPoints =
         {
-            L(1, 16f, 4f, 10f), L(2, 15f, 4.5f, 9f), L(7, 4.2f, 6f, 17.2f),
+            L(1, 16f, 4f, 10f), L(2, 15f, 4.5f, 9f), L(7, 4.2f, TowerHeight, 17.2f),
             L(8, 11.2f, 3.6f, 7.5f), L(10, 12f, 4f, 20.5f), L(11, -9.5f, 4.5f, 3.5f),
         };
 
@@ -364,7 +399,7 @@ namespace ZombiesFPS.World
             L(2, -13f, 0f, -11f), L(8, 7f, 3.6f, 7.5f), L(4, -8.2f, 2.6f, -5f),
             L(3, 5f, 2.6f, 18f), L(6, 12f, 1.4f, -5f), L(11, 13f, 0f, 8f),
             // Scrap Shield: frame, plate, handle.
-            L(7, 2.7f, 6f, 18.5f), L(0, -12.7f, 2.2f, 13f), L(9, 12f, 0f, -10f),
+            L(7, 2.7f, TowerHeight, 18.5f), L(0, -12.7f, 2.2f, 13f), L(9, 12f, 0f, -10f),
             L(9, -2f, 3f, 18f), L(4, 8f, 0f, -20f), L(6, -6.5f, 3f, -3f),
             L(10, 4f, 4f, 20.5f), L(1, -18f, 0f, -9f), L(7, 15f, 2.4f, 4f),
             // Buddy Bot: chassis, rotor, brain.

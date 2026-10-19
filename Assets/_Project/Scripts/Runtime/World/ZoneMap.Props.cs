@@ -31,12 +31,18 @@ namespace ZombiesFPS.World
             (new[] { 1, 2, 1, 0 }, 0.15f), // Lantern Core
             (new[] { 1, 2, 3, 1 }, 0.35f), // Archives
             (new[] { 2, 1, 1, 3 }, 0.3f),  // Greenhouse
+            (new[] { 2, 1, 0, 3 }, 0.15f), // Gaol
+            (new[] { 1, 2, 2, 3 }, 0.2f),  // Plague Ward
+            (new[] { 0, 1, 3, 0 }, 0.15f), // Scriptorium
+            (new[] { 3, 3, 1, 1 }, 0.3f),  // Alchemist's Furnace
+            (new[] { 3, 2, 0, 1 }, 0.3f),  // Rampart Ruins
+            (new[] { 1, 0, 1, 2 }, 0.15f), // Sunken Temple
         };
 
         /// <summary>Zones whose walls get a shield or two hung up.</summary>
-        static readonly int[] ShieldZones = { 0, 1, 3, 4, 10 };
+        static readonly int[] ShieldZones = { 0, 1, 3, 4, 10, 12, 16 };
         /// <summary>Open-air zones that get a fire pit.</summary>
-        static readonly int[] FirePitZones = { 0, 5, 8 };
+        static readonly int[] FirePitZones = { 0, 5, 8, 16 };
 
         static readonly Color PropWood = new Color(0.36f, 0.25f, 0.15f);
         static readonly Color Ember = new Color(1f, 0.45f, 0.12f);

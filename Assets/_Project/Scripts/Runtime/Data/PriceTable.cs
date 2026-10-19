@@ -22,7 +22,7 @@ namespace ZombiesFPS.Data
         }
 
         [Tooltip("Cost of each door, in the map's door order (see ZoneMap.Doors).")]
-        public long[] doorCosts = { 750, 750, 1000, 1000, 1000, 1250, 1250, 1250, 1500, 1500, 1500, 1750, 1750, 2000, 2000, 2000, 2250 };
+        public long[] doorCosts = { 750, 750, 1000, 1000, 1000, 1250, 1250, 1250, 1500, 1500, 1500, 1750, 1750, 2000, 2000, 2000, 2250, 1500, 2000, 1750, 2000, 2250, 2250, 2500, 2500, 2500, 2750, 2250, 2500 };
 
         [Tooltip("Upgrade machine: the cost of each visit (Mk II, Mk III, Mk IV).")]
         public long[] upgradeCosts = { 5000, 10000, 15000 };
