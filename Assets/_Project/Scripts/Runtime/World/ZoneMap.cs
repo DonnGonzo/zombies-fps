@@ -86,10 +86,10 @@ namespace ZombiesFPS.World
         {
             // Gate Yard: an asphalt yard inside bare concrete walls, grimy at the foot.
             new ZoneLook(Surface.Asphalt, new Color(0.2f, 0.2f, 0.21f), Surface.Concrete, new Color(0.42f, 0.41f, 0.38f), Surface.Concrete, new Color(0.28f, 0.28f, 0.27f), 0.9f),
-            // Depot: a concrete warehouse floor and old brick walls on a concrete plinth.
-            new ZoneLook(Surface.Concrete, new Color(0.4f, 0.39f, 0.36f), Surface.Brick, new Color(0.42f, 0.26f, 0.19f), Surface.Concrete, new Color(0.35f, 0.34f, 0.32f), 1f),
-            // Garage: darker, oil-soaked concrete; walls painted workshop green up to shoulder height.
-            new ZoneLook(Surface.Concrete, new Color(0.31f, 0.3f, 0.28f), Surface.Concrete, new Color(0.42f, 0.41f, 0.39f), Surface.Plaster, new Color(0.2f, 0.28f, 0.24f), 1.3f),
+            // Depot: a flagstone floor and old brick walls on a stone plinth.
+            new ZoneLook(Surface.Tile, new Color(0.4f, 0.39f, 0.36f), Surface.Brick, new Color(0.42f, 0.26f, 0.19f), Surface.Concrete, new Color(0.35f, 0.34f, 0.32f), 1f),
+            // Garage: darker, sooty flagstones; walls limewashed green up to shoulder height.
+            new ZoneLook(Surface.Tile, new Color(0.31f, 0.3f, 0.28f), Surface.Concrete, new Color(0.42f, 0.41f, 0.39f), Surface.Plaster, new Color(0.2f, 0.28f, 0.24f), 1.3f),
             // Chapel: stone flags, limewashed plaster over dark wood panelling.
             new ZoneLook(Surface.Tile, new Color(0.42f, 0.4f, 0.36f), Surface.Plaster, new Color(0.6f, 0.56f, 0.48f), Surface.Wood, new Color(0.28f, 0.19f, 0.11f), 1.1f),
             // Barracks: worn floorboards, institutional pale green plaster, wood skirting.
@@ -196,6 +196,8 @@ namespace ZombiesFPS.World
 
         public static ZoneMap Build(PriceTable prices)
         {
+            // Scanned medieval textures and props, unless turned off in Settings. Only looks: colliders never change.
+            SurfaceTextures.PhotosEnabled = GameSettings.MapArt;
             var map = new ZoneMap();
             map.BuildInternal(prices);
             return map;
@@ -625,13 +627,18 @@ namespace ZombiesFPS.World
         /// <summary>An enamelled shade on a short rod with a glowing bulb under it, and its light.</summary>
         void AddLamp(Vector3 position)
         {
-            Deco(position + Vector3.up * 0.17f, new Vector3(0.05f, 0.18f, 0.05f), Girder, Surface.Metal);
-            DecoPrim(PrimitiveType.Cylinder, position + Vector3.up * 0.04f, new Vector3(0.75f, 0.05f, 0.75f), Quaternion.identity, new Color(0.17f, 0.22f, 0.19f), Surface.Metal);
-            DecoPrim(PrimitiveType.Cylinder, position + Vector3.up * 0.1f, new Vector3(0.3f, 0.04f, 0.3f), Quaternion.identity, new Color(0.17f, 0.22f, 0.19f), Surface.Metal);
-            Glow(PrimitiveType.Cylinder, position - Vector3.up * 0.02f, new Vector3(0.42f, 0.02f, 0.42f), Quaternion.identity, Lamp);
+            bool lantern = PropModels.Get(PropModels.Lantern) != null;
+            if (lantern) CeilingLantern(position);
+            else
+            {
+                Deco(position + Vector3.up * 0.17f, new Vector3(0.05f, 0.18f, 0.05f), Girder, Surface.Metal);
+                DecoPrim(PrimitiveType.Cylinder, position + Vector3.up * 0.04f, new Vector3(0.75f, 0.05f, 0.75f), Quaternion.identity, new Color(0.17f, 0.22f, 0.19f), Surface.Metal);
+                DecoPrim(PrimitiveType.Cylinder, position + Vector3.up * 0.1f, new Vector3(0.3f, 0.04f, 0.3f), Quaternion.identity, new Color(0.17f, 0.22f, 0.19f), Surface.Metal);
+                Glow(PrimitiveType.Cylinder, position - Vector3.up * 0.02f, new Vector3(0.42f, 0.02f, 0.42f), Quaternion.identity, Lamp);
+            }
             var go = new GameObject("Lamp Light");
             go.transform.SetParent(Root, false);
-            go.transform.localPosition = position + Vector3.down * 0.3f;
+            go.transform.localPosition = position + Vector3.down * (lantern ? 0.45f : 0.3f);
             var light = go.AddComponent<Light>();
             light.type = LightType.Point;
             light.range = 17f;

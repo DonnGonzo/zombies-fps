@@ -258,6 +258,11 @@ namespace ZombiesFPS.World
         /// <summary>A caged bulkhead lamp on a wall, glowing unless it's broken.</summary>
         void WallLamp(Vector3 at, Vector3 inward, bool lit)
         {
+            if (PropModels.Get(PropModels.Lantern) != null)
+            {
+                WallLantern(at, inward, lit);
+                return;
+            }
             var rot = Quaternion.LookRotation(inward, Vector3.up);
             var housing = new Color(0.14f, 0.15f, 0.15f);
             Deco(at + inward * 0.015f, new Vector3(0.3f, 0.36f, 0.03f), rot, housing, Surface.Metal);
@@ -909,6 +914,8 @@ namespace ZombiesFPS.World
             // Colliders made this frame aren't in the physics scene until synced, and the clearance checks need them.
             Physics.SyncTransforms();
             CollectKeepOuts();
+            // Props first: they're solid, so the wall clutter and floor litter placed after keep clear of them.
+            DressProps();
             DressWallFaces();
             DoorSigns();
             DressYards();
@@ -1394,12 +1401,23 @@ namespace ZombiesFPS.World
             const float CellSize = 48f;
             static readonly Dictionary<PrimitiveType, Mesh> s_Meshes = new Dictionary<PrimitiveType, Mesh>();
             readonly Dictionary<(Material, int, int), List<CombineInstance>> _parts = new Dictionary<(Material, int, int), List<CombineInstance>>();
+            readonly HashSet<Material> _shadowed = new HashSet<Material>();
 
             public void Add(PrimitiveType type, Vector3 pos, Quaternion rot, Vector3 scale, Material material)
             {
                 var key = (material, Mathf.FloorToInt(pos.x / CellSize), Mathf.FloorToInt(pos.z / CellSize));
                 if (!_parts.TryGetValue(key, out var list)) _parts[key] = list = new List<CombineInstance>();
                 list.Add(new CombineInstance { mesh = MeshOf(type), transform = Matrix4x4.TRS(pos, rot, scale) });
+            }
+
+            /// <summary>One submesh of a model (a scanned prop). Shadowed materials cast shadows once merged.</summary>
+            public void Add(Mesh mesh, int subMesh, Matrix4x4 transform, Material material, bool shadows)
+            {
+                Vector3 pos = transform.GetColumn(3);
+                var key = (material, Mathf.FloorToInt(pos.x / CellSize), Mathf.FloorToInt(pos.z / CellSize));
+                if (!_parts.TryGetValue(key, out var list)) _parts[key] = list = new List<CombineInstance>();
+                list.Add(new CombineInstance { mesh = mesh, subMeshIndex = subMesh, transform = transform });
+                if (shadows) _shadowed.Add(material);
             }
 
             static Mesh MeshOf(PrimitiveType type)
@@ -1426,7 +1444,7 @@ namespace ZombiesFPS.World
                     if (!readable)
                     {
                         // Built-in meshes that can't be read can't be merged: fall back to one renderer each.
-                        foreach (var c in list) Single(holder, c, toLocal, material);
+                        foreach (var c in list) Single(holder, c, toLocal, material, Shadows(material));
                         continue;
                     }
                     for (int i = 0; i < list.Count; i++)
@@ -1443,12 +1461,15 @@ namespace ZombiesFPS.World
                     go.AddComponent<MeshFilter>().sharedMesh = mesh;
                     var r = go.AddComponent<MeshRenderer>();
                     r.sharedMaterial = material;
-                    r.shadowCastingMode = ShadowCastingMode.Off;
+                    r.shadowCastingMode = Shadows(material);
                 }
                 _parts.Clear();
+                _shadowed.Clear();
             }
 
-            static void Single(Transform holder, CombineInstance c, Matrix4x4 toLocal, Material material)
+            ShadowCastingMode Shadows(Material material) => _shadowed.Contains(material) ? ShadowCastingMode.On : ShadowCastingMode.Off;
+
+            static void Single(Transform holder, CombineInstance c, Matrix4x4 toLocal, Material material, ShadowCastingMode shadows)
             {
                 var m = toLocal * c.transform;
                 var go = new GameObject("Decor");
@@ -1459,7 +1480,7 @@ namespace ZombiesFPS.World
                 go.AddComponent<MeshFilter>().sharedMesh = c.mesh;
                 var r = go.AddComponent<MeshRenderer>();
                 r.sharedMaterial = material;
-                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.shadowCastingMode = shadows;
             }
         }
     }

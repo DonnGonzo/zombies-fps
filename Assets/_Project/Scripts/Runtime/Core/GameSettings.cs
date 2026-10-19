@@ -18,7 +18,7 @@ namespace ZombiesFPS.Core
         static bool s_InvertY, s_Subtitles, s_ReduceShake, s_Tips, s_Colorblind;
         static int s_Quality;
         static float s_Brightness;
-        static bool s_Bloom, s_Grain, s_AnimatedZombies;
+        static bool s_Bloom, s_Grain, s_AnimatedZombies, s_MapArt;
 
         /// <summary>Raised when a graphics setting changes, so the camera and lights can be set up again.</summary>
         public static event System.Action GraphicsChanged;
@@ -43,6 +43,7 @@ namespace ZombiesFPS.Core
             s_Bloom = PlayerPrefs.GetInt(Prefix + "Bloom", 1) != 0;
             s_Grain = PlayerPrefs.GetInt(Prefix + "FilmGrain", 1) != 0;
             s_AnimatedZombies = PlayerPrefs.GetInt(Prefix + "AnimatedZombies", 1) != 0;
+            s_MapArt = PlayerPrefs.GetInt(Prefix + "MapArt", 1) != 0;
             AudioListener.volume = s_Master;
         }
 
@@ -86,6 +87,13 @@ namespace ZombiesFPS.Core
         {
             get { EnsureLoaded(); return s_AnimatedZombies; }
             set { EnsureLoaded(); s_AnimatedZombies = value; PlayerPrefs.SetInt(Prefix + "AnimatedZombies", value ? 1 : 0); }
+        }
+
+        /// <summary>The map uses the scanned medieval textures and props (when they're in the project). Applies from the next match.</summary>
+        public static bool MapArt
+        {
+            get { EnsureLoaded(); return s_MapArt; }
+            set { EnsureLoaded(); s_MapArt = value; PlayerPrefs.SetInt(Prefix + "MapArt", value ? 1 : 0); }
         }
 
         /// <summary>Mouse sensitivity multiplier (1 = default).</summary>

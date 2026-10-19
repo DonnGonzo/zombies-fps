@@ -60,6 +60,66 @@ namespace ZombiesFPS.Core
             _ => new Look(0.5f, 0.35f, 0.3f, 0.2f, 0f, 0.3f),
         };
 
+        // ---------------------------------------------------------------- photo textures
+
+        /// <summary>
+        /// Scanned CC0 textures (Poly Haven) for the map, in a medieval style, and the metres one tile covers.
+        /// Files live in Resources/CC0/Surfaces: slug_albedo (colour) and slug_nrh (normal in RG, height in B).
+        /// Surfaces not listed here, or whose files are missing, keep their procedural texture.
+        /// </summary>
+        static string PhotoSlug(Surface s, out float metres)
+        {
+            metres = 2f;
+            switch (s)
+            {
+                case Surface.Asphalt: return "cobblestone_floor_05";
+                case Surface.Concrete: return "castle_wall_varriation";
+                case Surface.Brick: return "medieval_red_brick";
+                case Surface.Tile: metres = 1.8f; return "monastery_stone_floor";
+                case Surface.Plaster: return "medieval_wall_01";
+                case Surface.Wood: return "old_planks_02";
+                case Surface.Rust: metres = 2.2f; return "rust_coarse_01";
+                case Surface.Metal: return "metal_plate_02";
+                case Surface.Dirt: metres = 2.35f; return "mud_forest";
+                case Surface.Grass: return "sparse_grass";
+                default: return null;
+            }
+        }
+
+        /// <summary>A surface's photo textures, if it has them.</summary>
+        public readonly struct Photo
+        {
+            public readonly Texture2D Albedo, NormalHeight;
+            public readonly float Metres;
+            public Photo(Texture2D albedo, Texture2D normalHeight, float metres) { Albedo = albedo; NormalHeight = normalHeight; Metres = metres; }
+        }
+
+        /// <summary>Whether the map uses the photo textures where it has them (Settings can turn them off).</summary>
+        public static bool PhotosEnabled = true;
+
+        static readonly Dictionary<Surface, Photo?> s_Photos = new Dictionary<Surface, Photo?>();
+
+        public static bool TryGetPhoto(Surface s, out Photo photo)
+        {
+            photo = default;
+            if (!PhotosEnabled) return false;
+            if (!s_Photos.TryGetValue(s, out var cached))
+            {
+                cached = null;
+                string slug = PhotoSlug(s, out float metres);
+                if (slug != null)
+                {
+                    var albedo = Resources.Load<Texture2D>("CC0/Surfaces/" + slug + "_albedo");
+                    var nrh = Resources.Load<Texture2D>("CC0/Surfaces/" + slug + "_nrh");
+                    if (albedo != null && nrh != null) cached = new Photo(albedo, nrh, metres);
+                }
+                s_Photos[s] = cached;
+            }
+            if (cached == null) return false;
+            photo = cached.Value;
+            return true;
+        }
+
         static readonly Dictionary<Surface, (Texture2D detail, Texture2D normal)> s_Cache = new Dictionary<Surface, (Texture2D, Texture2D)>();
 
         public static (Texture2D detail, Texture2D normal) Get(Surface s)

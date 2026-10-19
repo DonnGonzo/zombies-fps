@@ -12,6 +12,7 @@ namespace ZombiesFPS.Core
     {
         static readonly Dictionary<Color, Material> s_Lit = new Dictionary<Color, Material>();
         static readonly Dictionary<(Color, Surface, bool), Material> s_Surfaces = new Dictionary<(Color, Surface, bool), Material>();
+        static readonly Dictionary<(Color, Surface), Material> s_Photos = new Dictionary<(Color, Surface), Material>();
         static readonly Dictionary<Color, Material> s_Unlit = new Dictionary<Color, Material>();
         static Material s_DefaultLit, s_SurfaceBase, s_GlowBase;
         static bool s_SurfaceChecked, s_GlowChecked;
@@ -33,9 +34,11 @@ namespace ZombiesFPS.Core
         public static Material Lit(Color color, Surface surface, bool moving = false)
         {
             var key = (color, surface, moving);
-            if (s_Surfaces.TryGetValue(key, out var cached) && cached != null) return cached;
             var baseMat = SurfaceBase();
             if (baseMat == null) return FlatLit(color);
+            // The map (never anything that moves) uses scanned textures where it has them.
+            if (!moving && SurfaceTextures.TryGetPhoto(surface, out var photo)) return PhotoLit(baseMat, color, surface, photo);
+            if (s_Surfaces.TryGetValue(key, out var cached) && cached != null) return cached;
             var (detail, normal) = SurfaceTextures.Get(surface);
             var look = SurfaceTextures.LookOf(surface);
             var mat = new Material(baseMat) { name = surface + " " + ColorUtility.ToHtmlStringRGB(color) };
@@ -52,6 +55,36 @@ namespace ZombiesFPS.Core
             // Hundreds of zombie parts share these; instancing draws each set in one go.
             mat.enableInstancing = true;
             s_Surfaces[key] = mat;
+            return mat;
+        }
+
+        /// <summary>
+        /// A map material from a scanned texture. The texture brings its own colour, so the requested colour only
+        /// tints it: its hue a little, its brightness about half way (the shader doubles the texture).
+        /// </summary>
+        static Material PhotoLit(Material baseMat, Color color, Surface surface, SurfaceTextures.Photo photo)
+        {
+            var key = (color, surface);
+            if (s_Photos.TryGetValue(key, out var cached) && cached != null) return cached;
+            var look = SurfaceTextures.LookOf(surface);
+            float lum = Mathf.Max(0.02f, color.r * 0.2126f + color.g * 0.7152f + color.b * 0.0722f);
+            var hue = new Color(color.r / lum, color.g / lum, color.b / lum);
+            var tint = Color.Lerp(Color.white, hue, 0.3f) * Mathf.Clamp(Mathf.Lerp(1f, lum / 0.38f, 0.5f), 0.55f, 1.35f) * 0.5f;
+            tint.a = 1f;
+            var mat = new Material(baseMat) { name = surface + " Photo " + ColorUtility.ToHtmlStringRGB(color) };
+            mat.SetColor("_Color", tint);
+            mat.SetTexture("_MainTex", photo.Albedo);
+            mat.SetTexture("_BumpMap", photo.NormalHeight);
+            mat.SetFloat("_PackedHeight", 1f);
+            mat.SetFloat("_Scale", 1f / photo.Metres);
+            mat.SetFloat("_Detail", 1f);
+            mat.SetFloat("_BumpStrength", 1f);
+            mat.SetFloat("_Glossiness", look.Gloss);
+            mat.SetFloat("_Metallic", look.Metallic * 0.6f);
+            mat.SetFloat("_Grime", look.Grime * 0.6f);
+            mat.SetFloat("_ObjectSpace", 0f);
+            mat.enableInstancing = true;
+            s_Photos[key] = mat;
             return mat;
         }
 

@@ -15,6 +15,7 @@ Shader "ZombiesFPS/Surface"
         _Metallic ("Metallic", Range(0,1)) = 0
         _Grime ("Grime", Range(0,1)) = 0.35
         _ObjectSpace ("Object space", Float) = 0
+        _PackedHeight ("Height in normal map B (photo textures)", Float) = 0
         _EmissionColor ("Emission", Color) = (0,0,0,1)
     }
     SubShader
@@ -32,7 +33,7 @@ Shader "ZombiesFPS/Surface"
         fixed4 _Color;
         half4 _EmissionColor;
         float _Scale;
-        half _Detail, _BumpStrength, _Glossiness, _Metallic, _Grime, _ObjectSpace;
+        half _Detail, _BumpStrength, _Glossiness, _Metallic, _Grime, _ObjectSpace, _PackedHeight;
 
         struct Input
         {
@@ -84,10 +85,19 @@ Shader "ZombiesFPS/Surface"
             half4 cY = tex2D(_MainTex, uvY);
             half4 cZ = tex2D(_MainTex, uvZ);
             half4 detail = cX * blend.x + cY * blend.y + cZ * blend.z;
+            half4 bX = tex2D(_BumpMap, uvX);
+            half4 bY = tex2D(_BumpMap, uvY);
+            half4 bZ = tex2D(_BumpMap, uvZ);
+            // Procedural textures keep height in the detail alpha; photo textures in the normal map's blue.
+            half height = _PackedHeight > 0.5 ? bX.b * blend.x + bY.b * blend.y + bZ.b * blend.z : detail.a;
 
-            // Big, slow blotches of dirt and damp from the same texture at a much larger size.
+            // Big, slow blotches of dirt and damp from the same height at a much larger size.
             float g = _Scale * 0.11;
-            half blotch = tex2D(_MainTex, p.zy * g + 0.37).a * blend.x + tex2D(_MainTex, p.xz * g + 0.71).a * blend.y + tex2D(_MainTex, p.xy * g + 0.13).a * blend.z;
+            half blotch;
+            if (_PackedHeight > 0.5)
+                blotch = tex2D(_BumpMap, p.zy * g + 0.37).b * blend.x + tex2D(_BumpMap, p.xz * g + 0.71).b * blend.y + tex2D(_BumpMap, p.xy * g + 0.13).b * blend.z;
+            else
+                blotch = tex2D(_MainTex, p.zy * g + 0.37).a * blend.x + tex2D(_MainTex, p.xz * g + 0.71).a * blend.y + tex2D(_MainTex, p.xy * g + 0.13).a * blend.z;
             half grime = saturate((0.55 - blotch) * 2.2) * _Grime;
             // Dirt collects at the foot of walls.
             if (_ObjectSpace < 0.5) grime += saturate(1 - IN.worldPos.y / 1.4) * (1 - blend.y) * _Grime * 0.45;
@@ -97,14 +107,14 @@ Shader "ZombiesFPS/Surface"
             albedo *= lerp(1, 0.55, grime);
             o.Albedo = saturate(albedo);
             o.Metallic = _Metallic;
-            o.Smoothness = saturate(_Glossiness * lerp(0.6, 1.25, detail.a) * (1 - grime * 0.6));
+            o.Smoothness = saturate(_Glossiness * lerp(0.6, 1.25, height) * (1 - grime * 0.6));
             o.Emission = _EmissionColor.rgb;
             o.Alpha = 1;
 
             // Whiteout-blended triplanar normals.
-            half3 tX = UnpackRG(tex2D(_BumpMap, uvX), _BumpStrength);
-            half3 tY = UnpackRG(tex2D(_BumpMap, uvY), _BumpStrength);
-            half3 tZ = UnpackRG(tex2D(_BumpMap, uvZ), _BumpStrength);
+            half3 tX = UnpackRG(bX, _BumpStrength);
+            half3 tY = UnpackRG(bY, _BumpStrength);
+            half3 tZ = UnpackRG(bZ, _BumpStrength);
             tX = half3(tX.xy + n.zy, abs(tX.z) * n.x);
             tY = half3(tY.xy + n.xz, abs(tY.z) * n.y);
             tZ = half3(tZ.xy + n.xy, abs(tZ.z) * n.z);

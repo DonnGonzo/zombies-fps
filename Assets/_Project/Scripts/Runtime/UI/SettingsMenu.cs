@@ -176,7 +176,7 @@ namespace ZombiesFPS.UI
 
         static void DrawGraphics(Rect body, float u)
         {
-            float rowH = 60 * u, y = body.y;
+            float rowH = 54 * u, y = body.y;
             Ui.Label(new Rect(body.x, y, 260 * u, rowH), "Quality", Ui.Body, Ui.Text, TextAnchor.MiddleLeft);
             float bw = 150 * u;
             for (int i = 0; i < GameSettings.QualityNames.Length; i++)
@@ -193,6 +193,8 @@ namespace ZombiesFPS.UI
             GameSettings.FilmGrain = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Film grain", GameSettings.FilmGrain, u);
             y += rowH;
             GameSettings.AnimatedZombies = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Animated zombie models", GameSettings.AnimatedZombies, u, "off = the old blocky zombies");
+            y += rowH;
+            GameSettings.MapArt = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Medieval map textures and props", GameSettings.MapArt, u, "off = the old procedural look; next match");
             y += rowH + 10 * u;
             Ui.Label(new Rect(body.x, y, body.width, 80 * u), "Low turns off bloom and shortens shadows for older PCs. Medium adds bloom, soft shadows and smoother edges. High adds sharper, longer shadows, reflections on metal and the smoothest edges.", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
         }
