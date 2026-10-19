@@ -43,6 +43,7 @@ namespace ZombiesFPS.UI
             "powerup [emp]  offer power-up cards (emp = empowered)",
             "doors          open every door",
             "parts          find every build part",
+            "egg            finish the easter egg step being played (or the next one)",
             "goto ZONE      teleport yourself (try: goto crane, goto high 2)",
             "clearlog       empty this log",
         };
@@ -241,6 +242,17 @@ namespace ZombiesFPS.UI
                 case "parts":
                     if (BuildManager.Instance != null) BuildManager.Instance.DebugCollectAll();
                     Log("Every part found. Build them at a build station.");
+                    break;
+                case "egg":
+                    var egg = EasterEgg.Instance;
+                    if (egg == null || egg.Finished)
+                    {
+                        Log("No easter egg step left to finish.");
+                        break;
+                    }
+                    string title = egg.CurrentStep.title;
+                    egg.DebugCompleteStep();
+                    Log($"Easter egg step done: {title}.");
                     break;
                 case "goto":
                     var me = NetPlayer.Local;

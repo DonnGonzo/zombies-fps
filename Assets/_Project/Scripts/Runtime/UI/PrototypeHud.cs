@@ -68,6 +68,8 @@ namespace ZombiesFPS.UI
             BuildManager.PartFound += OnPartFound;
             BuildManager.ItemBuilt += OnItemBuilt;
             BuildManager.RobotBroke += OnRobotBroke;
+            EasterEgg.StepStarted += OnEggStarted;
+            EasterEgg.StepCompleted += OnEggCompleted;
             // The pause menu has its own Resume button, so a click there mustn't drop straight back into the game.
             PlayerLook.ClickToResume = false;
             gameObject.AddComponent<StoryDirector>().Init(player);
@@ -84,6 +86,8 @@ namespace ZombiesFPS.UI
             BuildManager.PartFound -= OnPartFound;
             BuildManager.ItemBuilt -= OnItemBuilt;
             BuildManager.RobotBroke -= OnRobotBroke;
+            EasterEgg.StepStarted -= OnEggStarted;
+            EasterEgg.StepCompleted -= OnEggCompleted;
             PlayerLook.ClickToResume = true;
             SettingsMenu.Close();
             DebugConsole.Close();
@@ -175,6 +179,21 @@ namespace ZombiesFPS.UI
 
         void OnStoryCompleted() =>
             ShowBanner("STORY COMPLETE", "The Lantern is dead. Keep going: the Trader's bounties are on the board, and round 500 is the record.", Ui.Amber);
+
+        void OnEggStarted(int step)
+        {
+            var def = EasterEggData.At(step);
+            if (def == null) return;
+            ShowBanner(def.title.ToUpperInvariant(), $"The doors are sealed. Kill {def.zombies} of Doctor Morrow's runners. They don't count toward the round.", EasterEggData.ScientistColor);
+        }
+
+        void OnEggCompleted(int step)
+        {
+            var def = EasterEggData.At(step);
+            if (def == null) return;
+            ShowBanner("THE LANTERN IS AWAKE", $"{def.title}: step {step + 1} of {EasterEggData.Steps.Length} done. {EasterEgg.StepReward:N0} points for everyone.", EasterEggData.ScientistColor);
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
+        }
 
         void ShowBanner(string title, string sub, Color color)
         {
@@ -357,6 +376,7 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Reroll: Tips.Offer("reroll", "The shrine sells redraws for power-up cards. Press 4 while picking a power-up to redraw."); break;
                     case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all the parts of the Scrap Cannon, Aegis Shield (four parts) or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
                     case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Aegis Shield or Buddy Bot here once the squad has all of its parts; after that, take one whenever you need it."); break;
+                    case BuyableKind.Reactor: Tips.Offer("reactor", "The Lantern reactor. Something in it is listening. With the whole squad in the room, touching it starts the map's secret, and seals you in until it's done."); break;
                 }
             }
             var motor = _player.Motor;
@@ -510,7 +530,11 @@ namespace ZombiesFPS.UI
             string last = StoryDirector.LastBeat;
             float sh = style.CalcHeight(new GUIContent(summary), cw - 48 * u);
             float lh = string.IsNullOrEmpty(last) ? 0f : Ui.Tiny.CalcHeight(new GUIContent($"\"{last}\""), cw - 48 * u) + 40 * u;
-            var r = new Rect(pause.xMax + 24 * u, pause.y, cw, 90 * u + sh + lh);
+            // The easter egg shows up here once the squad has found it.
+            var egg = EasterEgg.Instance;
+            bool eggFound = egg != null && (egg.Active.Value || egg.StepsDone.Value > 0);
+            float eh = eggFound ? 54 * u : 0f;
+            var r = new Rect(pause.xMax + 24 * u, pause.y, cw, 90 * u + sh + lh + eh);
             Ui.PanelBox(r, StoryData.RadioColor, u);
             string actLine = act < StoryData.StoryActs ? $"ACT {act + 1} OF {StoryData.StoryActs}  ·  THE STORY ENDS AT ROUND {StoryData.FinalRound}" : "STORY COMPLETE";
             Ui.Label(new Rect(r.x + 24 * u, r.y + 20 * u, cw, 26 * u), actLine, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
@@ -525,6 +549,16 @@ namespace ZombiesFPS.UI
                 Ui.Label(new Rect(r.x + 24 * u, r.y + 92 * u + sh, cw - 48 * u, 22 * u), "LAST RADIO CALL", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
                 Ui.Label(new Rect(r.x + 24 * u, r.y + 116 * u + sh, cw - 48 * u, lh - 40 * u), $"\"{last}\"", tiny, Ui.Muted, TextAnchor.UpperLeft);
                 tiny.wordWrap = tw;
+            }
+            if (eggFound)
+            {
+                int done = egg.StepsDone.Value, steps = EasterEggData.Steps.Length;
+                var next = EasterEggData.At(done);
+                string state = egg.Active.Value ? $"Now: {next.title}, {egg.Remaining} runners left"
+                    : next != null && next.kind != EggStepKind.Locked ? $"Next: {next.title}" : "Doctor Morrow will have more for you soon";
+                float ey = r.yMax - eh;
+                Ui.Label(new Rect(r.x + 24 * u, ey, cw, 22 * u), $"DOCTOR MORROW'S WORK  ·  {done} OF {steps} STEPS", Ui.Tiny, EasterEggData.ScientistColor, TextAnchor.UpperLeft);
+                Ui.Label(new Rect(r.x + 24 * u, ey + 22 * u, cw - 48 * u, 22 * u), state, Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
             }
         }
 
@@ -667,6 +701,12 @@ namespace ZombiesFPS.UI
             if (rounds.IsBlackout)
             {
                 Ui.Label(new Rect(0, y, w, 26 * u), $"BLACKOUT  ·  {GameConfig.Round.blackoutPointsMultiplier:0}x POINTS", Ui.Small, Ui.Violet, TextAnchor.UpperCenter);
+                y += 26 * u;
+            }
+            var egg = EasterEgg.Instance;
+            if (egg != null && egg.Active.Value)
+            {
+                Ui.Label(new Rect(0, y, w, 26 * u), $"LANTERN TRIAL  ·  {egg.Remaining} OF {egg.Total.Value} RUNNERS LEFT  ·  DOORS SEALED", Ui.Small, EasterEggData.ScientistColor, TextAnchor.UpperCenter);
                 y += 26 * u;
             }
             if (rounds.GodMode.Value)

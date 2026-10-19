@@ -23,6 +23,8 @@ namespace ZombiesFPS.World
         Part,
         /// <summary>A place at a build station; Index is bench * BuildableCount + buildable.</summary>
         Workbench,
+        /// <summary>The Lantern Core's reactor, where the easter egg's steps start. Free to touch.</summary>
+        Reactor,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -298,6 +300,8 @@ namespace ZombiesFPS.World
             for (int bench = 0; bench < BenchCount; bench++)
                 for (int item = 0; item < BuildableCount; item++)
                     buyables.Add(new Buyable { Kind = BuyableKind.Workbench, Index = bench * BuildableCount + item, Position = BenchPlace(bench, item), Range = BenchRange });
+            // Reached from any side: the range is measured from the reactor's middle.
+            buyables.Add(new Buyable { Kind = BuyableKind.Reactor, Index = 0, Position = ReactorBase + Vector3.up, Range = CoreDiameter / 2f + 1.6f });
             Buyables = buyables.ToArray();
 
             PlayerStart = StartPosition;

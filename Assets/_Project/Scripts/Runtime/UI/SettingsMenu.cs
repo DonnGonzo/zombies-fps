@@ -84,6 +84,7 @@ namespace ZombiesFPS.UI
                     GameSettings.MasterVolume = 1f;
                     GameSettings.EffectsVolume = 1f;
                     GameSettings.VoiceVolume = 1f;
+                    GameSettings.MusicVolume = 0.7f;
                     break;
                 case Tab.Accessibility:
                     GameSettings.Subtitles = true;
@@ -207,6 +208,8 @@ namespace ZombiesFPS.UI
             GameSettings.EffectsVolume = Ui.Slider(new Rect(body.x, y, body.width, rowH), "Effects", GameSettings.EffectsVolume, 0f, 1f, $"{GameSettings.EffectsVolume * 100f:0}%", u);
             y += rowH;
             GameSettings.VoiceVolume = Ui.Slider(new Rect(body.x, y, body.width, rowH), "Voices and radio", GameSettings.VoiceVolume, 0f, 1f, $"{GameSettings.VoiceVolume * 100f:0}%", u);
+            y += rowH;
+            GameSettings.MusicVolume = Ui.Slider(new Rect(body.x, y, body.width, rowH), "Music", GameSettings.MusicVolume, 0f, 1f, $"{GameSettings.MusicVolume * 100f:0}%", u);
         }
 
         static void DrawAccessibility(Rect body, float u)

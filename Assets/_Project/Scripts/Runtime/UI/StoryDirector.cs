@@ -20,7 +20,7 @@ namespace ZombiesFPS.UI
 
         NetPlayer _player;
         AudioSource _radio, _ambience;
-        readonly Queue<(string speaker, string text, Color color, float pitch)> _queue = new Queue<(string, string, Color, float)>();
+        readonly Queue<(string speaker, string text, Color color, float pitch, AudioClip voice)> _queue = new Queue<(string, string, Color, float, AudioClip)>();
         float _nextLineAt;
         float _talkUntil, _nextBlip;
         float _talkPitch = 0.7f;
@@ -56,12 +56,14 @@ namespace ZombiesFPS.UI
             _traderIndex = Random.Range(0, 8);
             MissionBoard.MissionCompleted += OnMissionCompleted;
             MissionBoard.MissionFailed += OnMissionFailed;
+            EasterEgg.LineSaid += OnScientistLine;
         }
 
         void OnDestroy()
         {
             MissionBoard.MissionCompleted -= OnMissionCompleted;
             MissionBoard.MissionFailed -= OnMissionFailed;
+            EasterEgg.LineSaid -= OnScientistLine;
         }
 
         int Round => RoundManager.Instance != null ? RoundManager.Instance.DisplayRound : 1;
@@ -69,10 +71,17 @@ namespace ZombiesFPS.UI
         void Radio(string text)
         {
             int round = Round;
-            _queue.Enqueue((StoryData.RadioSpeaker(round), text, StoryData.RadioSpeakerColor(round), 0.72f));
+            _queue.Enqueue((StoryData.RadioSpeaker(round), text, StoryData.RadioSpeakerColor(round), 0.72f, null));
         }
 
         static string Pick(string[] lines) => lines == null || lines.Length == 0 ? null : lines[Random.Range(0, lines.Length)];
+
+        /// <summary>Doctor Morrow, over the lab's intercoms: his recording if there is one, else the placeholder voice.</summary>
+        void OnScientistLine(EggLine line)
+        {
+            var voice = string.IsNullOrEmpty(line.id) ? null : Resources.Load<AudioClip>(EasterEggData.VoiceFolder + line.id);
+            _queue.Enqueue((EasterEggData.ScientistName, line.text, EasterEggData.ScientistColor, 0.55f, voice));
+        }
 
         void OnMissionCompleted(int id)
         {
@@ -154,7 +163,7 @@ namespace ZombiesFPS.UI
             if (open && !_shopWasOpen && Time.time >= _nextTrader)
             {
                 _nextTrader = Time.time + TraderCooldown;
-                _queue.Enqueue((StoryData.TraderName, StoryData.TraderLine(Round, _traderIndex++), StoryData.TraderColor, 0.6f));
+                _queue.Enqueue((StoryData.TraderName, StoryData.TraderLine(Round, _traderIndex++), StoryData.TraderColor, 0.6f, null));
             }
             _shopWasOpen = open;
         }
@@ -162,13 +171,22 @@ namespace ZombiesFPS.UI
         void PlayQueue()
         {
             if (_queue.Count == 0 || Time.time < _nextLineAt) return;
-            var (speaker, text, color, pitch) = _queue.Dequeue();
+            var (speaker, text, color, pitch, voice) = _queue.Dequeue();
             if (string.IsNullOrEmpty(text)) return;
             bool radio = speaker != StoryData.TraderName;
             float duration = Mathf.Clamp(1.6f + text.Length * 0.055f, 2.5f, 8f);
+            if (voice != null) duration = Mathf.Max(duration, voice.length + 0.6f);
             Subtitles.Show(speaker, text, color, radio, duration);
             _radio.pitch = 1f;
             if (radio) _radio.PlayOneShot(ProceduralAudio.Radio, 0.6f);
+            if (voice != null)
+            {
+                // A real recording: no placeholder syllables over it.
+                _radio.PlayOneShot(voice, 1f);
+                _talkUntil = 0f;
+                _nextLineAt = Time.time + duration + LineGap;
+                return;
+            }
             _talkPitch = pitch;
             _talkUntil = Time.time + (radio ? 0.3f : 0f) + Mathf.Clamp(text.Length * 0.05f, 0.6f, 4f);
             _nextBlip = Time.time + (radio ? 0.3f : 0f);

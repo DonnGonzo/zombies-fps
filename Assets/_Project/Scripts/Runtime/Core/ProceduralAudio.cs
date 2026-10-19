@@ -54,6 +54,16 @@ namespace ZombiesFPS.Core
         /// <summary>A low looping drone for the facility's ambience.</summary>
         public static AudioClip Drone => s_Drone ? s_Drone : (s_Drone = MakeDrone());
 
+        static AudioClip s_Zap, s_Thunder, s_FieldHum, s_Surge;
+        /// <summary>An electric crack: the reactor's arcs and the trial's lightning strikes.</summary>
+        public static AudioClip Zap => s_Zap ? s_Zap : (s_Zap = MakeZap());
+        /// <summary>A long rolling discharge, for the reactor waking and the trial ending.</summary>
+        public static AudioClip Thunder => s_Thunder ? s_Thunder : (s_Thunder = MakeThunder());
+        /// <summary>A looping buzz for the energy fields sealing a room.</summary>
+        public static AudioClip FieldHum => s_FieldHum ? s_FieldHum : (s_FieldHum = MakeFieldHum());
+        /// <summary>A looping, throbbing charge for the reactor while it wakes.</summary>
+        public static AudioClip ReactorSurge => s_Surge ? s_Surge : (s_Surge = MakeSurge());
+
         /// <summary>A short syllable of placeholder "speech", for voice lines until real recordings exist.</summary>
         public static AudioClip RandomBlip()
         {
@@ -170,6 +180,90 @@ namespace ZombiesFPS.Core
                 d[i] = (hum + lp * 0.6f) * 0.35f;
             }
             return Build("Drone", d);
+        }
+
+        static AudioClip MakeZap()
+        {
+            var rng = new System.Random(71);
+            int n = (int)(Rate * 0.35f);
+            var d = new float[n];
+            float hp = 0f, last = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                // High-passed noise in stuttering bursts, over a falling buzz.
+                hp = 0.6f * (hp + noise - last);
+                last = noise;
+                float stutter = Mathf.Sin(2f * Mathf.PI * 38f * t) > -0.2f ? 1f : 0.25f;
+                float buzz = Mathf.Sign(Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(240f, 90f, t / 0.35f) * t)) * 0.18f;
+                float env = Mathf.Clamp01(t * 600f) * Mathf.Exp(-t * 11f);
+                d[i] = Mathf.Clamp((hp * 0.9f * stutter + buzz) * env, -1f, 1f);
+            }
+            return Build("Zap", d);
+        }
+
+        static AudioClip MakeThunder()
+        {
+            var rng = new System.Random(73);
+            const float length = 3.2f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            float lp = 0f, lp2 = 0f, hp = 0f, last = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                hp = 0.7f * (hp + noise - last);
+                last = noise;
+                lp += (noise - lp) * 0.05f;
+                lp2 += (lp - lp2) * 0.08f;
+                float crack = hp * Mathf.Exp(-t * 18f);
+                // The rumble swells and rolls off in waves.
+                float roll = lp2 * 4.2f * (0.6f + 0.4f * Mathf.Sin(t * 7f + Mathf.Sin(t * 2.3f) * 2f)) * Mathf.Clamp01(t * 6f) * Mathf.Exp(-t * 1.1f);
+                float sub = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(48f, 30f, t / length) * t) * 0.35f * Mathf.Exp(-t * 1.6f);
+                d[i] = Mathf.Clamp(crack * 0.8f + roll + sub, -1f, 1f);
+            }
+            return Build("Thunder", d);
+        }
+
+        static AudioClip MakeFieldHum()
+        {
+            const float length = 2f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            var rng = new System.Random(79);
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                // Whole cycles in 2 s so it loops cleanly: mains hum and its buzzy harmonics, with a little hiss.
+                float hum = Mathf.Sin(2f * Mathf.PI * 60f * t) * 0.3f + Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 120f * t)) * 0.06f
+                            + Mathf.Sin(2f * Mathf.PI * 180f * t) * 0.1f * (0.6f + 0.4f * Mathf.Sin(2f * Mathf.PI * 2f * t));
+                float hiss = (float)(rng.NextDouble() * 2.0 - 1.0) * 0.03f;
+                d[i] = (hum + hiss) * 0.5f;
+            }
+            return Build("FieldHum", d);
+        }
+
+        static AudioClip MakeSurge()
+        {
+            const float length = 4f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            var rng = new System.Random(83);
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                // Whole cycles in 4 s: a low throb at 2 beats a second over rising and falling overtones.
+                float throb = 0.55f + 0.45f * Mathf.Sin(2f * Mathf.PI * 2f * t);
+                float body = Mathf.Sin(2f * Mathf.PI * 45f * t) * 0.4f + Mathf.Sin(2f * Mathf.PI * 90.25f * t) * 0.2f
+                             + Mathf.Sin(2f * Mathf.PI * 135f * t) * 0.12f * (0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 0.5f * t));
+                lp += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp) * 0.2f;
+                float crackle = rng.NextDouble() < 0.0015 ? 0.6f : 0f;
+                d[i] = Mathf.Clamp((body * throb + lp * 0.12f + crackle * lp) * 0.6f, -1f, 1f);
+            }
+            return Build("Surge", d);
         }
 
         public static AudioClip RandomGroan()

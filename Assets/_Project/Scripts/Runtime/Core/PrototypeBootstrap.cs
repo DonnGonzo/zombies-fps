@@ -81,6 +81,7 @@ namespace ZombiesFPS.Core
             GraphicsSetup.BakeReflections(new Bounds(new Vector3(area.center.x, 4f, area.center.y), new Vector3(area.width, 12f, area.height)));
             GameConfig.PlayerStart = GameConfig.Map.PlayerStart;
             new GameObject("FX").AddComponent<FxSystem>();
+            new GameObject("Music").AddComponent<MusicPlayer>();
             BuildMenuCamera();
             CreateNetworkManager();
 

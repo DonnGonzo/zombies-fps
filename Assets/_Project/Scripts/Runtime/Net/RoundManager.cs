@@ -270,6 +270,7 @@ namespace ZombiesFPS.Net
             if (MapState.Instance != null) MapState.Instance.ServerReset();
             if (MissionBoard.Instance != null) MissionBoard.Instance.ServerReset();
             if (BuildManager.Instance != null) BuildManager.Instance.ServerReset();
+            if (EasterEgg.Instance != null) EasterEgg.Instance.ServerReset();
             Round.Value = 0;
             Won.Value = false;
             BeginIntermission(GameConfig.Round.firstRoundDelay);

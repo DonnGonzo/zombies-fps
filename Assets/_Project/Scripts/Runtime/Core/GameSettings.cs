@@ -14,7 +14,7 @@ namespace ZombiesFPS.Core
         public static readonly string[] QualityNames = { "Low", "Medium", "High" };
 
         static bool s_Loaded;
-        static float s_Sensitivity, s_Fov, s_Master, s_Effects, s_Voice, s_HudScale;
+        static float s_Sensitivity, s_Fov, s_Master, s_Effects, s_Voice, s_Music, s_HudScale;
         static bool s_InvertY, s_Subtitles, s_ReduceShake, s_Tips, s_Colorblind;
         static int s_Quality;
         static float s_Brightness;
@@ -32,6 +32,7 @@ namespace ZombiesFPS.Core
             s_Master = PlayerPrefs.GetFloat(Prefix + "MasterVolume", 1f);
             s_Effects = PlayerPrefs.GetFloat(Prefix + "EffectsVolume", 1f);
             s_Voice = PlayerPrefs.GetFloat(Prefix + "VoiceVolume", 1f);
+            s_Music = PlayerPrefs.GetFloat(Prefix + "MusicVolume", 0.7f);
             s_HudScale = PlayerPrefs.GetFloat(Prefix + "HudScale", 1f);
             s_InvertY = PlayerPrefs.GetInt(Prefix + "InvertY", 0) != 0;
             s_Subtitles = PlayerPrefs.GetInt(Prefix + "Subtitles", 1) != 0;
@@ -165,6 +166,13 @@ namespace ZombiesFPS.Core
             set { EnsureLoaded(); s_Voice = Mathf.Clamp01(value); PlayerPrefs.SetFloat(Prefix + "VoiceVolume", s_Voice); ApplyVolumes(); }
         }
 
+        /// <summary>The menu theme, the in-match ambience and the easter egg's music. The music player follows it each frame.</summary>
+        public static float MusicVolume
+        {
+            get { EnsureLoaded(); return s_Music; }
+            set { EnsureLoaded(); s_Music = Mathf.Clamp01(value); PlayerPrefs.SetFloat(Prefix + "MusicVolume", s_Music); }
+        }
+
         public static float HudScale
         {
             get { EnsureLoaded(); return s_HudScale; }
@@ -214,6 +222,7 @@ namespace ZombiesFPS.Core
             MasterVolume = 1f;
             EffectsVolume = 1f;
             VoiceVolume = 1f;
+            MusicVolume = 0.7f;
             HudScale = 1f;
             InvertY = false;
             Subtitles = true;

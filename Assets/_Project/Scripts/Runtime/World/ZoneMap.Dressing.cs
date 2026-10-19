@@ -924,6 +924,7 @@ namespace ZombiesFPS.World
             // The rooms' own furniture before the general barrels and crates, so it gets the pick of the walls.
             _propSpots.Clear();
             DressRooms();
+            DressLab();
             DressProps();
             DressWallFaces();
             DoorSigns();

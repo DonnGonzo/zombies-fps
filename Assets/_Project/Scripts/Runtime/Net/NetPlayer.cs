@@ -749,6 +749,7 @@ namespace ZombiesFPS.Net
                 if (BuildManager.Instance == null) return -1;
                 return BuildManager.Instance.BenchPrice(this, b.Index % ZoneMap.BuildableCount, out what);
             }
+            if (b.Kind == BuyableKind.Reactor) return EasterEgg.Instance != null ? EasterEgg.Instance.ReactorPrice(this, out what) : -1;
             var entry = GameConfig.Prices.WallGunAt(b.Index);
             if (entry == null || entry.gun == null) return -1;
             bool owned = SlotOf(GameConfig.GunId(entry.gun)) >= 0;
@@ -1044,6 +1045,10 @@ namespace ZombiesFPS.Net
             else if (b.Kind == BuyableKind.Workbench)
             {
                 BuildManager.Instance.ServerUseBench(this, b.Index % ZoneMap.BuildableCount);
+            }
+            else if (b.Kind == BuyableKind.Reactor)
+            {
+                EasterEgg.Instance.ServerTouchReactor(this);
             }
             else
             {
