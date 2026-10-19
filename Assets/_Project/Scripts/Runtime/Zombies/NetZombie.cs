@@ -134,6 +134,13 @@ namespace ZombiesFPS.Zombies
         Vector3[] _bulkScales;
         Color _skin;
         bool _built;
+        // The imported, animated character (when one is in the project). The blocky rig above stays underneath it,
+        // hidden, to carry the hitboxes, armour, acid sac and weak point, which are moved to follow the model's bones.
+        ZombieModel _model;
+        bool _modelOn;
+        Renderer[] _rigRenderers;
+        static readonly Vector3 SpineRest = new Vector3(0f, 0.06f, 0f);
+        static readonly Vector3 HeadRest = new Vector3(0f, 0.61f, 0.04f);
 
         // Per-life look and gait (seeded from the network id, so every machine sees the same zombie).
         uint _seed;
@@ -142,6 +149,7 @@ namespace ZombiesFPS.Zombies
         int _reachStyle;
         float _hunch, _tilt, _strideMul, _noise;
         bool _swingRight;
+        int _swingCount;
         float _spitStart = -100f;
         // Where it's looking (the nearest player), smoothed.
         NetPlayer _lookAt;
@@ -317,6 +325,7 @@ namespace ZombiesFPS.Zombies
             _head.gameObject.SetActive(true);
             _visual.localPosition = Vector3.zero;
             _visual.localRotation = Quaternion.identity;
+            if (_model != null) _model.ResetLife(_seed);
         }
 
         void Build(Color skin)
@@ -449,6 +458,35 @@ namespace ZombiesFPS.Zombies
             _colliders = GetComponentsInChildren<Collider>(true);
             _renderers = _visual.GetComponentsInChildren<Renderer>(true);
             _baseMaterials = new Material[_renderers.Length];
+
+            _model = ZombieModel.Create(_visual, 1.78f);
+            if (_model != null)
+            {
+                // Hidden under the model: everything but the armour, sac, weak point and the Warden's back spurs.
+                var rig = new List<Renderer>();
+                foreach (var r in _renderers)
+                {
+                    var t = r.transform;
+                    if (t.IsChildOf(_sac.transform) || t.IsChildOf(_core.transform) || t.IsChildOf(_armor.transform)) continue;
+                    if (t.parent == _spine && Array.IndexOf(_bossParts, r.gameObject) >= 0) continue;
+                    rig.Add(r);
+                }
+                _rigRenderers = rig.ToArray();
+                SetModelMode(GameSettings.AnimatedZombies);
+            }
+        }
+
+        void SetModelMode(bool on)
+        {
+            _modelOn = on;
+            _model.gameObject.SetActive(on);
+            foreach (var r in _rigRenderers) r.enabled = !on;
+            if (!on)
+            {
+                _spine.localPosition = SpineRest;
+                _head.localPosition = HeadRest;
+                _jointsWarm = false;
+            }
         }
 
         /// <summary>
@@ -457,7 +495,7 @@ namespace ZombiesFPS.Zombies
         /// </summary>
         void BuildHead(List<Renderer> skin, List<Renderer> hair, Material flesh, Material gore, Material bone)
         {
-            _head = Greybox.Empty("Head", _spine, new Vector3(0f, 0.61f, 0.04f));
+            _head = Greybox.Empty("Head", _spine, HeadRest);
             var hit = _head.gameObject.AddComponent<SphereCollider>();
             hit.radius = 0.17f;
             _head.gameObject.AddComponent<Hitbox>().Init(this, head: true);
@@ -651,6 +689,16 @@ namespace ZombiesFPS.Zombies
             _noise = Rand() * 10f;
 
             for (int i = 0; i < _renderers.Length; i++) _baseMaterials[i] = _renderers[i].sharedMaterial;
+
+            if (_model != null)
+            {
+                // Each type leans toward its own colour; walkers only faintly, so they keep the model's own look.
+                var cloth = d.clothColor;
+                float peak = Mathf.Max(cloth.r, Mathf.Max(cloth.g, cloth.b), 0.01f);
+                var hue = new Color(cloth.r / peak, cloth.g / peak, cloth.b / peak);
+                var tint = Color.Lerp(Color.white, hue, d.kind == ZombieKind.Walker ? 0.2f : 0.6f) * Color.Lerp(Color.white, d.skinTint, 0.7f);
+                _model.SetLook(tint, d.crawls ? 1f : height);
+            }
         }
 
         // ---------------------------------------------------------------- damage (host)
@@ -732,6 +780,7 @@ namespace ZombiesFPS.Zombies
             _swingStart = Time.time;
             // Alternate hands, so a zombie mauling you doesn't look like a loop.
             _swingRight = !_swingRight;
+            _swingCount++;
             _audio.PlayOneShot(ProceduralAudio.ZombieSwipe, 0.6f);
         }
 
@@ -770,6 +819,7 @@ namespace ZombiesFPS.Zombies
                 _head.gameObject.SetActive(false);
                 FxSystem.Instance?.Impact(_head.position, Vector3.up, FxSystem.Blood, 18, 4.5f, 0.09f);
             }
+            if (_model != null) _model.Die((int)(NetworkObjectId + (ulong)_swingCount), headshot);
             _audio.Stop();
             SetFlash(false);
         }
@@ -1212,9 +1262,23 @@ namespace ZombiesFPS.Zombies
         {
             float dt = Time.deltaTime;
             if (_deathTime <= 0f && _deadSeenAt >= 0f && Time.time - _deadSeenAt > 0.25f) EnterDeadVisual(-transform.forward, false);
+            if (_model != null && _modelOn != GameSettings.AnimatedZombies) SetModelMode(!_modelOn);
             if (_deathTime > 0f)
             {
                 float t = Time.time - _deathTime;
+                if (_modelOn)
+                {
+                    // The death clip does the falling; the body only sinks away at the end.
+                    float sinkM = Mathf.Clamp01((t - DeathFallTime - CorpseTime) / SinkTime);
+                    _visual.localRotation = Quaternion.identity;
+                    _visual.localPosition = new Vector3(0f, -0.6f * sinkM, 0f);
+                    if (t < DeathFallTime + CorpseTime + 0.1f)
+                    {
+                        _model.Animate(dt, 0f, _data.crawls, 0f, 1f, 0, 99f, false);
+                        FollowModel();
+                    }
+                    return;
+                }
                 float fall = Mathf.Clamp01(t / DeathFallTime);
                 _visual.localRotation = Quaternion.AngleAxis(fall * fall * 88f, _fallAxis);
                 float sink = Mathf.Clamp01((t - DeathFallTime - CorpseTime) / SinkTime);
@@ -1258,6 +1322,7 @@ namespace ZombiesFPS.Zombies
             _flashing = flashing;
             var white = Greybox.Lit(Color.white);
             for (int i = 0; i < _renderers.Length; i++) _renderers[i].sharedMaterial = flashing ? white : _baseMaterials[i];
+            if (_model != null) _model.SetFlash(flashing);
         }
 
         /// <summary>
@@ -1273,6 +1338,14 @@ namespace ZombiesFPS.Zombies
             float speed = _speedEstimate;
             bool stunned = IsStunned;
             bool runner = d.kind == ZombieKind.Runner;
+
+            if (_modelOn)
+            {
+                _model.Animate(dt, speed, d.crawls, swing, d.attackWindup + d.attackRecovery, _swingCount, now - _spitStart, stunned);
+                LeanBody(dt, now, speed, stunned);
+                FollowModel();
+                return;
+            }
 
             // Stride length sets the cadence, so the feet keep roughly in step with the ground instead of skating.
             float stride = (runner ? 2f : d.crawls ? 0.9f : 1.25f) * d.bodyScale.y * _strideMul;
@@ -1318,7 +1391,12 @@ namespace ZombiesFPS.Zombies
             else AnimateUpright(now, gait, run, stunned, d.armored || d.IsBoss, atk, atkPitch, atkElbow, atkLean, atkTwist, heave);
 
             SmoothPose(dt);
+            LeanBody(dt, now, speed, stunned);
+        }
 
+        void LeanBody(float dt, float now, float speed, bool stunned)
+        {
+            var d = _data;
             // Weight: lean into speeding up, rock back when stopping, bank into turns. Measured from how the body
             // actually moves, so it's the same on every machine.
             float yaw = transform.eulerAngles.y;
@@ -1335,6 +1413,22 @@ namespace ZombiesFPS.Zombies
             // Whole-body reactions: a jolt back when shot, a drunken wobble when stunned.
             float wobble = stunned ? Mathf.Sin(now * 9f) * 8f : 0f;
             _visual.localRotation = Quaternion.Euler(-_flinch * 8f + (stunned ? 10f : 0f) + (d.crawls ? 0f : _accelLean), 0f, wobble + _turnLean);
+        }
+
+        /// <summary>
+        /// Keeps the hidden rig on the model's bones: the spine (and with it the armour, acid sac and weak point) on
+        /// the model's spine, and the head hitbox on its skull, so you hit what you see.
+        /// </summary>
+        void FollowModel()
+        {
+            var spine = _model.Spine;
+            Vector3 up = _model.Neck.position - spine.position;
+            if (up.sqrMagnitude < 1e-6f) up = transform.up;
+            up.Normalize();
+            Vector3 forward = Vector3.Cross(_model.transform.right, up);
+            if (forward.sqrMagnitude < 1e-6f) forward = transform.forward;
+            _spine.SetPositionAndRotation(spine.position, Quaternion.LookRotation(forward, up));
+            _head.position = _model.HeadCenter;
         }
 
         /// <summary>

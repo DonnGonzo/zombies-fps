@@ -191,6 +191,8 @@ namespace ZombiesFPS.UI
             GameSettings.Bloom = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Bloom", GameSettings.Bloom, u, "glow around lamps, muzzle flashes and eyes");
             y += rowH;
             GameSettings.FilmGrain = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Film grain", GameSettings.FilmGrain, u);
+            y += rowH;
+            GameSettings.AnimatedZombies = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Animated zombie models", GameSettings.AnimatedZombies, u, "off = the old blocky zombies");
             y += rowH + 10 * u;
             Ui.Label(new Rect(body.x, y, body.width, 80 * u), "Low turns off bloom and shortens shadows for older PCs. Medium adds bloom, soft shadows and smoother edges. High adds sharper, longer shadows, reflections on metal and the smoothest edges.", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
         }

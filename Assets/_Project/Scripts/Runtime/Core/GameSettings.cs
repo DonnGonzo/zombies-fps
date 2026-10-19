@@ -18,7 +18,7 @@ namespace ZombiesFPS.Core
         static bool s_InvertY, s_Subtitles, s_ReduceShake, s_Tips, s_Colorblind;
         static int s_Quality;
         static float s_Brightness;
-        static bool s_Bloom, s_Grain;
+        static bool s_Bloom, s_Grain, s_AnimatedZombies;
 
         /// <summary>Raised when a graphics setting changes, so the camera and lights can be set up again.</summary>
         public static event System.Action GraphicsChanged;
@@ -42,6 +42,7 @@ namespace ZombiesFPS.Core
             s_Brightness = PlayerPrefs.GetFloat(Prefix + "Brightness", 1f);
             s_Bloom = PlayerPrefs.GetInt(Prefix + "Bloom", 1) != 0;
             s_Grain = PlayerPrefs.GetInt(Prefix + "FilmGrain", 1) != 0;
+            s_AnimatedZombies = PlayerPrefs.GetInt(Prefix + "AnimatedZombies", 1) != 0;
             AudioListener.volume = s_Master;
         }
 
@@ -78,6 +79,13 @@ namespace ZombiesFPS.Core
         {
             get { EnsureLoaded(); return s_Grain; }
             set { EnsureLoaded(); s_Grain = value; PlayerPrefs.SetInt(Prefix + "FilmGrain", value ? 1 : 0); }
+        }
+
+        /// <summary>Zombies use the imported character model and its animations (when one is in the project).</summary>
+        public static bool AnimatedZombies
+        {
+            get { EnsureLoaded(); return s_AnimatedZombies; }
+            set { EnsureLoaded(); s_AnimatedZombies = value; PlayerPrefs.SetInt(Prefix + "AnimatedZombies", value ? 1 : 0); }
         }
 
         /// <summary>Mouse sensitivity multiplier (1 = default).</summary>
