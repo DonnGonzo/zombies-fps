@@ -150,6 +150,12 @@ namespace ZombiesFPS.Zombies
         ZombieModel _model;
         bool _modelOn;
         Renderer[] _rigRenderers;
+        // The horde's model, and the bosses' (the Mutant, Warrok), built the first time this zombie is one. _model is
+        // whichever this life wears.
+        ZombieModel _zombieModel;
+        readonly Dictionary<ZombieModel.Kit, ZombieModel> _kitModels = new Dictionary<ZombieModel.Kit, ZombieModel>();
+        // The Warden's back spurs: worn over the zombie model, but the Mutant has horns of its own.
+        Renderer[] _spurRenderers;
         static readonly Vector3 SpineRest = new Vector3(0f, 0.06f, 0f);
         static readonly Vector3 HeadRest = new Vector3(0f, 0.61f, 0.04f);
 
@@ -482,7 +488,7 @@ namespace ZombiesFPS.Zombies
             _renderers = _visual.GetComponentsInChildren<Renderer>(true);
             _baseMaterials = new Material[_renderers.Length];
 
-            _model = ZombieModel.Create(_visual, 1.78f);
+            _model = _zombieModel = ZombieModel.Create(_visual, 1.78f);
             if (_model != null)
             {
                 // Hidden under the model: everything but the sac, weak point and the Warden's back spurs. The chest
@@ -496,6 +502,9 @@ namespace ZombiesFPS.Zombies
                     rig.Add(r);
                 }
                 _rigRenderers = rig.ToArray();
+                var spurs = new List<Renderer>();
+                for (int i = 0; i < 3; i++) spurs.AddRange(_bossParts[i].GetComponentsInChildren<Renderer>(true));
+                _spurRenderers = spurs.ToArray();
                 SetModelMode(GameSettings.AnimatedZombies);
             }
         }
@@ -505,12 +514,36 @@ namespace ZombiesFPS.Zombies
             _modelOn = on;
             _model.gameObject.SetActive(on);
             foreach (var r in _rigRenderers) r.enabled = !on;
+            foreach (var r in _spurRenderers) r.enabled = !on || _model == _zombieModel;
             if (!on)
             {
                 _spine.localPosition = SpineRest;
                 _head.localPosition = HeadRest;
                 _jointsWarm = false;
             }
+        }
+
+        /// <summary>
+        /// Wears <paramref name="kit"/>'s model this life (built the first time), or the zombie's when null or when
+        /// that kit isn't in the project.
+        /// </summary>
+        void UseModel(ZombieModel.Kit kit)
+        {
+            if (_zombieModel == null) return;
+            var next = _zombieModel;
+            if (kit != null && kit != ZombieModel.Zombie)
+            {
+                if (!_kitModels.TryGetValue(kit, out next))
+                {
+                    next = ZombieModel.Create(_visual, 1.78f, kit);
+                    _kitModels[kit] = next;
+                }
+                if (next == null) next = _zombieModel;
+            }
+            if (next == _model) return;
+            _model.gameObject.SetActive(false);
+            _model = next;
+            SetModelMode(_modelOn);
         }
 
         /// <summary>
@@ -716,6 +749,10 @@ namespace ZombiesFPS.Zombies
 
             if (_model != null)
             {
+                // The Warden is the Mutant from Ivan's creature pack, in its own colours (the easter egg's bosses
+                // re-dress it in ApplySpecial).
+                UseModel(d.IsBoss ? ZombieModel.Mutant : null);
+                _model.UseVariant(null);
                 // Ivan's monsters: every brute is an Imp and half the runners are Puglins, each in one of its colours.
                 string monster = d.kind == ZombieKind.Brute ? CharacterSkin.Imp
                     : d.kind == ZombieKind.Runner && Rand() < 0.5f ? CharacterSkin.Puglin : null;
@@ -726,8 +763,21 @@ namespace ZombiesFPS.Zombies
                 float peak = Mathf.Max(cloth.r, Mathf.Max(cloth.g, cloth.b), 0.01f);
                 var hue = new Color(cloth.r / peak, cloth.g / peak, cloth.b / peak);
                 var tint = Color.Lerp(Color.white, hue, d.kind == ZombieKind.Walker ? 0.2f : 0.6f) * Color.Lerp(Color.white, d.skinTint, 0.7f);
-                _model.SetLook(tint, d.crawls ? 1f : height);
+                _model.SetLook(_model != _zombieModel ? Color.white : tint, d.crawls ? 1f : height);
+                KeepProportions();
             }
+        }
+
+        /// <summary>
+        /// The Warden's body is stretched wider than it is tall for the blocky rig; the Mutant and Warrok are broad
+        /// already, so their models are scaled back to their own proportions.
+        /// </summary>
+        void KeepProportions()
+        {
+            if (_model == _zombieModel) return;
+            var body = _data.bodyScale;
+            var s = _model.transform.localScale;
+            _model.transform.localScale = new Vector3(s.x * body.y / Mathf.Max(body.x, 0.01f), s.y, s.z * body.y / Mathf.Max(body.z, 0.01f));
         }
 
         Light _specialLight;
@@ -747,7 +797,14 @@ namespace ZombiesFPS.Zombies
             var skinMat = Greybox.Lit(_skin * tint, Surface.Skin, true);
             foreach (var r in _skinRenderers) r.sharedMaterial = skinMat;
             for (int i = 0; i < _renderers.Length; i++) _baseMaterials[i] = _renderers[i].sharedMaterial;
-            if (_model != null) _model.SetLook(tint, 1f);
+            if (_model != null)
+            {
+                // Ashgrave is Warrok; Azhrakel the Mutant in red and fire; the Rotbloom the Mutant, tinted.
+                UseModel(special == EggBoss.General ? ZombieModel.Warrok : ZombieModel.Mutant);
+                _model.UseVariant(special == EggBoss.God ? "Red" : null);
+                _model.SetLook(special == EggBoss.Rotbloom ? tint : Color.white, 1f);
+                KeepProportions();
+            }
             if (_specialLight == null)
             {
                 _specialLight = new GameObject("Boss Glow").AddComponent<Light>();

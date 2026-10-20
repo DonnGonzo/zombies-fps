@@ -1,0 +1,287 @@
+using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
+using ZombiesFPS.Core;
+
+namespace ZombiesFPS.CharacterModels
+{
+    /// <summary>
+    /// A teammate as other players see them: Ely (or any Mixamo character in Resources/Survivors/Character) played
+    /// with Ivan's shooter pack in Resources/Survivors/Animations. Both are imported Humanoid, so Unity retargets the
+    /// clips onto the character's own build.
+    ///
+    /// The legs blend between idle, walking and running in eight directions from the player's velocity in their own
+    /// facing; the upper body plays a shot, a throw or a flinch over them, and a jump takes the whole body.
+    /// </summary>
+    public sealed class SurvivorModel : MonoBehaviour
+    {
+        const string CharacterFolder = "Survivors/Character";
+        const string TextureFolder = "Survivors/Character/Textures/";
+        const string AnimationFolder = "Survivors/Animations/";
+
+        enum Clip { Idle, Walk, Back, Left, Right, Run, RunBack, Jump, Fire, Throw, Hit }
+        const int BaseCount = 8, UpperCount = 3, ClipCount = 11;
+        static readonly string[] Files =
+        {
+            "rifle aiming idle", "walking", "walking backwards", "strafe left", "strafe right", "rifle run", "run backwards", "rifle jump",
+            "firing rifle", "toss grenade", "hit reaction",
+        };
+        static readonly Clip[] Fallback =
+        {
+            Clip.Walk, Clip.Idle, Clip.Walk, Clip.Walk, Clip.Walk, Clip.Walk, Clip.Back, Clip.Idle, Clip.Idle, Clip.Fire, Clip.Fire,
+        };
+        // The ground speed (m/s) each loop looks right at, so the feet keep up with the player.
+        static readonly float[] RefSpeed = { 1f, 1.5f, 1.3f, 1.4f, 1.4f, 4.6f, 3.2f };
+
+        static bool s_Loaded;
+        static GameObject s_Character;
+        static AnimationClip[] s_Clips;
+
+        PlayableGraph _graph;
+        AnimationMixerPlayable _base, _upper;
+        AnimationLayerMixerPlayable _layers;
+        AnimationClipPlayable[] _playables;
+        readonly float[] _time = new float[ClipCount];
+        readonly float[] _weight = new float[BaseCount];
+        readonly float[] _target = new float[BaseCount];
+        float _upperWeight, _airborne;
+        Renderer[] _renderers;
+
+        /// <summary>The upper chest, for anything that rides the body (the gun).</summary>
+        public Transform Chest { get; private set; }
+        public Transform Head { get; private set; }
+
+        /// <summary>Whether a survivor character and the basic clips are in the project.</summary>
+        public static bool Available
+        {
+            get
+            {
+                Load();
+                return s_Character != null;
+            }
+        }
+
+        static void Load()
+        {
+            if (s_Loaded) return;
+            s_Loaded = true;
+            s_Clips = new AnimationClip[ClipCount];
+            for (int i = 0; i < ClipCount; i++)
+                foreach (var c in Resources.LoadAll<AnimationClip>(AnimationFolder + Files[i]))
+                    if (!c.name.StartsWith("__preview__")) { s_Clips[i] = c; break; }
+            for (int pass = 0; pass < 3; pass++)
+                for (int i = 0; i < ClipCount; i++)
+                    if (s_Clips[i] == null) s_Clips[i] = s_Clips[(int)Fallback[i]];
+            if (s_Clips[(int)Clip.Idle] == null || s_Clips[(int)Clip.Walk] == null)
+            {
+                Debug.LogWarning("[Characters] No shooter clips in Resources/" + AnimationFolder + "; teammates stay blocky.");
+                return;
+            }
+            foreach (var go in Resources.LoadAll<GameObject>(CharacterFolder))
+                if (go.transform.parent == null && go.GetComponentInChildren<SkinnedMeshRenderer>(true) != null && FindBone(go.transform, "Head") != null)
+                {
+                    s_Character = go;
+                    break;
+                }
+            if (s_Character == null) Debug.LogWarning("[Characters] No survivor character in Resources/" + CharacterFolder + "; teammates stay blocky.");
+        }
+
+        static Transform FindBone(Transform root, string bone)
+        {
+            if (root.name == bone || root.name.EndsWith(":" + bone)) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var t = FindBone(root.GetChild(i), bone);
+                if (t != null) return t;
+            }
+            return null;
+        }
+
+        /// <summary>Builds the survivor under <paramref name="parent"/>, <paramref name="height"/> metres tall, facing its forward.</summary>
+        public static SurvivorModel Create(Transform parent, float height)
+        {
+            if (!Available) return null;
+            var go = Instantiate(s_Character, parent, false);
+            go.name = "Survivor";
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+            foreach (var c in go.GetComponentsInChildren<Collider>(true)) Destroy(c);
+            var model = go.AddComponent<SurvivorModel>();
+            if (!model.Init(height))
+            {
+                Destroy(go);
+                return null;
+            }
+            return model;
+        }
+
+        bool Init(float height)
+        {
+            var hips = FindBone(transform, "Hips");
+            Head = FindBone(transform, "Head");
+            Chest = FindBone(transform, "Spine2") ?? FindBone(transform, "Spine1") ?? FindBone(transform, "Spine");
+            var top = FindBone(transform, "HeadTop_End") ?? Head;
+            if (hips == null || Head == null || Chest == null) return false;
+            float tall = transform.InverseTransformPoint(top.position).y;
+            if (tall > 0.01f) transform.localScale = Vector3.one * (height / tall);
+
+            var animator = GetComponent<Animator>();
+            if (animator == null) animator = gameObject.AddComponent<Animator>();
+            animator.runtimeAnimatorController = null;
+            animator.applyRootMotion = false;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+
+            // The character's own textures, looked up by material name (Name_Diffuse, _Normal, _Glow), as the
+            // FBX's embedded ones may not come through the import.
+            _renderers = GetComponentsInChildren<Renderer>(true);
+            foreach (var r in _renderers)
+            {
+                var shared = r.sharedMaterials;
+                var mats = new Material[shared.Length];
+                for (int m = 0; m < shared.Length; m++) mats[m] = shared[m] != null ? Skin(shared[m]) : Greybox.Lit(Color.white);
+                r.sharedMaterials = mats;
+                if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true;
+            }
+
+            BuildGraph(animator);
+            return true;
+        }
+
+        static Material Skin(Material source)
+        {
+            string name = source.name.Replace(" (Instance)", "");
+            var diffuse = Resources.Load<Texture2D>(TextureFolder + name + "_Diffuse");
+            var normal = Resources.Load<Texture2D>(TextureFolder + name + "_Normal");
+            var glow = Resources.Load<Texture2D>(TextureFolder + name + "_Glow");
+            if (diffuse == null && source.HasProperty("_MainTex")) diffuse = source.GetTexture("_MainTex") as Texture2D;
+            if (normal == null && source.HasProperty("_BumpMap")) normal = source.GetTexture("_BumpMap") as Texture2D;
+            var mat = PropModels.Textured(name, diffuse, normal, 0.15f, 0.35f);
+            mat.enableInstancing = false;
+            if (glow != null)
+            {
+                mat.SetTexture("_EmissionMap", glow);
+                mat.SetColor("_EmissionColor", Color.white);
+                mat.EnableKeyword("_EMISSION");
+            }
+            return mat;
+        }
+
+        void BuildGraph(Animator animator)
+        {
+            _graph = PlayableGraph.Create("Survivor");
+            _graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+            var output = AnimationPlayableOutput.Create(_graph, "Pose", animator);
+            _base = AnimationMixerPlayable.Create(_graph, BaseCount);
+            _upper = AnimationMixerPlayable.Create(_graph, UpperCount);
+            _layers = AnimationLayerMixerPlayable.Create(_graph, 2);
+            _playables = new AnimationClipPlayable[ClipCount];
+            for (int i = 0; i < ClipCount; i++)
+            {
+                var p = AnimationClipPlayable.Create(_graph, s_Clips[i]);
+                p.SetApplyFootIK(false);
+                p.Pause();
+                _playables[i] = p;
+                if (i < BaseCount) _graph.Connect(p, 0, _base, i);
+                else _graph.Connect(p, 0, _upper, i - BaseCount);
+            }
+            _graph.Connect(_base, 0, _layers, 0);
+            _graph.Connect(_upper, 0, _layers, 1);
+            _layers.SetInputWeight(0, 1f);
+            _layers.SetInputWeight(1, 0f);
+            // Shots, throws and flinches move the chest, arms and head; the legs keep walking.
+            var mask = new AvatarMask();
+            foreach (var part in new[] { AvatarMaskBodyPart.Root, AvatarMaskBodyPart.Body, AvatarMaskBodyPart.LeftLeg, AvatarMaskBodyPart.RightLeg, AvatarMaskBodyPart.LeftFootIK, AvatarMaskBodyPart.RightFootIK })
+                mask.SetHumanoidBodyPartActive(part, false);
+            _layers.SetLayerMaskFromAvatarMask(1, mask);
+            output.SetSourcePlayable(_layers);
+            // Standing at rest from the start, so whatever is fitted to the chest is fitted to that pose.
+            _weight[(int)Clip.Idle] = 1f;
+            _base.SetInputWeight((int)Clip.Idle, 1f);
+            _graph.Evaluate(0f);
+        }
+
+        void OnDestroy()
+        {
+            if (_graph.IsValid()) _graph.Destroy();
+        }
+
+        /// <param name="velocity">Ground velocity in the player's own facing (x right, z forward), m/s.</param>
+        /// <param name="grounded">False while jumping or falling.</param>
+        /// <param name="fire">Seconds since the last shot (large when none).</param>
+        /// <param name="toss">Seconds since the last throw.</param>
+        /// <param name="hit">Seconds since they were last hurt.</param>
+        public void Animate(float dt, Vector3 velocity, bool grounded, float fire, float toss, float hit)
+        {
+            if (!_graph.IsValid() || dt <= 0f) return;
+            float blend = 1f - Mathf.Exp(-9f * dt);
+            velocity.y = 0f;
+            float speed = velocity.magnitude;
+
+            System.Array.Clear(_target, 0, BaseCount);
+            _airborne = Mathf.MoveTowards(_airborne, grounded ? 0f : 1f, dt * (grounded ? 6f : 4f));
+            float moving = Mathf.Clamp01((speed - 0.15f) / 0.5f);
+            float fast = Mathf.Clamp01((speed - 2.6f) / 1.6f);
+            float onFoot = 1f - _airborne;
+            _target[(int)Clip.Idle] = (1f - moving) * onFoot;
+            if (speed > 0.01f)
+            {
+                // Each direction's share of the move, from where it points in the player's facing.
+                var dir = velocity / speed;
+                float fwd = Mathf.Max(0f, dir.z), back = Mathf.Max(0f, -dir.z), left = Mathf.Max(0f, -dir.x), right = Mathf.Max(0f, dir.x);
+                float sum = Mathf.Max(fwd + back + left + right, 1e-4f);
+                float m = moving * onFoot / sum;
+                _target[(int)Clip.Walk] = m * fwd * (1f - fast);
+                _target[(int)Clip.Run] = m * fwd * fast;
+                _target[(int)Clip.Back] = m * back * (1f - fast);
+                _target[(int)Clip.RunBack] = m * back * fast;
+                _target[(int)Clip.Left] = m * left;
+                _target[(int)Clip.Right] = m * right;
+            }
+            _target[(int)Clip.Jump] = _airborne;
+            if (_airborne <= 0f) _time[(int)Clip.Jump] = 0f;
+
+            for (int i = 0; i < BaseCount; i++)
+            {
+                _weight[i] = Mathf.Lerp(_weight[i], _target[i], blend);
+                _base.SetInputWeight(i, _weight[i]);
+                float len = Mathf.Max(s_Clips[i].length, 0.05f);
+                if (i == (int)Clip.Jump)
+                {
+                    // Takeoff into the hang of the jump, held there until landing.
+                    _time[i] = Mathf.Min(_time[i] + dt, len * 0.55f);
+                }
+                else
+                {
+                    float rate = i == (int)Clip.Idle ? 1f : Mathf.Clamp(speed / RefSpeed[i], 0.5f, 2f);
+                    _time[i] = (_time[i] + dt * rate) % len;
+                }
+                _playables[i].SetTime(_time[i]);
+            }
+
+            // Upper body: a flinch wins over a throw, a throw over a shot.
+            int active = -1;
+            float at = 0f, upper = 0f;
+            float hitLen = s_Clips[(int)Clip.Hit].length, tossLen = s_Clips[(int)Clip.Throw].length;
+            if (hit < Mathf.Min(hitLen, 0.8f)) { active = (int)Clip.Hit; at = hit; upper = Fade(hit, Mathf.Min(hitLen, 0.8f)); }
+            else if (toss < tossLen) { active = (int)Clip.Throw; at = toss; upper = Fade(toss, tossLen); }
+            else if (fire < 0.35f) { active = (int)Clip.Fire; at = Mathf.Min(fire, s_Clips[(int)Clip.Fire].length * 0.3f); upper = Fade(fire, 0.35f); }
+            _upperWeight = Mathf.Lerp(_upperWeight, upper, 1f - Mathf.Exp(-25f * dt));
+            for (int i = 0; i < UpperCount; i++)
+            {
+                int clip = BaseCount + i;
+                _upper.SetInputWeight(i, clip == active ? 1f : 0f);
+                if (clip == active) _playables[clip].SetTime(at);
+            }
+            _layers.SetInputWeight(1, _upperWeight);
+            _graph.Evaluate(0f);
+        }
+
+        static float Fade(float t, float length) => Mathf.Clamp01(t / 0.08f) * Mathf.Clamp01((length - t) / 0.2f);
+
+        public void SetVisible(bool visible)
+        {
+            foreach (var r in _renderers) r.enabled = visible;
+        }
+    }
+}

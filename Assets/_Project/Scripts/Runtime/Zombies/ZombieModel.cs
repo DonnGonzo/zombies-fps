@@ -19,22 +19,63 @@ namespace ZombiesFPS.Zombies
     /// Monsters: <see cref="UseSkin"/> dresses a life as one of Ivan's Quaternius characters (Imp, Puglin) instead.
     /// The Mixamo rig still plays the clips, hidden, and its pose is copied onto the monster every frame
     /// (<see cref="CharacterSkin.Retarget"/>); the hitboxes follow the monster's own spine and head.
+    ///
+    /// Bosses: other <see cref="Kit"/>s pair another character with its own clips (the Mutant from Ivan's creature
+    /// pack for the Warden and Azhrakel, Warrok for Ashgrave). Those are imported Humanoid, so Unity retargets the
+    /// Mutant's clips onto Warrok's different build.
     /// </summary>
     public sealed class ZombieModel : MonoBehaviour
     {
-        const string CharacterFolder = "Zombies/Character";
-        const string TextureFolder = "Zombies/Character/Textures/";
-        const string AnimationFolder = "Zombies/Animations/";
         const string Placeholder = "X Bot";
+
+        /// <summary>A character and the clips it plays, one file per <see cref="Clip"/>.</summary>
+        public sealed class Kit
+        {
+            public readonly string CharacterFolder, TextureFolder, AnimationFolder;
+            public readonly string[] Files;
+            // The rotting-skin shader (the zombies), or the character's own textures as they are (the bosses).
+            public readonly bool Undead;
+            // Imported Humanoid: the upper-body layer is masked by body part rather than by bone path.
+            public readonly bool Humanoid;
+
+            internal bool Loaded;
+            internal GameObject Character;
+            internal AnimationClip[] Clips;
+            internal float[] Stride;
+
+            public Kit(string characterFolder, string animationFolder, string[] files, bool undead, bool humanoid)
+            {
+                CharacterFolder = characterFolder;
+                TextureFolder = characterFolder + "/Textures/";
+                AnimationFolder = animationFolder;
+                Files = files;
+                Undead = undead;
+                Humanoid = humanoid;
+            }
+        }
+
+        static readonly string[] MutantFiles =
+        {
+            "mutant breathing idle", "mutant walking", "mutant run", "mutant walking", "mutant run", "mutant dying", "mutant dying",
+            "mutant swiping", "mutant punch", "mutant jump attack", "mutant roaring",
+        };
+
+        /// <summary>The horde: Ch30 (or any Mixamo character in the folder) with the Mixamo zombie clips.</summary>
+        public static readonly Kit Zombie = new Kit("Zombies/Character", "Zombies/Animations/", new[]
+        {
+            "zombie idle", "zombie walk", "zombie run", "zombie crawl", "running crawl", "zombie death", "zombie dying",
+            "zombie attack", "zombie biting", "zombie biting (2)", "zombie scream",
+        }, undead: true, humanoid: false);
+
+        /// <summary>The Mutant from Ivan's creature pack, with its own clips: the Warden, and (in red) Azhrakel.</summary>
+        public static readonly Kit Mutant = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, humanoid: true);
+
+        /// <summary>Warrok, playing the Mutant's clips: General Ashgrave.</summary>
+        public static readonly Kit Warrok = new Kit("Creatures/Warrok", "Creatures/Animations/", MutantFiles, undead: false, humanoid: true);
 
         // Base layer (whole body): locomotion and death. Upper layer (spine up): attacks and the spitter's scream.
         enum Clip { Idle, Walk, Run, Crawl, CrawlRun, Death, Dying, Attack, Bite, Bite2, Scream }
         const int BaseCount = 7, UpperCount = 4, ClipCount = 11;
-        static readonly string[] Files =
-        {
-            "zombie idle", "zombie walk", "zombie run", "zombie crawl", "running crawl", "zombie death", "zombie dying",
-            "zombie attack", "zombie biting", "zombie biting (2)", "zombie scream",
-        };
         // What to play when a file is missing (only idle, walk and one death are needed).
         static readonly Clip[] Fallback =
         {
@@ -43,14 +84,16 @@ namespace ZombiesFPS.Zombies
         // Ground speed (m/s) each loop looks right at; playback is sped up or slowed to the zombie's real speed.
         // These are only fallbacks: the real strides are measured from the clips (MeasureStrides).
         static readonly float[] RefSpeed = { 1f, 0.9f, 3.2f, 0.5f, 1.6f };
-        // Measured stride speeds, in the model's own units (scaled by its size at runtime).
-        static float[] s_Stride;
 
         static readonly Color EyeGlow = new Color(1f, 0.85f, 0.2f);
 
-        static bool s_Loaded;
-        static GameObject s_Character;
-        static AnimationClip[] s_Clips;
+        Kit _kit;
+        // The kit's clips (its measured stride speeds are in Kit.Stride, in the model's own units).
+        AnimationClip[] _clips;
+        // Each material's name in the FBX, to find its textures (and their variants) by.
+        string[][] _materialNames;
+        float _sit;
+        Transform _upLegL, _upLegR, _legL, _legR;
 
         PlayableGraph _graph;
         AnimationMixerPlayable _base, _upper;
@@ -88,14 +131,14 @@ namespace ZombiesFPS.Zombies
         int _deathClip;
         bool _headHidden;
 
-        /// <summary>Whether a character model and the basic animations are in the project.</summary>
-        public static bool Available
+        /// <summary>Whether the zombie character model and the basic animations are in the project.</summary>
+        public static bool Available => IsAvailable(Zombie);
+
+        /// <summary>Whether <paramref name="kit"/>'s character and its basic animations are in the project.</summary>
+        public static bool IsAvailable(Kit kit)
         {
-            get
-            {
-                Load();
-                return s_Character != null;
-            }
+            Load(kit);
+            return kit.Character != null;
         }
 
         public Transform Spine => _skin != null ? _skin.Parts[(int)Part.Spine] : _spine;
@@ -104,28 +147,33 @@ namespace ZombiesFPS.Zombies
         public Vector3 HeadCenter => _skin != null ? _skin.HeadCenter
             : _headTop != null ? Vector3.Lerp(_headBone.position, _headTop.position, 0.45f) : _headBone.position + _headBone.up * 0.1f;
 
-        static void Load()
+        static void Load(Kit kit)
         {
-            if (s_Loaded) return;
-            s_Loaded = true;
+            if (kit.Loaded) return;
+            kit.Loaded = true;
 
-            s_Clips = new AnimationClip[ClipCount];
+            var clips = kit.Clips = new AnimationClip[ClipCount];
             for (int i = 0; i < ClipCount; i++)
-                foreach (var c in Resources.LoadAll<AnimationClip>(AnimationFolder + Files[i]))
-                    if (!c.name.StartsWith("__preview__")) { s_Clips[i] = c; break; }
+                foreach (var c in Resources.LoadAll<AnimationClip>(kit.AnimationFolder + kit.Files[i]))
+                    if (!c.name.StartsWith("__preview__")) { clips[i] = c; break; }
             for (int pass = 0; pass < 3; pass++)
                 for (int i = 0; i < ClipCount; i++)
-                    if (s_Clips[i] == null) s_Clips[i] = s_Clips[(int)Fallback[i]];
-            if (s_Clips[(int)Clip.Idle] == null || s_Clips[(int)Clip.Death] == null) return;
+                    if (clips[i] == null) clips[i] = clips[(int)Fallback[i]];
+            if (clips[(int)Clip.Idle] == null || clips[(int)Clip.Death] == null)
+            {
+                Debug.LogWarning($"[Zombies] No idle or death clip in Resources/{kit.AnimationFolder}; {kit.CharacterFolder} stays blocky.");
+                return;
+            }
 
             // Any skinned character in the folder; one the user added wins over the placeholder mannequin.
             var found = new List<GameObject>();
-            foreach (var go in Resources.LoadAll<GameObject>(CharacterFolder))
+            foreach (var go in Resources.LoadAll<GameObject>(kit.CharacterFolder))
                 if (go.transform.parent == null && go.GetComponentInChildren<SkinnedMeshRenderer>(true) != null && FindBone(go.transform, "Head") != null)
                     found.Add(go);
             found.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
             foreach (var go in found)
-                if (s_Character == null || s_Character.name == Placeholder) s_Character = go;
+                if (kit.Character == null || kit.Character.name == Placeholder) kit.Character = go;
+            if (kit.Character == null) Debug.LogWarning($"[Zombies] No rigged character in Resources/{kit.CharacterFolder}.");
         }
 
         static Transform FindBone(Transform root, string bone)
@@ -145,16 +193,22 @@ namespace ZombiesFPS.Zombies
             return false;
         }
 
-        /// <summary>Builds a model under <paramref name="parent"/>, scaled to stand <paramref name="height"/> metres tall.</summary>
-        public static ZombieModel Create(Transform parent, float height)
+        /// <summary>
+        /// Builds a model of <paramref name="kit"/> (the zombie when null) under <paramref name="parent"/>, scaled to
+        /// stand <paramref name="height"/> metres tall.
+        /// </summary>
+        public static ZombieModel Create(Transform parent, float height, Kit kit = null)
         {
-            if (!Available) return null;
-            var go = Instantiate(s_Character, parent, false);
+            kit = kit ?? Zombie;
+            if (!IsAvailable(kit)) return null;
+            var go = Instantiate(kit.Character, parent, false);
             go.name = "Model";
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.identity;
             go.transform.localScale = Vector3.one;
             var model = go.AddComponent<ZombieModel>();
+            model._kit = kit;
+            model._clips = kit.Clips;
             if (!model.Init(height))
             {
                 Destroy(go);
@@ -171,6 +225,10 @@ namespace ZombiesFPS.Zombies
             _headBone = FindBone(transform, "Head");
             _headTop = FindBone(transform, "HeadTop_End");
             if (_hips == null || _spine == null || _neck == null || _headBone == null) return false;
+            _upLegL = FindBone(transform, "LeftUpLeg");
+            _upLegR = FindBone(transform, "RightUpLeg");
+            _legL = FindBone(transform, "LeftLeg");
+            _legR = FindBone(transform, "RightLeg");
 
             // Scale to the zombie's height (packs come in centimetres, metres or anything in between).
             var top = _headTop != null ? _headTop : _headBone;
@@ -200,8 +258,9 @@ namespace ZombiesFPS.Zombies
             _materials = new Material[_renderers.Length][];
             _flash = new Material[_renderers.Length][];
             _baseColors = new Color[_renderers.Length][];
+            _materialNames = new string[_renderers.Length][];
             var white = Greybox.Lit(Color.white);
-            var undead = Resources.Load<Material>("Materials/Undead");
+            var undead = _kit.Undead ? Resources.Load<Material>("Materials/Undead") : null;
             if (undead != null && (undead.shader == null || !undead.shader.isSupported)) undead = null;
             for (int i = 0; i < _renderers.Length; i++)
             {
@@ -209,9 +268,14 @@ namespace ZombiesFPS.Zombies
                 _materials[i] = new Material[shared.Length];
                 _flash[i] = new Material[shared.Length];
                 _baseColors[i] = new Color[shared.Length];
+                _materialNames[i] = new string[shared.Length];
                 for (int m = 0; m < shared.Length; m++)
                 {
-                    _materials[i][m] = shared[m] == null ? white : undead != null ? UndeadSkin(undead, shared[m]) : new Material(shared[m]);
+                    _materialNames[i][m] = shared[m] != null ? shared[m].name.Replace(" (Instance)", "") : "";
+                    _materials[i][m] = shared[m] == null ? white
+                        : undead != null ? UndeadSkin(undead, shared[m], _kit.TextureFolder)
+                        : !_kit.Undead ? OwnSkin(shared[m], _kit.TextureFolder, null)
+                        : new Material(shared[m]);
                     _flash[i][m] = white;
                     _baseColors[i][m] = ColorOf(_materials[i][m]);
                 }
@@ -223,7 +287,7 @@ namespace ZombiesFPS.Zombies
             var center = HeadCenter;
             var fwd = transform.forward;
             var right = transform.right;
-            bool faceless = s_Character.name == Placeholder;
+            bool faceless = _kit.Character.name == Placeholder;
             _eyes = new GameObject[faceless ? 2 : 0];
             for (int s = 0; s < _eyes.Length; s++)
             {
@@ -235,7 +299,8 @@ namespace ZombiesFPS.Zombies
             }
 
             BuildGraph(animator);
-            if (s_Stride == null) MeasureStrides();
+            // Measured once per kit, on a model that's in the scene (a pose doesn't update under an inactive parent).
+            if (_kit.Stride == null && gameObject.activeInHierarchy) MeasureStrides();
             return true;
         }
 
@@ -244,13 +309,13 @@ namespace ZombiesFPS.Zombies
         /// folder (Name_Diffuse, Name_Normal, Name_Gloss), so the look never depends on how the FBX's embedded
         /// textures came through the import; otherwise whatever textures the imported material has are used.
         /// </summary>
-        static Material UndeadSkin(Material undead, Material source)
+        static Material UndeadSkin(Material undead, Material source, string folder)
         {
             var mat = new Material(undead);
             string name = source.name.Replace(" (Instance)", "");
-            var diffuse = Resources.Load<Texture2D>(TextureFolder + name + "_Diffuse");
-            var normal = Resources.Load<Texture2D>(TextureFolder + name + "_Normal");
-            var gloss = Resources.Load<Texture2D>(TextureFolder + name + "_Gloss");
+            var diffuse = Resources.Load<Texture2D>(folder + name + "_Diffuse");
+            var normal = Resources.Load<Texture2D>(folder + name + "_Normal");
+            var gloss = Resources.Load<Texture2D>(folder + name + "_Gloss");
             if (diffuse == null && source.HasProperty("_MainTex")) diffuse = source.GetTexture("_MainTex") as Texture2D;
             if (normal == null && source.HasProperty("_BumpMap")) normal = source.GetTexture("_BumpMap") as Texture2D;
             if (diffuse != null) mat.SetTexture("_MainTex", diffuse);
@@ -261,13 +326,73 @@ namespace ZombiesFPS.Zombies
         }
 
         /// <summary>
+        /// The character's own look, lit, from the same Textures folder (Name_Diffuse, Name_Normal, Name_Glow), or
+        /// from a <paramref name="variant"/> of it (Name_Variant_Diffuse...) where one is there.
+        /// </summary>
+        static Material OwnSkin(Material source, string folder, string variant)
+        {
+            string name = source.name.Replace(" (Instance)", "");
+            Texture2D Find(string map)
+            {
+                Texture2D t = null;
+                if (variant != null) t = Resources.Load<Texture2D>(folder + name + "_" + variant + "_" + map);
+                return t != null ? t : Resources.Load<Texture2D>(folder + name + "_" + map);
+            }
+            var diffuse = Find("Diffuse");
+            if (diffuse == null && source.HasProperty("_MainTex")) diffuse = source.GetTexture("_MainTex") as Texture2D;
+            var normal = Find("Normal");
+            if (normal == null && source.HasProperty("_BumpMap")) normal = source.GetTexture("_BumpMap") as Texture2D;
+            var mat = PropModels.Textured(name + (variant != null ? " " + variant : ""), diffuse, normal, 0f, 0.25f);
+            mat.enableInstancing = false;
+            var glow = Find("Glow");
+            if (glow != null)
+            {
+                mat.SetTexture("_EmissionMap", glow);
+                mat.SetColor("_EmissionColor", Color.white * 1.6f);
+                mat.EnableKeyword("_EMISSION");
+                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
+            return mat;
+        }
+
+        /// <summary>
+        /// Re-dresses the model in a variant of its textures (Azhrakel's red Mutant), or its own ones when null.
+        /// Only for kits drawn with their own textures; the type tint (<see cref="SetLook"/>) still applies on top.
+        /// </summary>
+        public void UseVariant(string variant)
+        {
+            if (_kit.Undead || variant == _variant) return;
+            _variant = variant;
+            for (int i = 0; i < _materials.Length; i++)
+                for (int m = 0; m < _materials[i].Length; m++)
+                {
+                    if (_materialNames[i][m] == "") continue;
+                    var old = _materials[i][m];
+                    var source = new Material(old) { name = _materialNames[i][m] };
+                    _materials[i][m] = OwnSkin(source, _kit.TextureFolder, variant);
+                    Destroy(source);
+                    Destroy(old);
+                    _baseColors[i][m] = ColorOf(_materials[i][m]);
+                }
+            for (int i = 0; i < _renderers.Length; i++) _renderers[i].sharedMaterials = _materials[i];
+        }
+
+        string _variant;
+
+        /// <summary>
+        /// Seated (1) or standing (0): bends the hips and knees over whatever the clips are doing, for a figure on a
+        /// throne (the hips stay where they are, on the seat).
+        /// </summary>
+        public void Sit(float seated) => _sit = Mathf.Clamp01(seated);
+
+        /// <summary>
         /// How fast each loop actually walks, measured once from the clip itself so playback can match the zombie's
         /// real speed and the feet don't slide. Works whether the clip moves the hips forward or walks in place:
         /// the planted foot moves backward under the hips at exactly the ground speed.
         /// </summary>
         void MeasureStrides()
         {
-            s_Stride = new float[RefSpeed.Length];
+            var stride = _kit.Stride = new float[RefSpeed.Length];
             var footL = FindBone(transform, "LeftToeBase") ?? FindBone(transform, "LeftFoot");
             var footR = FindBone(transform, "RightToeBase") ?? FindBone(transform, "RightFoot");
             float unit = Mathf.Max(transform.lossyScale.z, 1e-4f);
@@ -275,10 +400,10 @@ namespace ZombiesFPS.Zombies
             var speeds = new List<float>();
             for (int clip = 1; clip < RefSpeed.Length; clip++)
             {
-                s_Stride[clip] = RefSpeed[clip] / unit;
+                stride[clip] = RefSpeed[clip] / unit;
                 if (footL == null || footR == null) continue;
                 for (int i = 0; i < BaseCount; i++) _base.SetInputWeight(i, i == clip ? 1f : 0f);
-                float len = s_Clips[clip].length;
+                float len = _clips[clip].length;
                 if (len < 0.1f) continue;
                 const int N = 48;
                 float dt = len / N;
@@ -306,9 +431,9 @@ namespace ZombiesFPS.Zombies
                 // The median shrugs off the jump where the loop wraps.
                 speeds.Sort();
                 float v = speeds[speeds.Count / 2];
-                if (v * unit > 0.15f && v * unit < 7f) s_Stride[clip] = v;
+                if (v * unit > 0.15f && v * unit < 7f) stride[clip] = v;
             }
-            s_Stride[0] = RefSpeed[0] / unit;
+            stride[0] = RefSpeed[0] / unit;
         }
 
         void BuildGraph(Animator animator)
@@ -322,7 +447,7 @@ namespace ZombiesFPS.Zombies
             _playables = new AnimationClipPlayable[ClipCount];
             for (int i = 0; i < ClipCount; i++)
             {
-                var p = AnimationClipPlayable.Create(_graph, s_Clips[i]);
+                var p = AnimationClipPlayable.Create(_graph, _clips[i]);
                 p.SetApplyFootIK(false);
                 p.Pause();
                 _playables[i] = p;
@@ -336,6 +461,14 @@ namespace ZombiesFPS.Zombies
 
             // Attacks move the spine, arms and head only, so the legs keep walking underneath.
             var mask = new AvatarMask();
+            if (_kit.Humanoid)
+            {
+                foreach (var part in new[] { AvatarMaskBodyPart.Root, AvatarMaskBodyPart.LeftLeg, AvatarMaskBodyPart.RightLeg, AvatarMaskBodyPart.LeftFootIK, AvatarMaskBodyPart.RightFootIK })
+                    mask.SetHumanoidBodyPartActive(part, false);
+                _layers.SetLayerMaskFromAvatarMask(1, mask);
+                output.SetSourcePlayable(_layers);
+                return;
+            }
             var all = GetComponentsInChildren<Transform>(true);
             mask.transformCount = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -433,7 +566,7 @@ namespace ZombiesFPS.Zombies
         // ---------------------------------------------------------------- per frame
 
         /// <summary>The ground speed (m/s) clip <paramref name="clip"/> walks at, at this zombie's size.</summary>
-        float Stride(int clip) => Mathf.Max(s_Stride[clip] * transform.lossyScale.z, 0.1f);
+        float Stride(int clip) => Mathf.Max(_kit.Stride[clip] * transform.lossyScale.z, 0.1f);
 
         /// <param name="speed">Ground speed seen on this machine (m/s).</param>
         /// <param name="swing">0 none, 0..1 wind-up, 1..2 strike and recover (as NetZombie measures it).</param>
@@ -443,6 +576,7 @@ namespace ZombiesFPS.Zombies
         public void Animate(float dt, float speed, bool crawls, float swing, float swingTime, int swingVariant, float spit, bool stunned)
         {
             if (!_graph.IsValid()) return;
+            if (_kit.Stride == null) MeasureStrides();
             float blend = 1f - Mathf.Exp(-7f * dt);
 
             // Base layer: what the legs are doing.
@@ -452,7 +586,7 @@ namespace ZombiesFPS.Zombies
             {
                 target[_deathClip] = 1f;
                 blend = 1f - Mathf.Exp(-14f * dt);
-                var len = s_Clips[_deathClip].length;
+                var len = _clips[_deathClip].length;
                 _time[_deathClip] = Mathf.Min(_time[_deathClip] + dt, len - 0.01f);
             }
             else if (crawls)
@@ -485,7 +619,7 @@ namespace ZombiesFPS.Zombies
                     // Loops play at the speed the zombie is really moving (idle at its own pace).
                     float rate = i == (int)Clip.Idle ? 1f : Mathf.Clamp(speed / Stride(i), 0.35f, 3f);
                     _time[i] += dt * rate * slow;
-                    float len = Mathf.Max(s_Clips[i].length, 0.05f);
+                    float len = Mathf.Max(_clips[i].length, 0.05f);
                     if (_time[i] > len) _time[i] %= len;
                 }
                 _playables[i].SetTime(_time[i]);
@@ -504,13 +638,13 @@ namespace ZombiesFPS.Zombies
                     // are cut to fit the game's swing, rather than played at triple speed.
                     float s = swing < 1f ? swing * 0.5f : 0.5f + (swing - 1f) * 0.5f;
                     active = (int)Clip.Attack + Mathf.Abs(swingVariant) % 3;
-                    activeTime = s * Mathf.Min(s_Clips[active].length, swingTime * 1.6f);
+                    activeTime = s * Mathf.Min(_clips[active].length, swingTime * 1.6f);
                     upper = Mathf.Clamp01(s / 0.12f) * Mathf.Clamp01((1f - s) / 0.2f);
                 }
                 else if (spit < 1.1f)
                 {
                     active = (int)Clip.Scream;
-                    activeTime = Mathf.Min(0.4f + spit * 1.5f, s_Clips[active].length - 0.01f);
+                    activeTime = Mathf.Min(0.4f + spit * 1.5f, _clips[active].length - 0.01f);
                     upper = Mathf.Clamp01(spit / 0.1f) * Mathf.Clamp01((1.1f - spit) / 0.35f);
                 }
             }
@@ -536,11 +670,30 @@ namespace ZombiesFPS.Zombies
                 h.z = _hipsBind.z;
                 _hips.localPosition = h;
             }
+            if (_sit > 0f) PoseSeated();
             if (_headHidden) _headBone.localScale = Vector3.zero;
             if (_skin != null)
             {
                 _skin.Retarget(transform, _srcParts, _srcRest, _srcHipsRest, _skinAlign);
                 _skin.Head.localScale = _headHidden ? Vector3.zero : _skinHeadScale;
+            }
+        }
+
+        /// <summary>Thighs swung forward level and shins hung straight down, eased in by <see cref="_sit"/>.</summary>
+        void PoseSeated()
+        {
+            if (_upLegL == null || _upLegR == null || _legL == null || _legR == null) return;
+            var fwd = transform.forward;
+            foreach (var (thigh, shin) in new[] { (_upLegL, _legL), (_upLegR, _legR) })
+            {
+                Vector3 along = (shin.position - thigh.position).normalized;
+                var level = Quaternion.FromToRotation(along, Vector3.ProjectOnPlane(fwd, Vector3.up).normalized + Vector3.down * 0.1f);
+                thigh.rotation = Quaternion.Slerp(Quaternion.identity, level, _sit) * thigh.rotation;
+                var foot = shin.childCount > 0 ? shin.GetChild(0) : null;
+                if (foot == null) continue;
+                Vector3 down = (foot.position - shin.position).normalized;
+                var hang = Quaternion.FromToRotation(down, Vector3.down + fwd * 0.08f);
+                shin.rotation = Quaternion.Slerp(Quaternion.identity, hang, _sit) * shin.rotation;
             }
         }
 

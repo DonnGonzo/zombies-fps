@@ -110,6 +110,10 @@ namespace ZombiesFPS.Net
         int _rCharacter = -1;
         Vector3 _rLastPos;
         float _rSpeed, _rPhase, _rForward = 1f;
+        // Ivan's survivor model with the shooter pack, over the blocky body (which stays as the fallback).
+        CharacterModels.SurvivorModel _survivor;
+        Vector3 _rVelocity;
+        float _rFireAt = -100f, _rThrowAt = -100f, _rHurtAt = -100f, _rLastHealth = MaxHealth;
 
         // Server-only.
         float _lastDamageTime = -100f;
@@ -344,12 +348,30 @@ namespace ZombiesFPS.Net
             _remoteGlowLight.shadows = LightShadows.None;
             _remoteGlow.SetActive(false);
 
+            UseSurvivorModel();
+
             _remoteAudio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
             _remoteAudio.spatialBlend = 1f;
             _remoteAudio.minDistance = 3f;
             _remoteAudio.maxDistance = 60f;
             _remoteAudio.playOnAwake = false;
             ApplyRemotePose(State.Value);
+        }
+
+        /// <summary>
+        /// Dresses the teammate as the survivor model when it's in the project: the blocky body is hidden and the gun
+        /// moves onto the model's chest, held out in front where the shooter pack's rifle stance has its hands.
+        /// </summary>
+        void UseSurvivorModel()
+        {
+            _survivor = CharacterModels.SurvivorModel.Create(_body, 1.8f);
+            if (_survivor == null) return;
+            foreach (var r in _body.GetComponentsInChildren<Renderer>(true))
+                if (!r.transform.IsChildOf(_remoteGunRoot) && !r.transform.IsChildOf(_survivor.transform)) r.enabled = false;
+            var chest = _survivor.Chest;
+            _remoteGunRoot.SetParent(chest, true);
+            _remoteGunRoot.position = chest.position + transform.forward * 0.32f + transform.right * 0.1f + Vector3.up * 0.06f;
+            _remoteGunRoot.rotation = transform.rotation;
         }
 
         void ApplyRemotePose(LifeState state)
@@ -459,6 +481,18 @@ namespace ZombiesFPS.Net
             float forward = Vector3.Dot(delta, transform.forward);
             _rForward = Mathf.Lerp(_rForward, forward < -0.001f ? -1f : 1f, k);
             if (State.Value != LifeState.Alive) _rSpeed = 0f;
+            if (_survivor != null)
+            {
+                var local = State.Value == LifeState.Alive ? transform.InverseTransformDirection(delta / dt) : Vector3.zero;
+                _rVelocity = Vector3.Lerp(_rVelocity, local, k);
+                if (Health.Value < _rLastHealth - 0.5f) _rHurtAt = Time.time;
+                _rLastHealth = Health.Value;
+                bool grounded = State.Value != LifeState.Alive
+                    || Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, 0.55f, ~0, QueryTriggerInteraction.Ignore);
+                float now = Time.time;
+                _survivor.Animate(dt, _rVelocity, grounded, now - _rFireAt, now - _rThrowAt, now - _rHurtAt);
+                return;
+            }
 
             float gait = Mathf.Clamp01(_rSpeed / 2f);
             float sprint = Mathf.Clamp01((_rSpeed - 4.5f) / 2f);
@@ -989,6 +1023,7 @@ namespace ZombiesFPS.Net
         void ShotFxRpc(Vector3 end, Vector3 normal, bool flesh, bool explosive, bool withSound, int pierced, Vector3 impact, Vector3 impactNormal)
         {
             if (_remoteMuzzle == null) return;
+            _rFireAt = Time.time;
             int tier = TierInSlot(ActiveSlot.Value);
             FxSystem.Instance?.ShowTracer(_remoteMuzzle.position, end, UpgradeData.TierGlow(tier), pierced > 1);
             FxSystem.Instance?.Impact(end, normal, flesh ? FxSystem.Blood : FxSystem.Dust, flesh ? 5 : 3, 3f, 0.06f);

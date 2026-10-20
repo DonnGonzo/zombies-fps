@@ -175,6 +175,7 @@ namespace ZombiesFPS.Net
         [Rpc(SendTo.ClientsAndHost)]
         void ThrowSpawnRpc(long id, ThrowableKind kind, Vector3 origin, Vector3 velocity, float fuse)
         {
+            if (!IsOwner) _rThrowAt = Time.time;
             Throwable.Launch(id, kind, OwnerClientId, origin, velocity, fuse, IsServer, IsServer ? ServerDetonate : (System.Action<Throwable, Vector3, Hitbox>)null);
         }
 

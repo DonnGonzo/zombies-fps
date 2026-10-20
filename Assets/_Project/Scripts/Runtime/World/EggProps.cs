@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using ZombiesFPS.Core;
 using ZombiesFPS.Data;
+using ZombiesFPS.Zombies;
 
 namespace ZombiesFPS.World
 {
@@ -111,6 +112,9 @@ namespace ZombiesFPS.World
 
             _god = Figure.God(transform, ZoneMap.GodSpot);
             _general = Figure.General(transform, ZoneMap.ThroneSpot);
+            // Ivan's models where they're in the project: the Mutant in red for the god, Warrok for his general.
+            _god.UseModel(ZombieModel.Mutant, "Red", 5.4f);
+            _general.UseModel(ZombieModel.Warrok, null, 2.3f);
 
             _choiceFight = ChoiceGlow(ZoneMap.FightSpot);
             _choiceServe = ChoiceGlow(ZoneMap.ServeSpot);
@@ -335,7 +339,8 @@ namespace ZombiesFPS.World
                 float rise = Mathf.Clamp01((t - _godRiseAt) / 4f);
                 rise = rise * rise * (3f - 2f * rise);
                 _god.Root.localPosition = ZoneMap.GodSpot + Vector3.down * (1f - rise) * 6f;
-                _god.Idle(t, 0f);
+                // He roars as he clears the pit.
+                _god.Idle(t, 0f, roar: t - _godRiseAt - 2.5f);
             }
             if (_general.Root.gameObject.activeSelf)
             {
@@ -383,6 +388,7 @@ namespace ZombiesFPS.World
             Material _white;
             Transform _model;
             Animator _animator;
+            ZombieModel _animated;
             bool _hasSpeed, _flashing;
             float _stride;
             static readonly int SpeedParam = Animator.StringToHash("Speed");
@@ -451,6 +457,25 @@ namespace ZombiesFPS.World
                         if (p.nameHash == SpeedParam && p.type == AnimatorControllerParameterType.Float) _hasSpeed = true;
                 }
                 Body.gameObject.SetActive(false);
+                CaptureMaterials();
+            }
+
+            /// <summary>
+            /// Swaps the blocky body for <paramref name="kit"/>'s animated model, <paramref name="height"/> metres
+            /// tall, in texture <paramref name="variant"/>. Keeps the blocky body when the kit isn't in the project.
+            /// </summary>
+            public void UseModel(ZombieModel.Kit kit, string variant, float height)
+            {
+                var model = ZombieModel.Create(Root, height, kit);
+                if (model == null) return;
+                model.UseVariant(variant);
+                model.SetLook(Color.white, 1f);
+                model.ResetLife(1u);
+                foreach (var c in model.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
+                _animated = model;
+                _model = model.transform;
+                // The blocky body goes, but not its lights (Azhrakel's ember glow).
+                foreach (var r in Body.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                 CaptureMaterials();
             }
 
@@ -536,12 +561,27 @@ namespace ZombiesFPS.World
             /// <summary>Seated (1) on the throne, or standing (0).</summary>
             public void Seat(float seated)
             {
+                if (_animated != null)
+                {
+                    _animated.Sit(seated);
+                    // Back onto the throne's seat, which is about as high as his hips.
+                    _model.localPosition = new Vector3(0f, 0f, -0.35f * seated);
+                    return;
+                }
                 Body.localPosition = new Vector3(0f, Mathf.Lerp(0.95f * _scale, 1.12f, seated), Mathf.Lerp(0f, -0.35f, seated));
                 LegL.localRotation = LegR.localRotation = Quaternion.Euler(-85f * seated, 0f, 0f);
             }
 
-            public void Idle(float t, float hurt, float speed = 0f)
+            /// <param name="roar">Seconds into a roar (the animated models only; negative or long past for none).</param>
+            public void Idle(float t, float hurt, float speed = 0f, float roar = 99f)
             {
+                if (_animated != null)
+                {
+                    _animated.Animate(Time.deltaTime, speed, false, 0f, 1f, 0, roar >= 0f ? roar : 99f, false);
+                    bool flashing = hurt > 0f && Mathf.Repeat(t * 12f, 1f) < 0.5f;
+                    if (flashing != _flashing) _animated.SetFlash(_flashing = flashing);
+                    return;
+                }
                 float breathe = Mathf.Sin(t * 1.6f);
                 float k = Mathf.Clamp01(speed / 4f);
                 float swing = Mathf.Sin(_stride) * 45f * k;
