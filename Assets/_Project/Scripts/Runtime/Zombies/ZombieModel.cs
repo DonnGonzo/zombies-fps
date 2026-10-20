@@ -21,8 +21,9 @@ namespace ZombiesFPS.Zombies
     /// (<see cref="CharacterSkin.Retarget"/>); the hitboxes follow the monster's own spine and head.
     ///
     /// Bosses: other <see cref="Kit"/>s pair another character with its own clips (the Mutant from Ivan's creature
-    /// pack for the Warden and Azhrakel, Warrok for Ashgrave). Those are imported Humanoid, so Unity retargets the
-    /// Mutant's clips onto Warrok's different build.
+    /// pack for the Warden and Azhrakel). Warrok (Ashgrave) wears the Mutant's clips as a skin: a hidden Mutant
+    /// plays them and its pose is copied onto Warrok bone by bone from T-pose to T-pose, as for the monsters, since
+    /// the two skeletons' rest rotations differ too much to share Generic clips directly.
     /// </summary>
     public sealed class ZombieModel : MonoBehaviour
     {
@@ -35,22 +36,23 @@ namespace ZombiesFPS.Zombies
             public readonly string[] Files;
             // The rotting-skin shader (the zombies), or the character's own textures as they are (the bosses).
             public readonly bool Undead;
-            // Imported Humanoid: the upper-body layer is masked by body part rather than by bone path.
-            public readonly bool Humanoid;
+            // A Mixamo character worn over the rig (Resources folder), or null to show the rig's own character.
+            public readonly string SkinFolder;
 
             internal bool Loaded;
             internal GameObject Character;
             internal AnimationClip[] Clips;
             internal float[] Stride;
+            internal GameObject Skin;
 
-            public Kit(string characterFolder, string animationFolder, string[] files, bool undead, bool humanoid)
+            public Kit(string characterFolder, string animationFolder, string[] files, bool undead, string skinFolder = null)
             {
                 CharacterFolder = characterFolder;
                 TextureFolder = characterFolder + "/Textures/";
                 AnimationFolder = animationFolder;
                 Files = files;
                 Undead = undead;
-                Humanoid = humanoid;
+                SkinFolder = skinFolder;
             }
         }
 
@@ -65,13 +67,13 @@ namespace ZombiesFPS.Zombies
         {
             "zombie idle", "zombie walk", "zombie run", "zombie crawl", "running crawl", "zombie death", "zombie dying",
             "zombie attack", "zombie biting", "zombie biting (2)", "zombie scream",
-        }, undead: true, humanoid: false);
+        }, undead: true);
 
         /// <summary>The Mutant from Ivan's creature pack, with its own clips: the Warden, and (in red) Azhrakel.</summary>
-        public static readonly Kit Mutant = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, humanoid: true);
+        public static readonly Kit Mutant = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false);
 
-        /// <summary>Warrok, playing the Mutant's clips: General Ashgrave.</summary>
-        public static readonly Kit Warrok = new Kit("Creatures/Warrok", "Creatures/Animations/", MutantFiles, undead: false, humanoid: true);
+        /// <summary>Warrok, worn over the Mutant playing its clips: General Ashgrave.</summary>
+        public static readonly Kit Warrok = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, skinFolder: "Creatures/Warrok");
 
         // Base layer (whole body): locomotion and death. Upper layer (spine up): attacks and the spitter's scream.
         enum Clip { Idle, Walk, Run, Crawl, CrawlRun, Death, Dying, Attack, Bite, Bite2, Scream }
@@ -174,6 +176,19 @@ namespace ZombiesFPS.Zombies
             foreach (var go in found)
                 if (kit.Character == null || kit.Character.name == Placeholder) kit.Character = go;
             if (kit.Character == null) Debug.LogWarning($"[Zombies] No rigged character in Resources/{kit.CharacterFolder}.");
+            if (kit.SkinFolder != null)
+            {
+                kit.Skin = FindCharacter(kit.SkinFolder);
+                if (kit.Skin == null) Debug.LogWarning($"[Zombies] No rigged character in Resources/{kit.SkinFolder}; showing {kit.CharacterFolder} instead.");
+            }
+        }
+
+        static GameObject FindCharacter(string folder)
+        {
+            foreach (var go in Resources.LoadAll<GameObject>(folder))
+                if (go.transform.parent == null && go.GetComponentInChildren<SkinnedMeshRenderer>(true) != null && FindBone(go.transform, "Head") != null)
+                    return go;
+            return null;
         }
 
         static Transform FindBone(Transform root, string bone)
@@ -214,6 +229,8 @@ namespace ZombiesFPS.Zombies
                 Destroy(go);
                 return null;
             }
+            // Warrok and the like: worn over the rig from the start.
+            if (kit.Skin != null) model.UseSkin(null, 0);
             return model;
         }
 
@@ -461,14 +478,6 @@ namespace ZombiesFPS.Zombies
 
             // Attacks move the spine, arms and head only, so the legs keep walking underneath.
             var mask = new AvatarMask();
-            if (_kit.Humanoid)
-            {
-                foreach (var part in new[] { AvatarMaskBodyPart.Root, AvatarMaskBodyPart.LeftLeg, AvatarMaskBodyPart.RightLeg, AvatarMaskBodyPart.LeftFootIK, AvatarMaskBodyPart.RightFootIK })
-                    mask.SetHumanoidBodyPartActive(part, false);
-                _layers.SetLayerMaskFromAvatarMask(1, mask);
-                output.SetSourcePlayable(_layers);
-                return;
-            }
             var all = GetComponentsInChildren<Transform>(true);
             mask.transformCount = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -724,10 +733,13 @@ namespace ZombiesFPS.Zombies
         /// </summary>
         public void UseSkin(string character, int variant)
         {
+            // A kit that wears a character always does.
+            bool own = character == null && _kit.Skin != null;
+            if (own) character = "#" + _kit.SkinFolder;
             CharacterSkin skin = null;
             if (character != null && !_skins.TryGetValue(character, out skin))
             {
-                skin = CharacterSkin.Create(character, transform, 0);
+                skin = own ? CharacterSkin.Wrap(Instantiate(_kit.Skin, transform, false), _kit.SkinFolder) : CharacterSkin.Create(character, transform, 0);
                 if (skin != null)
                 {
                     // As tall as the zombie, in the rig's own units (the model's scale then makes it the zombie's height).
@@ -745,7 +757,7 @@ namespace ZombiesFPS.Zombies
             if (skin == null) return;
 
             // Own copies of the variant's materials, so each monster can be tinted for its type.
-            var shared = CharacterSkin.Materials(character, variant);
+            var shared = own ? WornMaterials(skin) : CharacterSkin.Materials(character, variant);
             _skinMaterials = new Material[shared.Length];
             _skinFlash = new Material[shared.Length];
             _skinColors = new Color[shared.Length];
@@ -758,6 +770,19 @@ namespace ZombiesFPS.Zombies
             }
             skin.Renderer.sharedMaterials = _skinMaterials;
             _skinHeadScale = Vector3.one;
+        }
+
+        Material[] _worn;
+
+        /// <summary>The worn character's own look, from its Textures folder (made once per model).</summary>
+        Material[] WornMaterials(CharacterSkin skin)
+        {
+            if (_worn != null) return _worn;
+            var shared = skin.Renderer.sharedMaterials;
+            _worn = new Material[shared.Length];
+            for (int m = 0; m < shared.Length; m++)
+                _worn[m] = shared[m] != null ? OwnSkin(shared[m], _kit.SkinFolder + "/Textures/", null) : Greybox.Lit(Color.white);
+            return _worn;
         }
     }
 }

@@ -108,6 +108,43 @@ namespace ZombiesFPS.CharacterModels
             return skin;
         }
 
+        /// <summary>
+        /// Turns an instantiated Mixamo character (an FBX in T-pose, "mixamorig:" bones) into a skin that
+        /// <see cref="Retarget"/> can pose, in place: its own transform becomes the skin's root. Null (and the object
+        /// destroyed) when it has no skinned mesh or no hips and head.
+        /// </summary>
+        public static CharacterSkin Wrap(GameObject model, string character)
+        {
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localScale = Vector3.one;
+            // Posed from code only: its own Animator (no controller) and any colliders go.
+            foreach (var a in model.GetComponentsInChildren<Animator>(true)) Destroy(a);
+            foreach (var c in model.GetComponentsInChildren<Collider>(true)) Destroy(c);
+            var skin = model.AddComponent<CharacterSkin>();
+            skin.Character = character;
+            skin.Renderer = model.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            skin.Parts = FindMixamo(model.transform);
+            if (skin.Renderer == null || skin.Hips == null || skin.Head == null)
+            {
+                Destroy(model);
+                return null;
+            }
+            skin.Renderer.updateWhenOffscreen = true;
+            skin.Bones = skin.Renderer.bones;
+            skin.RestRotations = Capture(model.transform, skin.Parts);
+            skin.HipsRest = model.transform.InverseTransformPoint(skin.Hips.position);
+            Transform top = null;
+            foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                if (t.name.EndsWith("HeadTop_End")) { top = t; break; }
+            var head = skin.Head;
+            var topPos = top != null ? top.position : head.position + model.transform.up * (head.position - skin.Hips.position).magnitude * 0.35f;
+            skin.Height = model.transform.InverseTransformPoint(topPos).y;
+            var center = Vector3.Lerp(head.position, topPos, 0.45f) + model.transform.TransformVector(new Vector3(0f, 0f, 0.02f * skin.Height));
+            skin.HeadCenterLocal = head.InverseTransformPoint(center);
+            return skin;
+        }
+
         static Data Load(string character)
         {
             if (s_Data.TryGetValue(character, out var cached)) return cached;

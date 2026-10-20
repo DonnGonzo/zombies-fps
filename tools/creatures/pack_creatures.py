@@ -7,7 +7,8 @@ Creatures/Warrok    Warrok (General Ashgrave)
 Creatures/Animations  the creature pack clips both play
 Survivors/Character Ely (teammates), Survivors/Animations the shooter pack
 
-All are imported Humanoid (auto-mapped Mixamo bones), so Unity retargets the clips across the builds. Textures
+All are imported Generic (Humanoid can't map the Mutant: its left hand has no fingers, and both packs' clips are on
+its skeleton). The game plays the clips on a hidden Mutant and copies the pose onto Warrok and Ely. Textures
 are named <Material>_Diffuse/_Normal/_Glow, which is how ZombieModel and SurvivorModel find them.
 """
 import io, os, shutil, subprocess, sys, uuid, collections
@@ -26,9 +27,7 @@ MODEL_META = """ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
   externalObjects: {}
-  autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 3
-  avatarSetup: 1
+  animationType: 2
   importAnimation: 1
   userData: 
   assetBundleName: 

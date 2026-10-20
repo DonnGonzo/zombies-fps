@@ -7,8 +7,9 @@ namespace ZombiesFPS.CharacterModels
 {
     /// <summary>
     /// A teammate as other players see them: Ely (or any Mixamo character in Resources/Survivors/Character) played
-    /// with Ivan's shooter pack in Resources/Survivors/Animations. Both are imported Humanoid, so Unity retargets the
-    /// clips onto the character's own build.
+    /// with Ivan's shooter pack in Resources/Survivors/Animations. The pack was exported on the Mutant's skeleton, so a
+    /// hidden Mutant plays the clips and Ely copies its pose bone by bone, T-pose to T-pose
+    /// (<see cref="CharacterSkin.Retarget"/>): the two rigs' rest rotations differ too much to share Generic clips.
     ///
     /// The legs blend between idle, walking and running in eight directions from the player's velocity in their own
     /// facing; the upper body plays a shot, a throw or a flinch over them, and a jump takes the whole body.
@@ -18,6 +19,7 @@ namespace ZombiesFPS.CharacterModels
         const string CharacterFolder = "Survivors/Character";
         const string TextureFolder = "Survivors/Character/Textures/";
         const string AnimationFolder = "Survivors/Animations/";
+        const string RigPath = "Creatures/Mutant/Mutant";
 
         enum Clip { Idle, Walk, Back, Left, Right, Run, RunBack, Jump, Fire, Throw, Hit }
         const int BaseCount = 8, UpperCount = 3, ClipCount = 11;
@@ -34,7 +36,7 @@ namespace ZombiesFPS.CharacterModels
         static readonly float[] RefSpeed = { 1f, 1.5f, 1.3f, 1.4f, 1.4f, 4.6f, 3.2f };
 
         static bool s_Loaded;
-        static GameObject s_Character;
+        static GameObject s_Character, s_Rig;
         static AnimationClip[] s_Clips;
 
         PlayableGraph _graph;
@@ -45,7 +47,11 @@ namespace ZombiesFPS.CharacterModels
         readonly float[] _weight = new float[BaseCount];
         readonly float[] _target = new float[BaseCount];
         float _upperWeight, _airborne;
-        Renderer[] _renderers;
+        CharacterSkin _skin;
+        Transform[] _srcParts;
+        Quaternion[] _srcRest, _align;
+        Vector3 _srcHipsRest, _hipsBind;
+        Transform _hips;
 
         /// <summary>The upper chest, for anything that rides the body (the gun).</summary>
         public Transform Chest { get; private set; }
@@ -84,6 +90,12 @@ namespace ZombiesFPS.CharacterModels
                     break;
                 }
             if (s_Character == null) Debug.LogWarning("[Characters] No survivor character in Resources/" + CharacterFolder + "; teammates stay blocky.");
+            s_Rig = Resources.Load<GameObject>(RigPath);
+            if (s_Rig == null)
+            {
+                Debug.LogWarning("[Characters] The shooter clips play on the Mutant (Resources/" + RigPath + "), which is missing; teammates stay blocky.");
+                s_Character = null;
+            }
         }
 
         static Transform FindBone(Transform root, string bone)
@@ -101,7 +113,7 @@ namespace ZombiesFPS.CharacterModels
         public static SurvivorModel Create(Transform parent, float height)
         {
             if (!Available) return null;
-            var go = Instantiate(s_Character, parent, false);
+            var go = Instantiate(s_Rig, parent, false);
             go.name = "Survivor";
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.identity;
@@ -118,13 +130,27 @@ namespace ZombiesFPS.CharacterModels
 
         bool Init(float height)
         {
-            var hips = FindBone(transform, "Hips");
-            Head = FindBone(transform, "Head");
-            Chest = FindBone(transform, "Spine2") ?? FindBone(transform, "Spine1") ?? FindBone(transform, "Spine");
-            var top = FindBone(transform, "HeadTop_End") ?? Head;
-            if (hips == null || Head == null || Chest == null) return false;
-            float tall = transform.InverseTransformPoint(top.position).y;
-            if (tall > 0.01f) transform.localScale = Vector3.one * (height / tall);
+            // The hidden rig the clips play on, at rest.
+            _hips = FindBone(transform, "Hips");
+            var rigHead = FindBone(transform, "Head");
+            var rigTop = FindBone(transform, "HeadTop_End") ?? rigHead;
+            if (_hips == null || rigHead == null) return false;
+            foreach (var r in GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+            float tall = transform.InverseTransformPoint(rigTop.position).y;
+            if (tall < 0.01f) return false;
+            _srcParts = CharacterSkin.FindMixamo(transform);
+            _srcRest = CharacterSkin.Capture(transform, _srcParts);
+            _srcHipsRest = transform.InverseTransformPoint(_hips.position);
+            _hipsBind = _hips.localPosition;
+
+            // Ely over it, as tall as the rig and lined up with its T-pose.
+            _skin = CharacterSkin.Wrap(Instantiate(s_Character, transform, false), s_Character.name);
+            if (_skin == null) return false;
+            _skin.transform.localScale = Vector3.one * (tall / Mathf.Max(_skin.Height, 0.01f));
+            _align = _skin.AlignTo(transform, _srcParts);
+            transform.localScale = Vector3.one * (height / tall);
+            Head = _skin.Head;
+            Chest = _skin.Parts[(int)Part.UpperChest] ?? _skin.Parts[(int)Part.Chest] ?? _skin.Parts[(int)Part.Spine];
 
             var animator = GetComponent<Animator>();
             if (animator == null) animator = gameObject.AddComponent<Animator>();
@@ -132,22 +158,16 @@ namespace ZombiesFPS.CharacterModels
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
 
-            // The character's own textures, looked up by material name (Name_Diffuse, _Normal, _Glow), as the
-            // FBX's embedded ones may not come through the import.
-            _renderers = GetComponentsInChildren<Renderer>(true);
-            foreach (var r in _renderers)
-            {
-                var shared = r.sharedMaterials;
-                var mats = new Material[shared.Length];
-                for (int m = 0; m < shared.Length; m++) mats[m] = shared[m] != null ? Skin(shared[m]) : Greybox.Lit(Color.white);
-                r.sharedMaterials = mats;
-                if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true;
-            }
+            // Ely's own textures, looked up by material name (Name_Diffuse, _Normal, _Glow), as the FBX's embedded
+            // ones may not come through the import.
+            var shared = _skin.Renderer.sharedMaterials;
+            var mats = new Material[shared.Length];
+            for (int m = 0; m < shared.Length; m++) mats[m] = shared[m] != null ? Skin(shared[m]) : Greybox.Lit(Color.white);
+            _skin.Renderer.sharedMaterials = mats;
 
             BuildGraph(animator);
             return true;
         }
-
         static Material Skin(Material source)
         {
             string name = source.name.Replace(" (Instance)", "");
@@ -191,14 +211,40 @@ namespace ZombiesFPS.CharacterModels
             _layers.SetInputWeight(1, 0f);
             // Shots, throws and flinches move the chest, arms and head; the legs keep walking.
             var mask = new AvatarMask();
-            foreach (var part in new[] { AvatarMaskBodyPart.Root, AvatarMaskBodyPart.Body, AvatarMaskBodyPart.LeftLeg, AvatarMaskBodyPart.RightLeg, AvatarMaskBodyPart.LeftFootIK, AvatarMaskBodyPart.RightFootIK })
-                mask.SetHumanoidBodyPartActive(part, false);
+            var chest = FindBone(transform, "Spine1") ?? FindBone(transform, "Spine");
+            var all = GetComponentsInChildren<Transform>(true);
+            mask.transformCount = all.Length;
+            for (int i = 0; i < all.Length; i++)
+            {
+                mask.SetTransformPath(i, PathOf(all[i]));
+                mask.SetTransformActive(i, chest != null && all[i].IsChildOf(chest));
+            }
             _layers.SetLayerMaskFromAvatarMask(1, mask);
             output.SetSourcePlayable(_layers);
             // Standing at rest from the start, so whatever is fitted to the chest is fitted to that pose.
             _weight[(int)Clip.Idle] = 1f;
             _base.SetInputWeight((int)Clip.Idle, 1f);
             _graph.Evaluate(0f);
+            Pose();
+        }
+
+        string PathOf(Transform t)
+        {
+            if (t == transform) return "";
+            string path = t.name;
+            for (var p = t.parent; p != null && p != transform; p = p.parent) path = p.name + "/" + path;
+            return path;
+        }
+
+        /// <summary>Keeps the rig over its feet (the player moves it, not the clip) and copies its pose onto Ely.</summary>
+        void Pose()
+        {
+            var h = _hips.localPosition;
+            float reach = 0.08f / Mathf.Max(transform.localScale.x, 1e-4f);
+            h.x = Mathf.Clamp(h.x, _hipsBind.x - reach, _hipsBind.x + reach);
+            h.z = _hipsBind.z;
+            _hips.localPosition = h;
+            _skin.Retarget(transform, _srcParts, _srcRest, _srcHipsRest, _align);
         }
 
         void OnDestroy()
@@ -275,13 +321,11 @@ namespace ZombiesFPS.CharacterModels
             }
             _layers.SetInputWeight(1, _upperWeight);
             _graph.Evaluate(0f);
+            Pose();
         }
 
         static float Fade(float t, float length) => Mathf.Clamp01(t / 0.08f) * Mathf.Clamp01((length - t) / 0.2f);
 
-        public void SetVisible(bool visible)
-        {
-            foreach (var r in _renderers) r.enabled = visible;
-        }
+        public void SetVisible(bool visible) => _skin.Renderer.enabled = visible;
     }
 }
