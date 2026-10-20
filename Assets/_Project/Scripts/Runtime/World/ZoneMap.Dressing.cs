@@ -545,7 +545,10 @@ namespace ZombiesFPS.World
             }
         }
 
-        /// <summary>A plate over each side of every door naming the zone through it, with a lamp above.</summary>
+        /// <summary>
+        /// A lamp over each side of every door. (These used to carry a plate naming the room through the door; room
+        /// names are only on the map now.)
+        /// </summary>
         void DoorSigns()
         {
             for (int d = 0; d < DoorLinks.Length; d++)
@@ -555,15 +558,7 @@ namespace ZombiesFPS.World
                 for (int s = -1; s <= 1; s += 2)
                 {
                     var inward = normal * s;
-                    int here = ZoneOfPoint(c + inward);
-                    int other = DoorLinks[d].x == here ? DoorLinks[d].y : DoorLinks[d].x;
-                    var rot = Quaternion.LookRotation(inward, Vector3.up);
                     var face = c + inward * (WallHalf + SkinDepth);
-                    Deco(face + inward * 0.02f + Vector3.up * 3.75f, new Vector3(2.2f, 0.46f, 0.04f), rot, new Color(0.12f, 0.13f, 0.13f), Surface.Metal);
-                    Deco(face + inward * 0.015f + Vector3.up * 3.75f, new Vector3(2.3f, 0.54f, 0.03f), rot, HazardYellow, Surface.Metal);
-                    var holder = Greybox.Empty("Door Sign", Root, face + inward * 0.045f + Vector3.up * 3.75f);
-                    holder.localRotation = rot;
-                    Greybox.Label("Name", holder, Vector3.zero, ZoneNames[other].ToUpperInvariant(), new Color(0.72f, 0.66f, 0.52f), 0.3f);
                     WallLamp(face + Vector3.up * 4.45f, inward, true);
                 }
             }
@@ -1059,29 +1054,18 @@ namespace ZombiesFPS.World
             Racking(L(1, -10f, 0f, 4f), 14f, 1f, 2.4f, rng);
             Racking(L(1, 8f, 0f, -6f), 8f, 1f, 2.4f, rng);
 
-            // Chapel: a runner up the nave, rails on the pews, candles on the lectern (with a small warm light),
-            // and stained glass high in the nave walls.
-            Deco(L(3, 0f, 0.006f, -5.15f), new Vector3(1.6f, 0.01f, 27.3f), new Color(0.3f, 0.07f, 0.06f), Surface.Fabric);
-            foreach (float x in new[] { -0.82f, 0.82f })
-                Deco(L(3, x, 0.008f, -5.15f), new Vector3(0.06f, 0.012f, 27.3f), new Color(0.42f, 0.32f, 0.12f), Surface.Fabric);
+            // Chapel: a runner up the nave, rails on the pews, and stained glass high in the nave walls.
+            // (In two lengths, either side of the rose in the crossing floor.)
+            foreach (var (z, len) in new[] { (-11.85f, 17.3f), (6.8f, 7f) })
+            {
+                Deco(L(3, 0f, 0.006f, z), new Vector3(1.6f, 0.01f, len), new Color(0.3f, 0.07f, 0.06f), Surface.Fabric);
+                foreach (float x in new[] { -0.82f, 0.82f })
+                    Deco(L(3, x, 0.008f, z), new Vector3(0.06f, 0.012f, len), new Color(0.42f, 0.32f, 0.12f), Surface.Fabric);
+            }
             if (PropModels.GetPack(Pew.Path, PackMaterial) == null)
-                foreach (float z in new[] { -18f, -15f, -12f })
+                foreach (float z in new[] { -19f, -16.5f, -14f, -11.5f })
                     foreach (float x in new[] { -4.2f, 4.2f })
                         Deco(L(3, x, 0.92f, z), new Vector3(4.5f, 0.04f, 0.7f), Shade(DarkWood, 0.8f), Surface.Wood);
-            foreach (float x in new[] { -0.3f, 0f, 0.3f })
-            {
-                float h = 0.12f + Mathf.Abs(x) * 0.3f;
-                DecoPrim(PrimitiveType.Cylinder, L(3, x, 1.2f + h / 2f, 10f), new Vector3(0.05f, h / 2f, 0.05f), Quaternion.identity, new Color(0.72f, 0.68f, 0.56f), Surface.Plaster);
-                Glow(PrimitiveType.Sphere, L(3, x, 1.2f + h + 0.035f, 10f), new Vector3(0.035f, 0.06f, 0.035f), Quaternion.identity, new Color(1f, 0.6f, 0.22f));
-            }
-            var candle = new GameObject("Candle Light").AddComponent<Light>();
-            candle.transform.SetParent(Root, false);
-            candle.transform.localPosition = L(3, 0f, 1.7f, 9.4f);
-            candle.type = LightType.Point;
-            candle.color = new Color(1f, 0.62f, 0.3f);
-            candle.range = 5f;
-            candle.intensity = 1.2f;
-            candle.shadows = LightShadows.None;
             foreach (float z in new[] { 22f, 51f })
             {
                 StainedGlass(new Vector3(-12f + WallHalf, 0f, z), Vector3.right, rng);

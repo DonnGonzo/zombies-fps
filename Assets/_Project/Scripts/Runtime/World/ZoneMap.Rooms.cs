@@ -79,7 +79,7 @@ namespace ZombiesFPS.World
         /// <summary>Rooms whose ceiling lamps are chandeliers, and which.</summary>
         static readonly Dictionary<int, PackItem> ChandelierZones = new Dictionary<int, PackItem>
         {
-            [3] = Chandelier, [10] = Chandelier, [14] = Chandelier, [17] = TempleChandelier,
+            [3] = Chandelier, [14] = Chandelier, [17] = TempleChandelier,
         };
 
         /// <summary>What each room gets along its walls, by weight. Zones not listed keep just the barrels and crates.</summary>
@@ -108,7 +108,7 @@ namespace ZombiesFPS.World
         /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the chapel's altar dais and organ, the globe.</summary>
         static readonly (PackItem item, int zone)[] Centrepieces =
         {
-            (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (AltarDais, 3), (Organ, 3), (Globe, 10), (Fountain, 11),
+            (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (Globe, 10), (Fountain, 11),
             (LecternStage, 14),
         };
 
@@ -129,6 +129,8 @@ namespace ZombiesFPS.World
             // room's centrepieces, so they get the pick of its walls.
             LabShell();
             ArchivesMakeover();
+            ChapelMakeover();
+            TempleMakeover();
             foreach (var (big, zone) in Centrepieces)
                 for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 

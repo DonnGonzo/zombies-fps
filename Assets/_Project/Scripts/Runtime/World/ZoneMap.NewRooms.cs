@@ -86,12 +86,8 @@ namespace ZombiesFPS.World
             foreach (var (x, z, h) in new[] { (-5f, 24f, 1.2f), (4f, 34f, 1f), (-6f, 40f, 1.4f), (1f, 12f, 1.1f) })
                 Greybox.Box("Fallen Masonry", Root, L(Rampart, x, h / 2f, z), new Vector3(2f, h, 1.3f), Shade(Stone, 0.9f), surface: Surface.Concrete);
 
-            // Sunken Temple: two rows of columns down the hall, and the sanctuary raised two steps at the north end.
-            foreach (float x in new[] { -6f, 6f })
-                foreach (float z in new[] { -13.5f, -7.5f, -1.5f, 4.5f, 10.5f, 16.5f })
-                    Greybox.Box("Column", Root, L(Temple, x, WallHeight / 2f, z), new Vector3(1f, WallHeight, 1f), new Color(0.58f, 0.52f, 0.42f), surface: Surface.Plaster);
-            Block("Sanctuary", Temple, -11.7f, 26f, -2f, 33.7f, 0.5f, new Color(0.5f, 0.45f, 0.36f), Surface.Tile);
-            Stairs(Temple, -6.85f, 26f, Vector3.back, 0.5f, 4f);
+            // Sunken Temple: two rows of columns down the hall, a fountain, and the sanctuary raised at the north end.
+            BuildTemple();
         }
 
         /// <summary>The new rooms' colliderless dressing.</summary>

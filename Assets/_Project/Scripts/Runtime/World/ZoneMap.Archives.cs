@@ -5,7 +5,8 @@ using ZombiesFPS.Core;
 namespace ZombiesFPS.World
 {
     /// <summary>
-    /// The Archives as a great library. The monks' altar stands on a stepped stone dais in the middle of the reading
+    /// The Archives as a great library, with two bays off the south either side of the Chapel: more stacks to the
+    /// west and a bindery to the east. The monks' altar stands on a stepped stone dais in the middle of the reading
     /// room, steps on all four sides, four columns at its corners carrying a beam frame up under a painted ceiling
     /// rose. Rows of tall stacks fill the west bay and the north wing, the east bay has two long reading tables, and
     /// every free stretch of wall is lined with bookcases nearly to the ceiling under a carved cornice. Every
@@ -26,7 +27,7 @@ namespace ZombiesFPS.World
         static readonly Vector3[] ArchiveStacks =
         {
             new Vector3(-8.3f, 4f, 8.6f), new Vector3(-10.9f, 4f, 8.6f),
-            new Vector3(-8.3f, -6.3f, -1.8f), new Vector3(-10.9f, -6.3f, -1.8f),
+            new Vector3(-15.2f, -19.6f, -10.5f), new Vector3(-12.4f, -19.6f, -10.5f), new Vector3(-9.6f, -19.6f, -10.5f),
             new Vector3(5.5f, 11.2f, 15.6f), new Vector3(12.5f, 11.2f, 15.6f),
         };
 
@@ -81,6 +82,7 @@ namespace ZombiesFPS.World
         /// <summary>Before the room's random furniture, so the bookcases get the walls.</summary>
         void ArchivesMakeover()
         {
+            ArchiveBays();
             LineArchiveWalls();
             Cornice();
             DressDais();
@@ -92,6 +94,15 @@ namespace ZombiesFPS.World
                 Deco(L(ArchivesZone, 11.5f, 0.008f, z), new Vector3(4.3f, 0.008f, 3f), new Color(0.24f, 0.13f, 0.3f), Surface.Fabric);
                 ReadingTableSet(L(ArchivesZone, 11.5f, 0f, z), Quaternion.identity, z < 0f ? 101 : 102);
                 if (PlaceFree(CandleStand, L(ArchivesZone, 14.1f, 0f, z), Quaternion.identity, true)) CandleLight(L(ArchivesZone, 14.1f, 1.45f, z));
+            }
+
+            // A map table in the west bay, between the door and the way through to the west stacks.
+            var mapTable = L(ArchivesZone, -12.2f, 0f, -3.2f);
+            if (PlaceFree(LongTable, mapTable, Quaternion.identity, true))
+            {
+                TableTop(LongTable, mapTable, Quaternion.identity, ArchivesZone, new System.Random(104));
+                foreach (float x in new[] { -0.8f, 0.8f })
+                    PlaceFree(KitStool, mapTable + new Vector3(x, 0f, -0.95f), Quaternion.identity, true);
             }
 
             // Lecterns with open books, turned to face the dais.
@@ -161,6 +172,10 @@ namespace ZombiesFPS.World
                 Deco(DaisPoint(0f, 6.2f, 0f) + d * (c + 0.26f), along * (c * 2f + 0.8f) + Vector3.up * 0.06f + Flat(d) * 0.02f, OldGold, Surface.Metal);
             }
 
+            // A banner off the middle of each side of the frame, out over the steps.
+            foreach (var d in sides)
+                HangItem(d.x + d.z > 0f ? HangingBanner1 : HangingBanner2, DaisPoint(0f, 0f, 0f) + d * (c + 0.25f), Quaternion.LookRotation(d), 5.6f);
+
             // A painted rose on the ceiling over the altar: a night-blue disc ringed in gold.
             DecoPrim(PrimitiveType.Cylinder, DaisPoint(0f, WallHeight - 0.3f, 0f), new Vector3(c * 2f - 0.8f, 0.01f, c * 2f - 0.8f), Quaternion.identity, Shade(OldGold, 0.8f), Surface.Metal);
             DecoPrim(PrimitiveType.Cylinder, DaisPoint(0f, WallHeight - 0.31f, 0f), new Vector3(c * 2f - 1.1f, 0.01f, c * 2f - 1.1f), Quaternion.identity, new Color(0.07f, 0.09f, 0.2f), Surface.Plaster);
@@ -170,6 +185,61 @@ namespace ZombiesFPS.World
                 float a = Range(rng, 0f, Mathf.PI * 2f), r = Mathf.Sqrt((float)rng.NextDouble()) * (c - 0.8f);
                 Glow(PrimitiveType.Sphere, DaisPoint(Mathf.Cos(a) * r, WallHeight - 0.325f, Mathf.Sin(a) * r), Vector3.one * Range(rng, 0.04f, 0.09f), Quaternion.identity, new Color(1f, 0.86f, 0.55f));
             }
+        }
+
+        /// <summary>
+        /// The two bays off the south. The bindery (east): a long work table under the books waiting to be
+        /// rebound, a bench and cabinets against its walls, chests of loose pages. The west stacks: torches on the
+        /// ends of the rows, and on the reading room's own stacks.
+        /// </summary>
+        void ArchiveBays()
+        {
+            float wall = 9f + WallHalf;
+            var east = Quaternion.Euler(0f, 90f, 0f);
+            var table = L(ArchivesZone, 13.2f, 0f, -13.4f);
+            if (PlaceFree(LongTable, table, east, true))
+            {
+                var rng = new System.Random(105);
+                TableTop(LongTable, table, east, ArchivesZone, rng);
+                foreach (float z in new[] { -0.9f, 0.9f })
+                    PlaceFree(KitStool, table + new Vector3(-1f, 0f, z), Quaternion.identity, true);
+            }
+            if (PlaceFree(Workbench, L(ArchivesZone, wall + Workbench.Size.z / 2f + 0.05f, 0f, -11.2f), east, true))
+                TableTop(Workbench, L(ArchivesZone, wall + Workbench.Size.z / 2f + 0.05f, 0f, -11.2f), east, ArchivesZone, new System.Random(106));
+            var board = L(ArchivesZone, wall + Sideboard.Size.z / 2f + 0.05f, 0f, -15.8f);
+            var books = PropModels.GetPack(Fantasy + "BookGroup_Medium_2", PackMaterial);
+            if (PlaceFree(Sideboard, board, east, true) && books != null) AddModel(books, board + Vector3.up * Sideboard.Size.y, east, false);
+            foreach (var p in new[] { new Vector2(15.8f, -9.2f), new Vector2(10.4f, -19.9f) })
+                PlaceFree(WoodChest, L(ArchivesZone, p.x, 0f, p.y), Quaternion.Euler(0f, p.x > 13f ? -90f : 0f, 0f), true);
+            if (PlaceFree(CandleStand, L(ArchivesZone, 15.8f, 0f, -18.6f), Quaternion.identity, true)) CandleLight(L(ArchivesZone, 15.8f, 1.45f, -18.6f));
+            // Rows of books stacked on the floor by the bench, waiting their turn.
+            var row = PropModels.GetPack(Fantasy + "BookGroup_Medium_1", PackMaterial);
+            if (row != null)
+                for (int i = 0; i < 3; i++)
+                {
+                    var at = L(ArchivesZone, 11.6f, 0f, -18.6f + i * 0.04f);
+                    if (KeptClear(at, 0.6f)) AddModel(row, at + Vector3.up * (i * 0.29f), Quaternion.Euler(0f, i * 4f, 0f), false);
+                }
+
+            // A torch on each stack's end that faces an aisle.
+            foreach (var s in ArchiveStacks)
+            {
+                bool south = s.y < 0f && s.z < 0f;
+                var face = L(ArchivesZone, s.x, 0f, south ? s.z : s.y);
+                var facing = Quaternion.LookRotation(south ? Vector3.forward : Vector3.back);
+                if (!HangItem(WallTorch, face, facing, 2.2f)) continue;
+                CandleLight(face + facing * new Vector3(0f, 2.55f, 0.32f));
+            }
+        }
+
+        /// <summary>A wall item on a face (a wall, a stack's end, a beam): face is the face's foot, facing points out of it.</summary>
+        bool HangItem(PackItem item, Vector3 face, Quaternion facing, float height)
+        {
+            var model = PropModels.GetPack(item.Path, PackMaterial);
+            if (model == null) return false;
+            var size = item.Size;
+            AddModel(model, face + Vector3.up * (height + item.Min.y) + facing * new Vector3(0f, 0f, size.z / 2f + 0.01f), facing, false);
+            return true;
         }
 
         /// <summary>Tall bookcases side by side along every stretch of wall where nothing else needs it.</summary>

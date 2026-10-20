@@ -501,16 +501,8 @@ namespace ZombiesFPS.World
             Greybox.Box("Wreck", Root, L(2, -8f, 0.75f, -7f), new Vector3(2f, 1.5f, 4.2f), new Color(0.22f, 0.28f, 0.36f), surface: Surface.Metal);
             Greybox.Box("Wreck", Root, L(2, -6f, 0.75f, 6f), new Vector3(4.2f, 1.5f, 2f), new Color(0.45f, 0.24f, 0.15f), surface: Surface.Rust);
 
-            // Chapel: pews down the nave, a lectern at the crossing, and a choir loft up stairs at the north end.
-            Block("Choir Loft", 3, 2f, 13f, 7.7f, 20.7f, 2.6f, DarkWood, Surface.Wood);
-            Stairs(3, 2f, 16f, Vector3.left, 2.6f, 2.4f);
-            var pew = new Color(0.3f, 0.19f, 0.11f);
-            foreach (float z in new[] { -18f, -15f, -12f })
-            {
-                Reskin(Greybox.Box("Pew", Root, L(3, -4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood), Pew, false, Pew.Size.y);
-                Reskin(Greybox.Box("Pew", Root, L(3, 4.2f, 0.45f, z), new Vector3(4.4f, 0.9f, 0.6f), pew, surface: Surface.Wood), Pew, false, Pew.Size.y);
-            }
-            Greybox.Box("Lectern", Root, L(3, 0f, 0.6f, 10f), new Vector3(1f, 1.2f, 0.8f), pew, surface: Surface.Wood);
+            // Chapel: piers down the nave, pews, the altar at its head and a choir loft up stairs at the north end.
+            BuildChapel();
 
             // Barracks: two rows of bunks down the hall, and a mezzanine along the west wall with stairs and a ladder.
             Block("Mezzanine", 4, -10.7f, -8f, -5.7f, 8f, 2.6f, new Color(0.34f, 0.25f, 0.16f), Surface.Wood);

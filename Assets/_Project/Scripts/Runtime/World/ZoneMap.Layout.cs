@@ -75,8 +75,9 @@ namespace ZombiesFPS.World
             new[] { 44, 56, 90, 86, 56, 50, 80, 56 },
             // Lantern Core: a stepped octagon round the core, entered from the Garage by a short passage.
             new[] { 12, 56, 44, 80, 16, 52, 40, 56, 20, 48, 36, 52, 16, 80, 40, 84, 20, 84, 36, 88, 22, 42, 34, 48 },
-            // Archives: an L, the big reading room (with the monks' altar) and the stacks off the north-east.
-            new[] { -22, 58, 12, 76, -4, 76, 12, 88 },
+            // Archives: the big reading room (with the monks' altar), the stacks off the north-east, and two bays off
+            // the south either side of the Chapel: the west stacks and the bindery.
+            new[] { -22, 58, 12, 76, -4, 76, 12, 88, -22, 44, -12, 58, 4, 44, 12, 58 },
             // Greenhouse.
             new[] { -56, 58, -22, 80 },
             // Gaol: a vaulted cell block under the old gate, its guard hall up against the gate passage.
@@ -317,7 +318,7 @@ namespace ZombiesFPS.World
             W(0, Side.West, -16, -8),    // Second Wind, Gate Yard
             W(6, Side.South, -10, -2),   // Hair Trigger, Loading Dock
             W(5, Side.North, 7, -14),    // Fleet Foot, Courtyard
-            W(10, Side.South, -7, 10),   // Steady Hand, Archives
+            W(10, Side.South, -21, 13), // Steady Hand, Archives (bindery)
             W(11, Side.North, 11, 8),    // Hazard Ward, Greenhouse
             W(9, Side.South, -16, 10),   // Bloodline, Lantern Core
         };
@@ -339,7 +340,7 @@ namespace ZombiesFPS.World
             W(7, Side.South, -7, -12), W(7, Side.North, 7, -16), W(7, Side.East, 7, 10),
             W(8, Side.North, 15, 14), W(8, Side.East, 23, -6), W(8, Side.West, -23, 10),
             W(9, Side.West, -16, -8), W(9, Side.South, -16, -10), W(9, Side.North, 16, -10),
-            W(10, Side.North, 11, -2), W(10, Side.West, 1, 14), W(10, Side.South, -7, -13),
+            W(10, Side.North, 11, -2), W(10, Side.West, 1, 14), W(10, Side.East, 17, -14),
             W(11, Side.West, -17, -6), W(11, Side.North, 11, 0), W(11, Side.South, -11, 10),
             W(12, Side.South, -6, -10), W(12, Side.West, -16, 3), W(12, Side.South, -6, 12),
             W(13, Side.South, -9, 12), W(13, Side.South, -19, -10), W(13, Side.East, 20, -3),

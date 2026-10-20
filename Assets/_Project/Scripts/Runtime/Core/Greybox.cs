@@ -182,6 +182,26 @@ namespace ZombiesFPS.Core
         static Font s_LabelFont;
 
         /// <summary>World-space text (machine names, signs), facing along the parent's forward.</summary>
+        static Material s_LabelMaterial;
+
+        /// <summary>
+        /// The font's atlas on a material that walls hide (the font's own draws over everything), or the font's own
+        /// material if that one can't be loaded.
+        /// </summary>
+        static Material LabelMaterial()
+        {
+            if (s_LabelMaterial != null) return s_LabelMaterial;
+            var m = Resources.Load<Material>("Materials/WorldText");
+            if (m == null || m.shader == null || !m.shader.isSupported) return s_LabelFont.material;
+            s_LabelMaterial = new Material(m) { mainTexture = s_LabelFont.material.mainTexture };
+            // The dynamic font rebuilds its atlas as it meets new characters; follow it.
+            Font.textureRebuilt += f =>
+            {
+                if (f == s_LabelFont && s_LabelMaterial != null) s_LabelMaterial.mainTexture = f.material.mainTexture;
+            };
+            return s_LabelMaterial;
+        }
+
         public static TextMesh Label(string name, Transform parent, Vector3 localPos, string text, Color color, float height = 0.2f)
         {
             if (s_LabelFont == null)
@@ -210,7 +230,7 @@ namespace ZombiesFPS.Core
             if (s_LabelFont != null)
             {
                 tm.font = s_LabelFont;
-                go.GetComponent<MeshRenderer>().sharedMaterial = s_LabelFont.material;
+                go.GetComponent<MeshRenderer>().sharedMaterial = LabelMaterial();
             }
             go.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return tm;

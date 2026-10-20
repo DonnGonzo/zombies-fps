@@ -74,11 +74,12 @@ namespace ZombiesFPS.World
         static readonly PackItem IronLantern = F("Lantern_Wall", -0.18f, 0.08f, -0.05f, 0.18f, 1.42f, 1.25f, Mount.Wall);
         static readonly PackItem HangingBanner1 = F("Banner_1", -0.09f, -1.55f, 0f, 0.1f, 0.84f, 1.61f, Mount.Wall);
         static readonly PackItem HangingBanner2 = F("Banner_2", -0.09f, -1.23f, 0f, 0.1f, 0.84f, 1.61f, Mount.Wall);
+        static readonly PackItem WallTorch = F("Torch_Metal", -0.11f, -0.28f, 0f, 0.11f, 0.37f, 0.39f, Mount.Wall);
         static readonly PackItem CandleChandelier = F("Chandelier", -0.65f, -1.42f, -0.65f, 0.65f, 0.04f, 0.65f, Mount.Open);
 
         // Small things for table tops and floors (walk-over, no colliders).
         static readonly string[] TavernTop = { "Mug", "Mug", "Table_Plate", "Candle_1", "Candle_2", "CandleStick", "Chalice", "Bottle_1", "Coin_Pile", "Pouch_Large" };
-        static readonly string[] LibraryTop = { "Book_5", "Book_7", "Book_Stack_1", "Book_Stack_2", "Scroll_1", "Scroll_2", "Candle_2", "CandleStick", "CandleStick_Triple", "BookGroup_Small_1" };
+        static readonly string[] LibraryTop = { "Book_5", "Book_7", "Book_Stack_1", "Book_Stack_2", "Scroll_1", "Scroll_2", "Candle_2", "CandleStick", "CandleStick_Triple", "BookGroup_Small_1", "BookGroup_Small_2", "BookGroup_Small_3" };
         static readonly string[] AlchemyTop = { "Potion_1", "Potion_2", "Potion_4", "Bottle_1", "SmallBottles_1", "Book_5", "Candle_1", "CandleStick", "Scroll_2" };
         static readonly string[] HoardTop = { "Coin_Pile", "Coin_Pile_2", "Chalice", "Pouch_Large", "Candle_2", "Book_7" };
         static readonly string[] MachineTop = { SciFi + "Prop_Mug", SciFi + "Prop_HealthPack_Tube", SciFi + "Prop_Grenade", SciFi + "Prop_Ammo_Small" };
@@ -202,7 +203,7 @@ namespace ZombiesFPS.World
         /// <summary>Rooms whose ceiling lamps are the kit's candle chandeliers.</summary>
         static readonly Dictionary<int, PackItem> KitChandeliers = new Dictionary<int, PackItem>
         {
-            [4] = CandleChandelier, [12] = CandleChandelier, [13] = CandleChandelier, [15] = CandleChandelier,
+            [4] = CandleChandelier, [10] = CandleChandelier, [12] = CandleChandelier, [13] = CandleChandelier, [15] = CandleChandelier,
         };
 
         static readonly Dictionary<int, (PackItem item, int weight)[]> s_MergedSets = new Dictionary<int, (PackItem, int)[]>();
