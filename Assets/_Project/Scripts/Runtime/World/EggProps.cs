@@ -117,7 +117,10 @@ namespace ZombiesFPS.World
             ExitGlow(ZoneMap.SanctumExitSpot);
             ExitGlow(ZoneMap.KeepExitSpot);
 
-            _hum = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
+            // On its own object: moving it to the altar or the stones must not carry every prop (and Brannock) with it.
+            var humAt = new GameObject("Egg Hum").transform;
+            humAt.SetParent(transform, false);
+            _hum = GameSettings.Effect(humAt.gameObject.AddComponent<AudioSource>());
             _hum.clip = ProceduralAudio.ReactorSurge;
             _hum.loop = true;
             _hum.spatialBlend = 0.9f;

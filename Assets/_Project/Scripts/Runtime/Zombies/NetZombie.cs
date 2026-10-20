@@ -485,12 +485,13 @@ namespace ZombiesFPS.Zombies
             _model = ZombieModel.Create(_visual, 1.78f);
             if (_model != null)
             {
-                // Hidden under the model: everything but the armour, sac, weak point and the Warden's back spurs.
+                // Hidden under the model: everything but the sac, weak point and the Warden's back spurs. The chest
+                // armour goes too: its flat plates were sized for the blocky body and stand off the model like a slab.
                 var rig = new List<Renderer>();
                 foreach (var r in _renderers)
                 {
                     var t = r.transform;
-                    if (t.IsChildOf(_sac.transform) || t.IsChildOf(_core.transform) || t.IsChildOf(_armor.transform)) continue;
+                    if (t.IsChildOf(_sac.transform) || t.IsChildOf(_core.transform)) continue;
                     if (t.parent == _spine && Array.IndexOf(_bossParts, r.gameObject) >= 0) continue;
                     rig.Add(r);
                 }
