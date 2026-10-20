@@ -125,6 +125,8 @@ namespace ZombiesFPS.CharacterModels
             skin.Character = character;
             skin.Renderer = model.GetComponentInChildren<SkinnedMeshRenderer>(true);
             skin.Parts = FindMixamo(model.transform);
+            // Unreal-style skeletons (pelvis, spine_01, ...) too, such as the Biomechanical Mutant.
+            if (skin.Parts[(int)Part.Hips] == null) skin.Parts = FindUnreal(model.transform);
             if (skin.Renderer == null || skin.Hips == null || skin.Head == null)
             {
                 Destroy(model);
@@ -325,6 +327,17 @@ namespace ZombiesFPS.CharacterModels
             var rest = new Quaternion[parts.Length];
             for (int p = 0; p < parts.Length; p++) rest[p] = parts[p] != null ? inv * parts[p].rotation : Quaternion.identity;
             return rest;
+        }
+
+        /// <summary>An Unreal-style skeleton's parts under <paramref name="root"/> (names in any case).</summary>
+        public static Transform[] FindUnreal(Transform root)
+        {
+            var parts = new Transform[PartCount];
+            var all = root.GetComponentsInChildren<Transform>(true);
+            for (int p = 0; p < PartCount; p++)
+                foreach (var t in all)
+                    if (string.Equals(t.name, UnrealNames[p], System.StringComparison.OrdinalIgnoreCase)) { parts[p] = t; break; }
+            return parts;
         }
 
         /// <summary>A Mixamo skeleton's parts under <paramref name="root"/> (names after any "prefix:").</summary>

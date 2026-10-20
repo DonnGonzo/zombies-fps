@@ -36,7 +36,7 @@ namespace ZombiesFPS.Zombies
             public readonly string[] Files;
             // The rotting-skin shader (the zombies), or the character's own textures as they are (the bosses).
             public readonly bool Undead;
-            // A Mixamo character worn over the rig (Resources folder), or null to show the rig's own character.
+            // A character (Mixamo or Unreal skeleton) worn over the rig (Resources folder), or null to show the rig's own character.
             public readonly string SkinFolder;
 
             internal bool Loaded;
@@ -44,6 +44,18 @@ namespace ZombiesFPS.Zombies
             internal AnimationClip[] Clips;
             internal float[] Stride;
             internal GameObject Skin;
+            bool? _dressed;
+
+            /// <summary>Whether the worn character's textures are in the project (a kit with no skin always is).</summary>
+            public bool Dressed
+            {
+                get
+                {
+                    if (SkinFolder == null) return true;
+                    if (_dressed == null) _dressed = Resources.LoadAll<Texture2D>(SkinFolder + "/Textures").Length > 0;
+                    return _dressed.Value;
+                }
+            }
 
             public Kit(string characterFolder, string animationFolder, string[] files, bool undead, string skinFolder = null)
             {
@@ -74,6 +86,11 @@ namespace ZombiesFPS.Zombies
 
         /// <summary>Warrok, worn over the Mutant playing its clips: General Ashgrave.</summary>
         public static readonly Kit Warrok = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, skinFolder: "Creatures/Warrok");
+
+        /// <summary>
+        /// The Biomechanical Mutant (Unreal skeleton), worn over the Mutant playing its clips: the Warden.
+        /// </summary>
+        public static readonly Kit BioMutant = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, skinFolder: "Creatures/BioMutant");
 
         // Base layer (whole body): locomotion and death. Upper layer (spine up): attacks and the spitter's scream.
         enum Clip { Idle, Walk, Run, Crawl, CrawlRun, Death, Dying, Attack, Bite, Bite2, Scream }
@@ -193,7 +210,9 @@ namespace ZombiesFPS.Zombies
 
         static Transform FindBone(Transform root, string bone)
         {
-            if (root.name == bone || root.name.EndsWith(":" + bone)) return root;
+            // Any case: Unreal skeletons name it "head".
+            if (string.Equals(root.name, bone, System.StringComparison.OrdinalIgnoreCase)
+                || root.name.EndsWith(":" + bone, System.StringComparison.OrdinalIgnoreCase)) return root;
             for (int i = 0; i < root.childCount; i++)
             {
                 var t = FindBone(root.GetChild(i), bone);

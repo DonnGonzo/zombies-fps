@@ -749,9 +749,9 @@ namespace ZombiesFPS.Zombies
 
             if (_model != null)
             {
-                // The Warden is the Mutant from Ivan's creature pack, in its own colours (the easter egg's bosses
-                // re-dress it in ApplySpecial).
-                UseModel(d.IsBoss ? ZombieModel.Mutant : null);
+                // The Warden is the Biomechanical Mutant, worn over the creature pack's Mutant (the easter egg's bosses
+                // re-dress it in ApplySpecial). Until its textures are in, the plain Mutant stands in.
+                UseModel(d.IsBoss ? (ZombieModel.BioMutant.Dressed ? ZombieModel.BioMutant : ZombieModel.Mutant) : null);
                 _model.UseVariant(null);
                 // Ivan's monsters: every brute is an Imp and half the runners are Puglins, each in one of its colours.
                 string monster = d.kind == ZombieKind.Brute ? CharacterSkin.Imp
