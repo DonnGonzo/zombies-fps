@@ -36,3 +36,7 @@ sysinfo.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Ivan's Rust & Blood SFX: licensed for use in the game, not for sharing on their own (tools/sfx/pack_sfx.py)
+/Assets/_Project/Resources/Audio/SFX/
+/Assets/_Project/Resources/Audio/SFX.meta

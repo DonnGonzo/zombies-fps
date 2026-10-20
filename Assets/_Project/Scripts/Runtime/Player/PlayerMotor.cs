@@ -176,6 +176,43 @@ namespace ZombiesFPS.Player
             _velocity = new Vector3(planar.x, vertical, planar.z);
             var flags = _controller.Move(_velocity * dt);
             if ((flags & CollisionFlags.Above) != 0 && _velocity.y > 0f) _velocity.y = 0f;
+            Footsteps(planar.magnitude * dt);
+        }
+
+        AudioSource _steps;
+        float _stepDistance;
+
+        /// <summary>A footstep every stride on the ground, from Ivan's SFX library, sounding like what's underfoot.</summary>
+        void Footsteps(float moved)
+        {
+            if (!_controller.isGrounded || moved <= 0f) return;
+            _stepDistance += moved;
+            float stride = Downed ? 0.9f : IsSprinting ? 2.3f : 1.7f;
+            if (_stepDistance < stride) return;
+            _stepDistance = 0f;
+            var clip = ProceduralAudio.Footstep(Underfoot());
+            if (clip == null) return;
+            if (_steps == null)
+            {
+                _steps = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
+                _steps.playOnAwake = false;
+                _steps.spatialBlend = 0f;
+            }
+            _steps.pitch = Random.Range(0.9f, 1.1f);
+            _steps.PlayOneShot(clip, IsSprinting ? 0.5f : 0.35f);
+        }
+
+        /// <summary>What the player stands on, guessed from the name of the floor's object.</summary>
+        string Underfoot()
+        {
+            if (!Physics.Raycast(transform.position + Vector3.up * 0.3f, Vector3.down, out var hit, 0.8f, ~0, QueryTriggerInteraction.Ignore))
+                return "concrete";
+            string n = hit.collider.name.ToLowerInvariant();
+            if (n.Contains("metal") || n.Contains("catwalk") || n.Contains("grate") || n.Contains("steel") || n.Contains("iron")) return "metal";
+            if (n.Contains("wood") || n.Contains("plank") || n.Contains("deck") || n.Contains("stair") || n.Contains("scaffold")) return "wood";
+            if (n.Contains("gravel") || n.Contains("yard") || n.Contains("rubble")) return "gravel";
+            if (n.Contains("dirt") || n.Contains("garden") || n.Contains("soil") || n.Contains("grass")) return "dirt";
+            return "concrete";
         }
 
         /// <summary>Sprinting drains the bar; it refills a moment after you stop. Running it dry locks sprint until it recovers a bit.</summary>

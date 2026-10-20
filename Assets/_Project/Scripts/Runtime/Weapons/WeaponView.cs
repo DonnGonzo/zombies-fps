@@ -27,6 +27,8 @@ namespace ZombiesFPS.Weapons
         GameObject _flash;
         Light _flashLight;
         Renderer[] _flashCore, _flashProngs;
+        // Ivan's Brackeys VFX muzzle sprites, when they're in the project (the drawn star is hidden then).
+        Material _flashStar, _flashFlame;
         Transform[] _prongs;
         float _flashUntil;
 
@@ -122,6 +124,8 @@ namespace ZombiesFPS.Weapons
             var warmMat = Greybox.Unlit(new Color(warm.r, warm.g, warm.b, 1f));
             foreach (var r in _flashCore) r.sharedMaterial = hotMat;
             foreach (var r in _flashProngs) r.sharedMaterial = warmMat;
+            if (_flashStar != null) _flashStar.color = new Color(hot.r, hot.g, hot.b, 1f);
+            if (_flashFlame != null) _flashFlame.color = new Color(warm.r, warm.g, warm.b, 1f);
             _flashLight.color = m.EnergyFlash ? new Color(warm.r, warm.g, warm.b) : FlashLightColor;
         }
 
@@ -187,6 +191,7 @@ namespace ZombiesFPS.Weapons
             }
             _flashProngs[_prongs.Length] = spike.GetComponent<Renderer>();
             _flashCore = new[] { core.GetComponent<Renderer>(), spikeCore.GetComponent<Renderer>() };
+            BuildFlashSprites();
             _flashLight = _flash.AddComponent<Light>();
             _flashLight.type = LightType.Point;
             _flashLight.range = 7f;
@@ -195,6 +200,42 @@ namespace ZombiesFPS.Weapons
             _flashLight.shadows = LightShadows.None;
             Greybox.DisableShadows(_flash);
             _flash.SetActive(false);
+        }
+
+        /// <summary>
+        /// The textured flash: a star facing down the barrel and two crossed flames out of it, so it reads from
+        /// behind the gun and from the side. Hides the drawn star when the sprites are there.
+        /// </summary>
+        void BuildFlashSprites()
+        {
+            _flashStar = FxSprites.Make(FxSprites.MuzzleStar, true, FlashHot, 2.2f);
+            _flashFlame = FxSprites.Make(FxSprites.MuzzleFlame, true, FlashWarm, 2f);
+            if (_flashStar == null || _flashFlame == null)
+            {
+                _flashStar = _flashFlame = null;
+                return;
+            }
+            foreach (var r in _flash.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+            Quad("Star", _flashStar, new Vector3(0f, 0f, 0.01f), Quaternion.identity, new Vector3(0.13f, 0.13f, 1f));
+            // The flame points up its texture; turned so it points out of the barrel.
+            var along = Quaternion.Euler(90f, 0f, 0f);
+            Quad("Flame", _flashFlame, new Vector3(0f, 0f, 0.1f), along, new Vector3(0.09f, 0.2f, 1f));
+            Quad("Flame", _flashFlame, new Vector3(0f, 0f, 0.1f), Quaternion.Euler(0f, 0f, 90f) * along, new Vector3(0.09f, 0.2f, 1f));
+        }
+
+        void Quad(string name, Material mat, Vector3 pos, Quaternion rot, Vector3 scale)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            go.name = name;
+            Destroy(go.GetComponent<Collider>());
+            go.transform.SetParent(_flash.transform, false);
+            go.transform.localPosition = pos;
+            go.transform.localRotation = rot;
+            go.transform.localScale = scale;
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
         }
 
         /// <summary>Lights the upgrade glow in the tier's colour, gently pulsing and flaring with each shot.</summary>

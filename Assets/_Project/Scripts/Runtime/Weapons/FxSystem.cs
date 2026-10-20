@@ -61,6 +61,23 @@ namespace ZombiesFPS.Weapons
             public float Life, MaxLife, From, To, Roll, RollSpeed;
         }
 
+        /// <summary>A camera-facing flipbook (Ivan's Brackeys VFX: fireballs, rolling smoke) played once.</summary>
+        struct Sheet
+        {
+            public Transform T;
+            public Renderer R;
+            public Vector3 Velocity;
+            public float Life, MaxLife, From, To, Roll;
+            public int Frames;
+        }
+
+        const int SheetCount = 16;
+        readonly List<Sheet> _sheets = new List<Sheet>(SheetCount);
+        int _nextSheet;
+        Material _fireball, _blastSmoke;
+        MaterialPropertyBlock _sheetBlock;
+        static readonly int FrameId = Shader.PropertyToID("_Frame");
+
         const int FlashCount = 6;
         const int VoiceCount = 10;
 
@@ -118,7 +135,9 @@ namespace ZombiesFPS.Weapons
             var sprites = Shader.Find("Sprites/Default");
             if (sprites != null)
             {
-                var puffMat = new Material(sprites) { name = "Puff", mainTexture = FxTextures.Puff() };
+                // Kenney's soft smoke from the Brackeys bundle where it's in the project, else the drawn one.
+                var smoke = Resources.Load<Texture2D>("Fx/" + FxSprites.Smoke);
+                var puffMat = new Material(sprites) { name = "Puff", mainTexture = smoke != null ? smoke : FxTextures.Puff() };
                 _puffBlock = new MaterialPropertyBlock();
                 for (int i = 0; i < PuffCount; i++)
                 {
@@ -136,6 +155,25 @@ namespace ZombiesFPS.Weapons
             }
 
             _decals = gameObject.AddComponent<Decals>();
+
+            _fireball = FxSprites.Make(FxSprites.Explosion, true, Color.white, 1.6f);
+            _blastSmoke = FxSprites.Make(FxSprites.ExplosionSmoke, false, new Color(0.75f, 0.72f, 0.7f, 0.9f));
+            if (_fireball != null)
+            {
+                _sheetBlock = new MaterialPropertyBlock();
+                for (int i = 0; i < SheetCount; i++)
+                {
+                    var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    go.name = "Flipbook";
+                    go.transform.SetParent(transform, false);
+                    DestroyImmediate(go.GetComponent<Collider>());
+                    var r = go.GetComponent<Renderer>();
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    r.receiveShadows = false;
+                    go.SetActive(false);
+                    _sheets.Add(new Sheet { T = go.transform, R = r });
+                }
+            }
 
             var tracerMat = _tracerMat = Greybox.Unlit(new Color(1f, 0.9f, 0.6f, 0.8f));
             for (int i = 0; i < TracerCount; i++)
@@ -246,8 +284,16 @@ namespace ZombiesFPS.Weapons
                 _decals.Place(DecalKind.Acid, hit.point, hit.normal, diameter, life);
         }
 
+        float _lastFlesh, _lastSurface;
+
         void BloodHit(Vector3 point, Vector3 normal, int count, float speed, float size)
         {
+            // One wet hit per volley (a shotgun's pellets would otherwise stack ten of them).
+            if (Time.time - _lastFlesh > 0.06f)
+            {
+                _lastFlesh = Time.time;
+                PlayAt(point, ProceduralAudio.FleshHit(), count >= 9 ? 0.75f : 0.5f);
+            }
             for (int i = 0; i < count; i++)
                 Emit(ChunkMode.Droplet, i % 3 == 0 ? _bloodB : _bloodA, point, normal, 0.85f, speed, size * 0.75f, 0.35f, 0.7f);
             bool kill = count >= 12;
@@ -272,6 +318,11 @@ namespace ZombiesFPS.Weapons
 
         void DustHit(Vector3 point, Vector3 normal, int count, float speed, float size)
         {
+            if (Time.time - _lastSurface > 0.08f)
+            {
+                _lastSurface = Time.time;
+                PlayAt(point, ProceduralAudio.SurfaceHit, 0.3f);
+            }
             for (int i = 0; i < count; i++)
                 Emit(ChunkMode.Debris, i % 2 == 0 ? _dustA : _dustB, point, normal, 0.8f, speed, size * 0.8f, 0.35f, 0.7f);
             bool big = count > 6;
@@ -303,8 +354,13 @@ namespace ZombiesFPS.Weapons
                 if (i % 2 == 0) Emit(ChunkMode.Ember, i % 4 == 0 ? _emberB : _emberA, point, normal, 1f, speed, size * 0.6f, 0.4f, 0.9f);
                 else Emit(ChunkMode.Debris, i % 3 == 0 ? _soot : _dustB, point, normal, 0.9f, speed * 0.8f, size, 0.5f, 0.9f);
             }
-            // A flash of fire, then rolling smoke.
-            for (int i = 0; i < 3; i++)
+            // A fireball (drawn flipbook where it's in the project), then rolling smoke.
+            if (_fireball != null)
+            {
+                Play(_fireball, point + normal * 0.3f * scale, Vector3.up * 0.4f, 1.6f * scale, 2.6f * scale, 0.9f);
+                if (_blastSmoke != null) Play(_blastSmoke, point + normal * 0.4f * scale, Vector3.up * 0.7f, 2f * scale, 3.6f * scale, 2.4f);
+            }
+            else for (int i = 0; i < 3; i++)
                 EmitPuff(point + Random.insideUnitSphere * 0.15f * scale, Random.insideUnitSphere * 0.6f, new Color(1f, 0.62f, 0.22f, 0.9f),
                     0.25f * scale, Random.Range(1f, 1.5f) * scale, Random.Range(0.18f, 0.28f));
             int smoke = 2 + count / 6;
@@ -358,6 +414,29 @@ namespace ZombiesFPS.Weapons
             p.R.SetPropertyBlock(_puffBlock);
             p.T.gameObject.SetActive(true);
             _puffs[index] = p;
+        }
+
+        /// <summary>Plays flipbook material <paramref name="mat"/> once, facing the camera, growing as it goes.</summary>
+        void Play(Material mat, Vector3 point, Vector3 velocity, float from, float to, float life)
+        {
+            if (_sheets.Count == 0 || mat == null) return;
+            int index = _nextSheet;
+            _nextSheet = (_nextSheet + 1) % _sheets.Count;
+            var s = _sheets[index];
+            var grid = mat.GetVector("_Grid");
+            s.Frames = Mathf.Max(1, (int)(grid.x * grid.y));
+            s.R.sharedMaterial = mat;
+            s.T.position = point;
+            s.Velocity = velocity;
+            s.From = from;
+            s.To = to;
+            s.MaxLife = s.Life = life;
+            s.Roll = Random.Range(0f, 360f);
+            s.T.localScale = Vector3.one * from;
+            _sheetBlock.SetFloat(FrameId, 0f);
+            s.R.SetPropertyBlock(_sheetBlock);
+            s.T.gameObject.SetActive(true);
+            _sheets[index] = s;
         }
 
         public void ShowTracer(Vector3 from, Vector3 to) => ShowTracer(from, to, Color.clear, false);
@@ -444,6 +523,32 @@ namespace ZombiesFPS.Weapons
                     _puffBlock.SetColor(ColorId, new Color(p.Color.r, p.Color.g, p.Color.b, alpha));
                     p.R.SetPropertyBlock(_puffBlock);
                     _puffs[i] = p;
+                }
+            }
+
+            if (_sheets.Count > 0)
+            {
+                if (_cam == null || !_cam.isActiveAndEnabled) _cam = Camera.main;
+                var camRot = _cam != null ? _cam.transform.rotation : Quaternion.identity;
+                for (int i = 0; i < _sheets.Count; i++)
+                {
+                    var s = _sheets[i];
+                    if (s.Life <= 0f) continue;
+                    s.Life -= dt;
+                    if (s.Life <= 0f)
+                    {
+                        s.T.gameObject.SetActive(false);
+                        _sheets[i] = s;
+                        continue;
+                    }
+                    float t = 1f - s.Life / s.MaxLife;
+                    s.Velocity *= 1f / (1f + 1.2f * dt);
+                    s.T.position += s.Velocity * dt;
+                    s.T.rotation = camRot * Quaternion.Euler(0f, 0f, s.Roll);
+                    s.T.localScale = Vector3.one * Mathf.Lerp(s.From, s.To, 1f - (1f - t) * (1f - t));
+                    _sheetBlock.SetFloat(FrameId, Mathf.Min(s.Frames - 1, t * s.Frames));
+                    s.R.SetPropertyBlock(_sheetBlock);
+                    _sheets[i] = s;
                 }
             }
 

@@ -14,14 +14,16 @@ namespace ZombiesFPS.Core
         static AudioClip s_RoundStart, s_RoundEnd, s_Purchase, s_Denied, s_DoorOpen;
         static AudioClip[] s_Groans;
 
-        public static AudioClip Gunshot => s_Gunshot ? s_Gunshot : (s_Gunshot = MakeGunshot());
-        public static AudioClip DryFire => s_DryFire ? s_DryFire : (s_DryFire = MakeClick("DryFire", 0.04f, 0.5f, 11));
-        public static AudioClip MagOut => s_MagOut ? s_MagOut : (s_MagOut = MakeClick("MagOut", 0.09f, 0.6f, 12));
-        public static AudioClip MagIn => s_MagIn ? s_MagIn : (s_MagIn = MakeClick("MagIn", 0.12f, 0.8f, 13));
+        // Recorded sounds from Ivan's Rust & Blood SFX library win over the synthesised ones where they're in
+        // Resources/Audio/SFX (see tools/sfx/pack_sfx.py); the call sites never change.
+        public static AudioClip Gunshot => s_Gunshot ? s_Gunshot : (s_Gunshot = File("rifle_fire") ?? MakeGunshot());
+        public static AudioClip DryFire => s_DryFire ? s_DryFire : (s_DryFire = File("rifle_empty") ?? MakeClick("DryFire", 0.04f, 0.5f, 11));
+        public static AudioClip MagOut => s_MagOut ? s_MagOut : (s_MagOut = File("mag_out") ?? MakeClick("MagOut", 0.09f, 0.6f, 12));
+        public static AudioClip MagIn => s_MagIn ? s_MagIn : (s_MagIn = File("mag_in") ?? MakeClick("MagIn", 0.12f, 0.8f, 13));
         public static AudioClip HitTick => s_HitTick ? s_HitTick : (s_HitTick = MakeTone("HitTick", 0.05f, 1900f, 0f, 0.35f));
         public static AudioClip HeadshotTick => s_HeadshotTick ? s_HeadshotTick : (s_HeadshotTick = MakeTone("HeadshotTick", 0.12f, 2600f, 1300f, 0.45f));
         public static AudioClip KillTick => s_KillTick ? s_KillTick : (s_KillTick = MakeTone("KillTick", 0.16f, 1200f, 600f, 0.4f));
-        public static AudioClip PlayerHurt => s_PlayerHurt ? s_PlayerHurt : (s_PlayerHurt = MakeThud());
+        public static AudioClip PlayerHurt => s_PlayerHurt ? s_PlayerHurt : (s_PlayerHurt = File("body_impact") ?? MakeThud());
         public static AudioClip ZombieSwipe => s_ZombieSwipe ? s_ZombieSwipe : (s_ZombieSwipe = MakeSwipe());
         // Low, ominous chord as a round begins; a rising three-note figure when it is cleared.
         public static AudioClip RoundStart => s_RoundStart ? s_RoundStart : (s_RoundStart = MakeChime("RoundStart", 3f, 1.2f, 0.5f,
@@ -36,13 +38,36 @@ namespace ZombiesFPS.Core
         static AudioClip s_Explosion, s_Concussion, s_Whoosh, s_KnifeHit, s_MeleeHit, s_PerkJingle, s_Radio, s_Plate, s_Drone, s_Pin;
         static AudioClip[] s_Blips;
 
-        public static AudioClip Explosion => s_Explosion ? s_Explosion : (s_Explosion = MakeExplosion("Explosion", 1.6f, 1f, 7));
+        public static AudioClip Explosion => s_Explosion ? s_Explosion : (s_Explosion = File("explosion") ?? MakeExplosion("Explosion", 1.6f, 1f, 7));
         /// <summary>A sharp bang with a long high ring.</summary>
         public static AudioClip Concussion => s_Concussion ? s_Concussion : (s_Concussion = MakeConcussion());
         /// <summary>Air whoosh for melee swings and thrown knives.</summary>
-        public static AudioClip Whoosh => s_Whoosh ? s_Whoosh : (s_Whoosh = MakeWhoosh());
+        public static AudioClip Whoosh => s_Whoosh ? s_Whoosh : (s_Whoosh = File("swing") ?? MakeWhoosh());
         public static AudioClip KnifeHit => s_KnifeHit ? s_KnifeHit : (s_KnifeHit = MakeClick("KnifeHit", 0.1f, 0.9f, 21));
-        public static AudioClip MeleeHit => s_MeleeHit ? s_MeleeHit : (s_MeleeHit = MakeThud());
+        public static AudioClip MeleeHit => s_MeleeHit ? s_MeleeHit : (s_MeleeHit = File("melee_hit") ?? MakeThud());
+
+        static readonly System.Collections.Generic.Dictionary<string, AudioClip> s_Files = new System.Collections.Generic.Dictionary<string, AudioClip>();
+
+        /// <summary>A recorded clip from Resources/Audio/SFX, or null when it isn't in the project.</summary>
+        static AudioClip File(string name)
+        {
+            if (!s_Files.TryGetValue(name, out var clip)) s_Files[name] = clip = Resources.Load<AudioClip>("Audio/SFX/" + name);
+            return clip;
+        }
+
+        /// <summary>A bullet chipping stone (recorded only: null when the library isn't in the project).</summary>
+        public static AudioClip SurfaceHit => File("surface_hit");
+
+        static readonly string[] FleshHits = { "flesh_hit_1", "flesh_hit_2", "flesh_hit_3" };
+
+        /// <summary>A wet hit for a bullet striking a zombie (recorded only: null when the library isn't in the project).</summary>
+        public static AudioClip FleshHit() => File(FleshHits[Random.Range(0, FleshHits.Length)]);
+
+        /// <summary>
+        /// A footstep on <paramref name="surface"/> (concrete, wood, metal, gravel, dirt), recorded only: null when the
+        /// library isn't in the project, as there were no footsteps before it.
+        /// </summary>
+        public static AudioClip Footstep(string surface) => File("footstep_" + surface) ?? File("footstep_concrete");
         /// <summary>Grenade pin and spoon.</summary>
         public static AudioClip Pin => s_Pin ? s_Pin : (s_Pin = MakeTone("Pin", 0.08f, 3200f, 2600f, 0.3f));
         /// <summary>A bright little tune when a perk tonic is bought.</summary>
