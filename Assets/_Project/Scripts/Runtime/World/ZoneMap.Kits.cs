@@ -120,7 +120,6 @@ namespace ZombiesFPS.World
             [0] = new[] { (Stall, 2), (StallCart, 2), (KitBarrel, 2), (WoodCrate, 2), (AppleCrate, 1), (AppleBarrel, 1), (Sack, 1) },           // Gate Yard: a market
             [1] = new[] { (WoodCrate, 3), (IronCrate, 2), (KitBarrel, 2), (BarrelRack, 2), (WoodChest, 1), (Sack, 2) },                           // Depot: stores
             [2] = new[] { (AnvilLog, 2), (Grindstone, 2), (Workbench, 2), (WeaponRack, 1), (KitBarrel, 1), (IronPail, 1) },                      // Garage: the smithy
-            [3] = new[] { (CandleStand, 2), (BookStand, 1), (SmallVase, 1) },                                                                    // Chapel
             [4] = new[] { (Bunk1, 2), (Bunk2, 2), (WoodChest, 2), (WeaponRack, 2), (Dummy, 1), (Nightstand, 1), (LongBench, 1) },               // Barracks
             [5] = new[] { (BigVase, 2), (LongBench, 2), (KitBarrel, 1), (Stall, 1) },                                                            // Courtyard
             [6] = new[] { (SfCrate, 2), (SfCrateLong, 1), (SfTarp, 2), (SfTarpLong, 1), (SfBarrel, 2), (SfAmmo, 1), (WoodCrate, 1) },             // Loading Dock: salvage
@@ -165,7 +164,6 @@ namespace ZombiesFPS.World
             [0] = new[] { (HangingBanner1, 5.6f, 2), (IronLantern, 2.4f, 3), (WallShield, 2.5f, 2) },
             [1] = new[] { (PegRack, 1.8f, 2), (PlankShelf, 1.6f, 2) },
             [2] = new[] { (PegRack, 1.8f, 3), (WallShield, 2.4f, 2), (PlankShelf, 1.7f, 1) },
-            [3] = new[] { (IronLantern, 2.4f, 2) },
             [4] = new[] { (WallShield, 2.4f, 4), (PegRack, 1.8f, 3), (HangingBanner2, 5.6f, 2), (PlankShelf, 1.6f, 2) },
             [5] = new[] { (IronLantern, 2.4f, 3), (HangingBanner1, 5.6f, 2) },
             [8] = new[] { (IronLantern, 2.4f, 2) },

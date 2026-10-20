@@ -44,3 +44,9 @@ New files need a .meta: albedo textures sRGB, `_nrh` linear, `_normal` as a norm
 Fantasy Props MegaKit, Sci-Fi Essentials Kit and Modular SciFi MegaKit (standard free versions) by Quaternius,
 https://quaternius.com, public domain (CC0 1.0). Converted by `tools/quaternius` into
 `Resources/CC0/{Fantasy,SciFi,SciFiModular}` and `Resources/CC0/Quaternius/Textures`; see its README.
+
+## Material-LIB (supplied by Ivan)
+
+Stone, tile and pillar textures from the Material-LIB pack Ivan added to the project. `pack_matlib.py <Material-LIB dir>
+Assets/_Project/Resources/CC0/Surfaces` packs them into the `matlib_*` surfaces (Ashlar, Mosaic, MosaicGrey, Fluted,
+Masonry); height is made from the base colour since the pack has no height maps.

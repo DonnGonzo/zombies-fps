@@ -54,8 +54,6 @@ namespace ZombiesFPS.World
         // static fields in different files of a partial class have no set order.
         const string Worlds = "TenWorlds/";
         static readonly PackItem Pew = new PackItem(Worlds + "ChurchPew", new Vector3(-1.55f, 0f, -0.3f), new Vector3(1.55f, 1.6f, 0.3f), Mount.Floor);
-        static readonly PackItem AltarDais = new PackItem(Worlds + "AltarDais", new Vector3(-2.7f, 0f, -1.1f), new Vector3(2.7f, 1.7f, 1.1f), Mount.Floor);
-        static readonly PackItem Organ = new PackItem(Worlds + "PipeOrgan", new Vector3(-1.06f, 0f, -0.07f), new Vector3(1.06f, 3.82f, 0.07f), Mount.Floor);
         static readonly PackItem Chandelier = new PackItem(Worlds + "LanternSuspension", new Vector3(-1.43f, 0f, -1.43f), new Vector3(1.43f, 2.47f, 1.43f), Mount.Open);
         static readonly PackItem Bookcase = new PackItem(Worlds + "Bookcase", new Vector3(-0.89f, 0f, -0.27f), new Vector3(0.89f, 5.9f, 0.27f), Mount.Floor);
         static readonly PackItem ReadingTable = new PackItem(Worlds + "ReadingTable", new Vector3(-1.12f, 0f, -0.47f), new Vector3(1.12f, 0.82f, 0.47f), Mount.Floor);
@@ -79,7 +77,7 @@ namespace ZombiesFPS.World
         /// <summary>Rooms whose ceiling lamps are chandeliers, and which.</summary>
         static readonly Dictionary<int, PackItem> ChandelierZones = new Dictionary<int, PackItem>
         {
-            [3] = Chandelier, [14] = Chandelier, [17] = TempleChandelier,
+            [14] = Chandelier, [17] = TempleChandelier,
         };
 
         /// <summary>What each room gets along its walls, by weight. Zones not listed keep just the barrels and crates.</summary>
@@ -88,7 +86,6 @@ namespace ZombiesFPS.World
             [0] = new[] { (Barricade, 3), (Crate, 2) },                                                   // Gate Yard
             [1] = new[] { (Crate, 3), (Barricade, 1), (Cabinet, 2) },                                     // Depot
             [2] = new[] { (Worktable, 2), (Crate, 2), (Barricade, 1) },                                   // Garage (smithy)
-            [3] = new[] { (Bench, 3), (Chair, 1), (Candles, 2), (Bones, 1) },                             // Chapel
             [5] = new[] { (GardenBench, 3), (Planter, 2), (Barricade, 1) },                               // Courtyard
             [4] = new[] { (Chair, 3), (BrokenTable, 2), (Sofa, 2), (Cabinet, 1), (Bench, 1) },            // Barracks
             [6] = new[] { (Barricade, 2), (Crate, 3) },                                                   // Loading Dock
@@ -105,7 +102,7 @@ namespace ZombiesFPS.World
             [17] = new[] { (LatticeScreen, 4), (Candles, 2), (Bench, 1) },                                // Sunken Temple
         };
 
-        /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the chapel's altar dais and organ, the globe.</summary>
+        /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the globe, the fountain, the lectern stage.</summary>
         static readonly (PackItem item, int zone)[] Centrepieces =
         {
             (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (Globe, 10), (Fountain, 11),
@@ -115,7 +112,7 @@ namespace ZombiesFPS.World
         /// <summary>Rooms with torches on the walls (each a flickering light), and at most how many.</summary>
         static readonly Dictionary<int, int> TorchZones = new Dictionary<int, int>
         {
-            [0] = 4, [1] = 3, [2] = 3, [3] = 4, [4] = 4, [5] = 4, [6] = 3, [7] = 3, [8] = 4, [9] = 6, [10] = 3, [11] = 2,
+            [0] = 4, [1] = 3, [2] = 3, [4] = 4, [5] = 4, [6] = 3, [7] = 3, [8] = 4, [9] = 6, [10] = 3, [11] = 2,
             [12] = 6, [13] = 4, [15] = 3, [16] = 4, [17] = 4,
         };
 

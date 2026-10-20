@@ -61,8 +61,8 @@ namespace ZombiesFPS.World
             new[] { 16, -12, 58, 12 },
             // Garage.
             new[] { 16, 12, 50, 42 },
-            // Chapel: a cross, the nave running north with a transept arm either side.
-            new[] { -12, 16, 4, 58, -24, 30, -12, 44, 4, 30, 16, 44 },
+            // Chapel: the nave running north to the chancel, with an aisle either side of its south part.
+            new[] { -12, 16, 4, 58, -24, 16, -12, 44, 4, 16, 16, 44 },
             // Barracks: one long hall.
             new[] { -46, 12, -24, 58 },
             // Courtyard: wide and open, with its north-west corner fallen in.
@@ -156,7 +156,7 @@ namespace ZombiesFPS.World
         {
             new Vector2(16f, 0f), new Vector2(-16f, 0f), new Vector2(-4f, 16f), new Vector2(33f, 12f),
             new Vector2(-34f, 12f), new Vector2(58f, -7f), new Vector2(16f, 37f), new Vector2(-24f, 37f),
-            new Vector2(80f, 20f), new Vector2(50f, 27f), new Vector2(-35f, 58f), new Vector2(-8f, 58f),
+            new Vector2(80f, 20f), new Vector2(50f, 27f), new Vector2(-35f, 58f), new Vector2(-15f, 44f),
             new Vector2(-22f, 65f), new Vector2(69f, 50f), new Vector2(12f, 68f), new Vector2(44f, 68f),
             new Vector2(28f, 42f), new Vector2(0f, -22f), new Vector2(18f, -34f), new Vector2(24f, -12f),
             new Vector2(58f, -17f), new Vector2(-14f, 76f), new Vector2(-22f, 78f), new Vector2(29.9f, 88f),
@@ -306,14 +306,14 @@ namespace ZombiesFPS.World
         public static readonly WallSpot[] WallBuySpots =
         {
             W(0, Side.South, -14, -10), W(1, Side.South, -12, -8), W(5, Side.West, -19, 0), W(2, Side.West, -17, -6),
-            W(4, Side.West, -11, 14), W(9, Side.East, 16, 8), W(3, Side.South, -7, -14), W(7, Side.West, -7, 16),
+            W(4, Side.West, -11, 14), W(9, Side.East, 16, 8), W(3, Side.South, -21, -14), W(7, Side.West, -7, 16),
             W(8, Side.North, 15, -8),
         };
 
         /// <summary>Perk machines in PerkKind order.</summary>
         public static readonly WallSpot[] PerkSpots =
         {
-            W(3, Side.North, 7, 14),     // Ironhide Tonic, Chapel (east arm)
+            W(3, Side.North, 7, 14),     // Ironhide Tonic, Chapel (east aisle)
             W(1, Side.South, -12, 8),    // Slick Fingers, Depot
             W(0, Side.West, -16, -8),    // Second Wind, Gate Yard
             W(6, Side.South, -10, -2),   // Hair Trigger, Loading Dock
@@ -333,7 +333,7 @@ namespace ZombiesFPS.World
             W(0, Side.East, 5, -18), W(0, Side.South, -14, 12), W(0, Side.North, 16, 11),
             W(1, Side.South, -12, 0), W(1, Side.South, -12, 17), W(1, Side.East, 21, 1),
             W(2, Side.South, -15, -12), W(2, Side.East, 17, -11), W(2, Side.North, 15, -13),
-            W(3, Side.North, 7, -14), W(3, Side.South, -7, 14), W(3, Side.West, -8, -9.5f),
+            W(3, Side.North, 7, -17), W(3, Side.South, -21, 14), W(3, Side.West, -20, -14),
             W(4, Side.West, -11, -16), W(4, Side.East, 11, -16), W(4, Side.North, 23, -8),
             W(5, Side.West, -19, -8), W(5, Side.South, -15, 8), W(5, Side.North, 15, 12),
             W(6, Side.South, -10, 5), W(6, Side.East, 15, 28), W(6, Side.West, -1, 20),
@@ -353,7 +353,7 @@ namespace ZombiesFPS.World
         /// <summary>One mission generator per zone (zone order), against a wall and clear of windows and doors.</summary>
         public static readonly WallSpot[] GeneratorSpots =
         {
-            W(0, Side.South, -14, 8), W(1, Side.North, 12, -14), W(2, Side.South, -15, 10), W(3, Side.East, 8, 10),
+            W(0, Side.South, -14, 8), W(1, Side.North, 12, -14), W(2, Side.South, -15, 10), W(3, Side.East, 20, -12),
             W(4, Side.East, 11, 20), W(5, Side.East, 19, -10), W(6, Side.North, 10, -13), W(7, Side.North, 7, -10),
             W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 11, -14), W(11, Side.South, -11, 0),
             W(12, Side.North, 6, -13), W(13, Side.East, 2, -14), W(14, Side.East, 23, 8), W(15, Side.East, 22, 0),
@@ -420,7 +420,7 @@ namespace ZombiesFPS.World
             // Scrap Cannon: barrel, coil, grip.
             L(1, 13f, 4f, 9f), L(5, -16.2f, 3.2f, -12.2f), L(10, -15f, 0f, 3f),
             L(2, -13f, 0f, -11f), L(8, 7f, 3.6f, 7.5f), L(4, -8.2f, 2.6f, -5f),
-            L(3, 5f, 2.6f, 18f), L(6, 12f, 1.4f, -5f), L(11, 13f, 0f, 8f),
+            L(3, -10.5f, 0f, -17.5f), L(6, 12f, 1.4f, -5f), L(11, 13f, 0f, 8f),
             // Aegis Shield: armour plate, view module, power core, brace kit.
             L(7, 2.7f, TowerHeight, 18.5f), L(0, -12.7f, 2.2f, 13f), L(9, 12f, 0f, -10f),
             L(9, -2f, 3f, 18f), L(4, 8f, 0f, -20f), L(6, -6.5f, 3f, -3f),

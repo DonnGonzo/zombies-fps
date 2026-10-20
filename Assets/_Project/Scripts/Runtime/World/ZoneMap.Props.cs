@@ -40,7 +40,7 @@ namespace ZombiesFPS.World
         };
 
         /// <summary>Zones whose walls get a shield or two hung up.</summary>
-        static readonly int[] ShieldZones = { 0, 1, 3, 4, 10, 12, 16 };
+        static readonly int[] ShieldZones = { 0, 1, 4, 10, 12, 16 };
         /// <summary>Open-air zones that get a fire pit.</summary>
         static readonly int[] FirePitZones = { 0, 5, 8, 16 };
 
@@ -54,7 +54,8 @@ namespace ZombiesFPS.World
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                if (f.Length < 3f) continue;
+                // The Chapel is dressed by hand (ZoneMap.Chapel.cs), without the barrels and crates.
+                if (f.Length < 3f || f.Zone == ChapelZone) continue;
                 var rng = new System.Random(6100 + i * 6007);
                 var (mix, chance) = PropMix[f.Zone];
                 int total = 0;

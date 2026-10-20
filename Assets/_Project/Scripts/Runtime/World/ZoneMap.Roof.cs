@@ -21,7 +21,9 @@ namespace ZombiesFPS.World
 
         static (RoofStyle style, Surface surface, Color color) RoofLook(int zone) => zone switch
         {
-            3 or 5 or 12 or 17 => (RoofStyle.Vault, Surface.Concrete, new Color(0.36f, 0.35f, 0.33f)),
+            // The Chapel's ribs are its own (ZoneMap.Chapel.cs); between them, a night-blue vault with gold stars.
+            3 => (RoofStyle.Vault, Surface.Plaster, new Color(0.13f, 0.17f, 0.34f)),
+            5 or 12 or 17 => (RoofStyle.Vault, Surface.Concrete, new Color(0.36f, 0.35f, 0.33f)),
             9 or 15 => (RoofStyle.Steel, Surface.Metal, new Color(0.2f, 0.21f, 0.23f)),
             11 => (RoofStyle.Glass, Surface.Wood, new Color(0.24f, 0.17f, 0.11f)),
             10 => (RoofStyle.Coffered, Surface.Wood, new Color(0.3f, 0.2f, 0.12f)),
@@ -45,6 +47,8 @@ namespace ZombiesFPS.World
                             if (style == RoofStyle.Glass) Glow(c, size, Quaternion.identity, new Color(0.32f, 0.45f, 0.45f, 0.35f));
                             else Deco(c, size, Quaternion.identity, Shade(color, 0.85f), surface);
                         }
+
+                    if (zone == ChapelZone) continue;
 
                     // What holds it up, running across the rectangle's short way.
                     bool acrossX = r.width <= r.height;

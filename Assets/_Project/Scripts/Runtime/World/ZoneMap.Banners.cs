@@ -50,7 +50,7 @@ namespace ZombiesFPS.World
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                if (f.Length < 6f || f.Zone < 0 || f.Zone >= BannerColors.Length || f.Zone == LabZone) continue;
+                if (f.Length < 6f || f.Zone < 0 || f.Zone >= BannerColors.Length || f.Zone == LabZone || f.Zone == ChapelZone) continue;
                 var (cloth, trim) = BannerColors[f.Zone];
                 var rng = new System.Random(3300 + i * 97);
                 for (float t = Range(rng, 2.5f, 4.5f); t < f.Length - 2.5f; t += Range(rng, 8f, 11f))

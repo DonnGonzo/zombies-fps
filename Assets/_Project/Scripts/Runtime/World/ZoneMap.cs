@@ -94,8 +94,8 @@ namespace ZombiesFPS.World
             new ZoneLook(Surface.Tile, new Color(0.4f, 0.39f, 0.36f), Surface.Brick, new Color(0.42f, 0.26f, 0.19f), Surface.Concrete, new Color(0.35f, 0.34f, 0.32f), 1f),
             // Garage: darker, sooty flagstones; walls limewashed green up to shoulder height.
             new ZoneLook(Surface.Tile, new Color(0.31f, 0.3f, 0.28f), Surface.Concrete, new Color(0.42f, 0.41f, 0.39f), Surface.Plaster, new Color(0.2f, 0.28f, 0.24f), 1.3f),
-            // Chapel: stone flags, limewashed plaster over dark wood panelling.
-            new ZoneLook(Surface.Tile, new Color(0.42f, 0.4f, 0.36f), Surface.Plaster, new Color(0.6f, 0.56f, 0.48f), Surface.Wood, new Color(0.28f, 0.19f, 0.11f), 1.1f),
+            // Chapel: a grey octagon-and-diamond tiled floor, dressed ashlar walls on a dark masonry plinth.
+            new ZoneLook(Surface.MosaicGrey, new Color(0.42f, 0.41f, 0.39f), Surface.Ashlar, new Color(0.6f, 0.56f, 0.48f), Surface.Masonry, new Color(0.34f, 0.32f, 0.3f), 1.2f),
             // Barracks: worn floorboards, institutional pale green plaster, wood skirting.
             new ZoneLook(Surface.Wood, new Color(0.36f, 0.26f, 0.17f), Surface.Plaster, new Color(0.47f, 0.5f, 0.42f), Surface.Wood, new Color(0.3f, 0.22f, 0.14f), 1f),
             // Courtyard: stone paving and weathered brick.
@@ -662,7 +662,8 @@ namespace ZombiesFPS.World
             for (int i = 0; i < ZoneCount; i++)
                 foreach (var r in ZoneRects(i))
                 {
-                    if (r.width < 4 || r.height < 4) continue;
+                    // The Chapel hangs its own chandeliers (ZoneMap.Chapel.cs).
+                    if (r.width < 4 || r.height < 4 || i == ChapelZone) continue;
                     int nx = Mathf.Max(1, Mathf.RoundToInt(r.width / LampSpacing)), nz = Mathf.Max(1, Mathf.RoundToInt(r.height / LampSpacing));
                     bool beamsAlongX = r.width <= r.height;
                     for (int a = 0; a < nx; a++)

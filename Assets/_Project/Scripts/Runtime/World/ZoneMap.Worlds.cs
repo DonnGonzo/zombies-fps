@@ -17,7 +17,7 @@ namespace ZombiesFPS.World
     public partial class ZoneMap
     {
         /// <summary>Rooms with tapestries on the walls (at most how many).</summary>
-        static readonly Dictionary<int, int> TapestryZones = new Dictionary<int, int> { [3] = 4, [10] = 2, [12] = 2, [14] = 3, [15] = 2 };
+        static readonly Dictionary<int, int> TapestryZones = new Dictionary<int, int> { [10] = 2, [12] = 2, [14] = 3, [15] = 2 };
 
         /// <summary>
         /// The pack's hospital, gaol and furnace pieces were steel and white paint; in this map they're iron and

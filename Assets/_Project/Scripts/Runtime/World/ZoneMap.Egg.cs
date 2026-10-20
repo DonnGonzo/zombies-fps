@@ -58,11 +58,11 @@ namespace ZombiesFPS.World
 
         // Built on first use, not as a static field: initialisers in different partial files run in an
         // order the compiler picks, and in player builds this one ran before ZoneAnchors was set.
-        /// <summary>Where the relics lie: the Chapel's choir loft and west arm, the Temple's sanctuary and east wing.</summary>
+        /// <summary>Where the relics lie: the Chapel's chancel and west aisle, the Temple's sanctuary and east wing.</summary>
         static Vector3[] s_RelicSpots;
         static Vector3[] RelicSpots => s_RelicSpots ??= new[]
         {
-            L(EasterEggData.ChapelZone, 5f, 2.6f, 18.5f), L(EasterEggData.ChapelZone, -16f, 0f, 2f),
+            L(EasterEggData.ChapelZone, 5.6f, 0.5f, 19.8f), L(EasterEggData.ChapelZone, -16f, 0f, 2f),
             L(EasterEggData.TempleZone, -9.5f, 0.5f, 31f), L(EasterEggData.TempleZone, 15f, 0f, 27f),
         };
 

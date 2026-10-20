@@ -27,7 +27,7 @@ namespace ZombiesFPS.World
         static readonly Vector3[] ArchiveStacks =
         {
             new Vector3(-8.3f, 4f, 8.6f), new Vector3(-10.9f, 4f, 8.6f),
-            new Vector3(-15.2f, -19.6f, -10.5f), new Vector3(-12.4f, -19.6f, -10.5f), new Vector3(-9.6f, -19.6f, -10.5f),
+            new Vector3(-15.2f, -19.6f, -10.5f), new Vector3(-12.4f, -19.6f, -10.5f),
             new Vector3(5.5f, 11.2f, 15.6f), new Vector3(12.5f, 11.2f, 15.6f),
         };
 

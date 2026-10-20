@@ -20,6 +20,16 @@ namespace ZombiesFPS.Core
         Fabric,
         Skin,
         Rubber,
+        /// <summary>Big dressed stone blocks (Material-LIB).</summary>
+        Ashlar,
+        /// <summary>Octagon-and-diamond terracotta floor tiles (Material-LIB).</summary>
+        Mosaic,
+        /// <summary>The same tiles in grey stone (Material-LIB).</summary>
+        MosaicGrey,
+        /// <summary>Fluted stone, for columns (Material-LIB).</summary>
+        Fluted,
+        /// <summary>Small rough-dressed stone blocks (Material-LIB).</summary>
+        Masonry,
     }
 
     /// <summary>
@@ -57,6 +67,11 @@ namespace ZombiesFPS.Core
             Surface.Fabric => new Look(5f, 0.45f, 0.35f, 0.05f, 0f, 0.45f),
             Surface.Skin => new Look(3f, 0.6f, 0.45f, 0.35f, 0f, 0.4f),
             Surface.Rubber => new Look(2f, 0.3f, 0.3f, 0.3f, 0f, 0.2f),
+            Surface.Ashlar => new Look(0.35f, 0.8f, 0.8f, 0.2f, 0f, 0.4f),
+            Surface.Mosaic => new Look(0.5f, 0.6f, 0.8f, 0.45f, 0f, 0.35f),
+            Surface.MosaicGrey => new Look(0.5f, 0.6f, 0.8f, 0.45f, 0f, 0.35f),
+            Surface.Fluted => new Look(0.5f, 0.7f, 0.8f, 0.2f, 0f, 0.4f),
+            Surface.Masonry => new Look(0.8f, 0.85f, 1f, 0.12f, 0f, 0.45f),
             _ => new Look(0.5f, 0.35f, 0.3f, 0.2f, 0f, 0.3f),
         };
 
@@ -82,6 +97,12 @@ namespace ZombiesFPS.Core
                 case Surface.Metal: return "metal_plate_02";
                 case Surface.Dirt: metres = 2.35f; return "mud_forest";
                 case Surface.Grass: return "sparse_grass";
+                // Ivan's Material-LIB pack, packed by tools/cc0/pack_matlib.py.
+                case Surface.Ashlar: metres = 2.4f; return "matlib_ashlar";
+                case Surface.Mosaic: metres = 2.2f; return "matlib_mosaic";
+                case Surface.MosaicGrey: metres = 2.2f; return "matlib_mosaic_grey";
+                case Surface.Fluted: metres = 1.6f; return "matlib_fluted";
+                case Surface.Masonry: metres = 1.8f; return "matlib_masonry";
                 default: return null;
             }
         }

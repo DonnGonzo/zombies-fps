@@ -285,7 +285,7 @@ namespace ZombiesFPS.World
                 Stains(f, rng);
                 WallLamps(f, rng);
                 WallRuns(f);
-                WallClutter(f, rng);
+                if (f.Zone != ChapelZone) WallClutter(f, rng);
             }
         }
 
@@ -364,8 +364,10 @@ namespace ZombiesFPS.World
                     ClearStretches(f, 5.4f, 0.06f, 0.3f, (a, b) =>
                         Deco(f.At((a + b) / 2f, 5.4f, 0.15f), new Vector3(b - a, 0.08f, 0.3f), f.Facing, new Color(0.16f, 0.17f, 0.19f), Surface.Metal));
                     break;
-                case 3: // Chapel: a plaster cornice.
-                    Deco(f.At(f.Length / 2f, 6.65f, 0.05f), new Vector3(f.Length, 0.18f, 0.1f), f.Facing, Shade(Looks[3].WallColor, 0.85f), Surface.Plaster);
+                case 3: // Chapel: a moulded cap on the masonry plinth and a stone cornice under the vault.
+                    Deco(f.At(f.Length / 2f, 1.25f, 0.05f), new Vector3(f.Length, 0.1f, 0.1f), f.Facing, Shade(Looks[3].WallColor, 0.9f), Surface.Ashlar);
+                    Deco(f.At(f.Length / 2f, 6.72f, 0.09f), new Vector3(f.Length, 0.22f, 0.18f), f.Facing, Shade(Looks[3].WallColor, 0.95f), Surface.Ashlar);
+                    Deco(f.At(f.Length / 2f, 6.58f, 0.05f), new Vector3(f.Length, 0.05f, 0.1f), f.Facing, Shade(OldGold, 0.75f), Surface.Metal);
                     break;
                 case 10: // Archives: a picture rail.
                     Deco(f.At(f.Length / 2f, 2.6f, 0.015f), new Vector3(f.Length, 0.05f, 0.03f), f.Facing, DarkWood, Surface.Wood);
@@ -574,7 +576,7 @@ namespace ZombiesFPS.World
             new[] { 3, 2, 3, 1, 2, 3, 1, 1, 0, 1, 0, 0 }, // Gate Yard
             new[] { 2, 3, 1, 2, 0, 2, 1, 0, 0, 0, 3, 1 }, // Depot
             new[] { 2, 1, 1, 5, 0, 2, 1, 0, 0, 1, 0, 1 }, // Garage
-            new[] { 3, 2, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2 }, // Chapel
+            new[] { 1, 2, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0 }, // Chapel
             new[] { 1, 3, 0, 0, 1, 1, 2, 0, 0, 0, 0, 2 }, // Barracks
             new[] { 3, 1, 2, 0, 4, 3, 1, 3, 0, 1, 0, 0 }, // Courtyard
             new[] { 2, 1, 3, 3, 1, 3, 1, 1, 0, 1, 2, 0 }, // Loading Dock
@@ -890,23 +892,6 @@ namespace ZombiesFPS.World
             }
         }
 
-        /// <summary>Panes of dim coloured glass in a leaded frame, high on a wall.</summary>
-        void StainedGlass(Vector3 face, Vector3 inward, System.Random rng)
-        {
-            var rot = Quaternion.LookRotation(inward, Vector3.up);
-            var right = rot * Vector3.right;
-            var center = face + inward * (SkinDepth + 0.03f) + Vector3.up * 5.2f;
-            Deco(center, new Vector3(1.95f, 2.85f, 0.06f), rot, new Color(0.06f, 0.06f, 0.07f), Surface.Metal);
-            var tints = new[] { new Color(0.4f, 0.06f, 0.05f), new Color(0.06f, 0.12f, 0.4f), new Color(0.45f, 0.28f, 0.05f), new Color(0.08f, 0.3f, 0.12f), new Color(0.22f, 0.07f, 0.32f) };
-            for (int c = 0; c < 3; c++)
-                for (int r = 0; r < 4; r++)
-                {
-                    var at = center + right * ((c - 1) * 0.6f) + Vector3.up * ((r - 1.5f) * 0.68f) + inward * 0.032f;
-                    if (rng.NextDouble() < 0.15) Deco(at, new Vector3(0.54f, 0.62f, 0.005f), rot, new Color(0.015f, 0.015f, 0.02f), Surface.Plain);
-                    else Glow(at, new Vector3(0.54f, 0.62f, 0.005f), rot, tints[rng.Next(tints.Length)]);
-                }
-        }
-
         // ---------------------------------------------------------------- zones
 
         /// <summary>All the colliderless dressing that needs the solid map in place to keep clear of it.</summary>
@@ -1042,7 +1027,7 @@ namespace ZombiesFPS.World
             Glow(PrimitiveType.Sphere, L(8, 13f, 6.35f, -10f), Vector3.one * 0.18f, Quaternion.identity, new Color(1f, 0.15f, 0.08f));
         }
 
-        /// <summary>The indoor zones: Depot, Chapel, Barracks, Archives.</summary>
+        /// <summary>The indoor zones: Depot, Barracks, Archives.</summary>
         void DressHalls()
         {
             var rng = new System.Random(1213);
@@ -1053,25 +1038,6 @@ namespace ZombiesFPS.World
             Racking(L(1, -10f, 0f, -5f), 14f, 1f, 2.4f, rng);
             Racking(L(1, -10f, 0f, 4f), 14f, 1f, 2.4f, rng);
             Racking(L(1, 8f, 0f, -6f), 8f, 1f, 2.4f, rng);
-
-            // Chapel: a runner up the nave, rails on the pews, and stained glass high in the nave walls.
-            // (In two lengths, either side of the rose in the crossing floor.)
-            foreach (var (z, len) in new[] { (-11.85f, 17.3f), (6.8f, 7f) })
-            {
-                Deco(L(3, 0f, 0.006f, z), new Vector3(1.6f, 0.01f, len), new Color(0.3f, 0.07f, 0.06f), Surface.Fabric);
-                foreach (float x in new[] { -0.82f, 0.82f })
-                    Deco(L(3, x, 0.008f, z), new Vector3(0.06f, 0.012f, len), new Color(0.42f, 0.32f, 0.12f), Surface.Fabric);
-            }
-            if (PropModels.GetPack(Pew.Path, PackMaterial) == null)
-                foreach (float z in new[] { -19f, -16.5f, -14f, -11.5f })
-                    foreach (float x in new[] { -4.2f, 4.2f })
-                        Deco(L(3, x, 0.92f, z), new Vector3(4.5f, 0.04f, 0.7f), Shade(DarkWood, 0.8f), Surface.Wood);
-            foreach (float z in new[] { 22f, 51f })
-            {
-                StainedGlass(new Vector3(-12f + WallHalf, 0f, z), Vector3.right, rng);
-                StainedGlass(new Vector3(4f - WallHalf, 0f, z), Vector3.left, rng);
-            }
-            StainedGlass(new Vector3(0f, 0f, 58f - WallHalf), Vector3.back, rng);
 
             // Barracks: mattresses and pillows on the bunks, with the gap between the tiers.
             foreach (float z in new[] { -17f, -13f, -9f, 9f, 13f, 17f })
