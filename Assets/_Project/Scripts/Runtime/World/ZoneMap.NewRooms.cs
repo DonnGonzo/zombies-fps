@@ -10,7 +10,7 @@ namespace ZombiesFPS.World
     ///   Scriptorium (from the lecture hall): rows of writing desks facing a lectern stage, bookcases round the walls.
     ///   Alchemist's Furnace (from the reactor control room): a great copper furnace with its flue to the roof.
     ///   Rampart Ruins (from the parkour gauntlet): a climb over fallen masonry up onto a broken battlement.
-    ///   Sunken Temple (from the prayer hall): a colonnaded hall with a reflecting pool, carpets and a raised sanctuary.
+    ///   Sunken Temple (from the prayer hall): a drowned serpent shrine, dressed in ZoneMap.Temple.cs.
     ///
     /// Everything solid here is placed the same with or without the art; the models only change the look.
     /// </summary>
@@ -86,7 +86,7 @@ namespace ZombiesFPS.World
             foreach (var (x, z, h) in new[] { (-5f, 24f, 1.2f), (4f, 34f, 1f), (-6f, 40f, 1.4f), (1f, 12f, 1.1f) })
                 Greybox.Box("Fallen Masonry", Root, L(Rampart, x, h / 2f, z), new Vector3(2f, h, 1.3f), Shade(Stone, 0.9f), surface: Surface.Concrete);
 
-            // Sunken Temple: two rows of columns down the hall, a fountain, and the sanctuary raised at the north end.
+            // Sunken Temple: the causeway, colonnade, ruins and the stepped dais (ZoneMap.Temple.cs).
             BuildTemple();
         }
 
@@ -141,22 +141,6 @@ namespace ZombiesFPS.World
                 Deco(L(Rampart, 4.46f, 2.2f, z), new Vector3(0.04f, 2f, 1.2f), new Color(0.42f, 0.1f, 0.08f), Surface.Fabric);
                 Deco(L(Rampart, 4.44f, 2.4f, z), new Vector3(0.03f, 0.5f, 0.5f), new Color(0.62f, 0.5f, 0.2f), Surface.Fabric);
             }
-
-            // Sunken Temple: a long reflecting pool down the nave, carpets in the aisles, and a tiled niche in the
-            // sanctuary's north wall.
-            Deco(L(Temple, 0f, 0.012f, 1.5f), new Vector3(4.6f, 0.02f, 26f), new Color(0.45f, 0.4f, 0.32f), Surface.Tile);
-            Deco(L(Temple, 0f, 0.025f, 1.5f), new Vector3(4f, 0.02f, 25.4f), new Color(0.03f, 0.06f, 0.07f), Surface.Metal);
-            foreach (float x in new[] { -9f, 9f })
-                for (float z = -15f; z < 18f; z += 4.5f)
-                {
-                    var c = rng.NextDouble() < 0.5 ? new Color(0.4f, 0.1f, 0.08f) : new Color(0.12f, 0.2f, 0.32f);
-                    Deco(L(Temple, x, 0.006f, z), new Vector3(2.4f, 0.01f, 3.6f), c, Surface.Fabric);
-                    Deco(L(Temple, x, 0.009f, z), new Vector3(2f, 0.01f, 3.2f), Shade(c, 1.5f), Surface.Fabric);
-                }
-            var niche = L(Temple, -6.85f, 0.5f, 33.68f);
-            Deco(niche + new Vector3(0f, 2.2f, 0f), new Vector3(2.6f, 3.6f, 0.04f), new Color(0.16f, 0.34f, 0.36f), Surface.Tile);
-            Deco(niche + new Vector3(0f, 2f, -0.01f), new Vector3(1.8f, 3f, 0.04f), new Color(0.08f, 0.1f, 0.12f), Surface.Plain);
-            DecoPrim(PrimitiveType.Cylinder, niche + new Vector3(0f, 3.5f, -0.02f), new Vector3(1.8f, 0.02f, 1.8f), Quaternion.Euler(90f, 0f, 0f), new Color(0.62f, 0.5f, 0.2f), Surface.Metal);
         }
     }
 }

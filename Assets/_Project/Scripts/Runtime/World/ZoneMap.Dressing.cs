@@ -283,9 +283,10 @@ namespace ZombiesFPS.World
                 if (f.Length < 1.5f) continue;
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
-                WallLamps(f, rng);
+                // The Temple's only lights are its own fires and the moon.
+                if (f.Zone != Temple) WallLamps(f, rng);
                 WallRuns(f);
-                if (f.Zone != ChapelZone) WallClutter(f, rng);
+                if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
         }
 
@@ -590,7 +591,7 @@ namespace ZombiesFPS.World
             new[] { 1, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }, // Scriptorium
             new[] { 3, 0, 1, 3, 0, 2, 1, 0, 2, 1, 0, 1 }, // Alchemist's Furnace
             new[] { 5, 0, 1, 0, 3, 3, 1, 4, 3, 0, 0, 2 }, // Rampart Ruins
-            new[] { 1, 1, 1, 0, 2, 1, 1, 0, 0, 0, 0, 0 }, // Sunken Temple
+            new[] { 3, 0, 0, 0, 2, 3, 1, 3, 2, 0, 0, 0 }, // Sunken Temple
         };
 
         static float LitterRadius(Litter kind) => kind switch

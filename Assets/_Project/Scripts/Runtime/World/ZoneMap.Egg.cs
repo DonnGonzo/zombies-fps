@@ -63,7 +63,7 @@ namespace ZombiesFPS.World
         static Vector3[] RelicSpots => s_RelicSpots ??= new[]
         {
             L(EasterEggData.ChapelZone, 5.6f, 0.5f, 19.8f), L(EasterEggData.ChapelZone, -16f, 0f, 2f),
-            L(EasterEggData.TempleZone, -9.5f, 0.5f, 31f), L(EasterEggData.TempleZone, 15f, 0f, 27f),
+            L(EasterEggData.TempleZone, -4f, 0.5f, 25f), L(EasterEggData.TempleZone, 15f, 0f, 27f),
         };
 
         public static Vector3 RelicSpot(int relic) => RelicSpots[Mathf.Clamp(relic, 0, RelicSpots.Length - 1)];

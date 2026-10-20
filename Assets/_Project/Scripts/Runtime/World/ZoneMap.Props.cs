@@ -54,8 +54,8 @@ namespace ZombiesFPS.World
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                // The Chapel is dressed by hand (ZoneMap.Chapel.cs), without the barrels and crates.
-                if (f.Length < 3f || f.Zone == ChapelZone) continue;
+                // The Chapel and the Temple are dressed by hand, without the barrels and crates.
+                if (f.Length < 3f || HandDressed(f.Zone)) continue;
                 var rng = new System.Random(6100 + i * 6007);
                 var (mix, chance) = PropMix[f.Zone];
                 int total = 0;

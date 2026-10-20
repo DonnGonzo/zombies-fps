@@ -6,7 +6,7 @@ namespace ZombiesFPS.World
     /// <summary>
     /// A roof over the whole map at the top of the walls, so nobody can look (or throw, or jump) over a wall into
     /// another room. Each room's ceiling matches it: timber boards on rafters in the halls and yards, stone vaults
-    /// with ribs in the chapel, courtyard, gaol and temple, gilt coffers over the Archives, steel deck on girders round the Lantern Core and the
+    /// with ribs in the chapel, courtyard and gaol, gilt coffers over the Archives, steel deck on girders round the Lantern Core and the
     /// furnace, and glass panes on rafters over the Greenhouse.
     ///
     /// The ceiling is drawn with the rest of the dressing, in tiles so each is lit by the lamps under it, and casts
@@ -23,7 +23,7 @@ namespace ZombiesFPS.World
         {
             // The Chapel's ribs are its own (ZoneMap.Chapel.cs); between them, a night-blue vault with gold stars.
             3 => (RoofStyle.Vault, Surface.Plaster, new Color(0.13f, 0.17f, 0.34f)),
-            5 or 12 or 17 => (RoofStyle.Vault, Surface.Concrete, new Color(0.36f, 0.35f, 0.33f)),
+            5 or 12 => (RoofStyle.Vault, Surface.Concrete, new Color(0.36f, 0.35f, 0.33f)),
             9 or 15 => (RoofStyle.Steel, Surface.Metal, new Color(0.2f, 0.21f, 0.23f)),
             11 => (RoofStyle.Glass, Surface.Wood, new Color(0.24f, 0.17f, 0.11f)),
             10 => (RoofStyle.Coffered, Surface.Wood, new Color(0.3f, 0.2f, 0.12f)),
@@ -34,6 +34,8 @@ namespace ZombiesFPS.World
         {
             for (int zone = 0; zone < ZoneCount; zone++)
             {
+                // The Temple draws its own ceiling, round the oculus (ZoneMap.Temple.cs).
+                if (zone == Temple) continue;
                 var (style, surface, color) = RoofLook(zone);
                 foreach (var r in ZoneRects(zone))
                 {

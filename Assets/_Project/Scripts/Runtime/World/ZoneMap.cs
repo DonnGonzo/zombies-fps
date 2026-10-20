@@ -122,8 +122,8 @@ namespace ZombiesFPS.World
             new ZoneLook(Surface.Tile, new Color(0.24f, 0.22f, 0.2f), Surface.Brick, new Color(0.34f, 0.2f, 0.15f), Surface.Rust, new Color(0.3f, 0.17f, 0.1f), 1f),
             // Rampart Ruins: trampled earth inside old grey curtain walls.
             new ZoneLook(Surface.Dirt, new Color(0.3f, 0.27f, 0.2f), Surface.Concrete, new Color(0.46f, 0.44f, 0.4f)),
-            // Sunken Temple: pale sandstone floor, warm plaster over a band of teal tiles.
-            new ZoneLook(Surface.Tile, new Color(0.5f, 0.45f, 0.36f), Surface.Plaster, new Color(0.62f, 0.55f, 0.43f), Surface.Tile, new Color(0.18f, 0.36f, 0.38f), 1.3f),
+            // Sunken Temple: dark wet flags, green-grey masonry, stained darker to the old tide line.
+            new ZoneLook(Surface.Ashlar, new Color(0.3f, 0.32f, 0.3f), Surface.Masonry, new Color(0.42f, 0.44f, 0.4f), Surface.Masonry, new Color(0.22f, 0.26f, 0.23f), 0.9f),
         };
 
         /// <summary>The wall core: shows only on wall ends, tops and the outside, since every zone face gets its own skin.</summary>
@@ -662,8 +662,8 @@ namespace ZombiesFPS.World
             for (int i = 0; i < ZoneCount; i++)
                 foreach (var r in ZoneRects(i))
                 {
-                    // The Chapel hangs its own chandeliers (ZoneMap.Chapel.cs).
-                    if (r.width < 4 || r.height < 4 || i == ChapelZone) continue;
+                    // The Chapel and the Temple hang their own lights.
+                    if (r.width < 4 || r.height < 4 || HandDressed(i)) continue;
                     int nx = Mathf.Max(1, Mathf.RoundToInt(r.width / LampSpacing)), nz = Mathf.Max(1, Mathf.RoundToInt(r.height / LampSpacing));
                     bool beamsAlongX = r.width <= r.height;
                     for (int a = 0; a < nx; a++)

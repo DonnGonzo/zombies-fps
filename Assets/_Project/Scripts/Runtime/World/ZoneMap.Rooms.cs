@@ -65,7 +65,6 @@ namespace ZombiesFPS.World
         static readonly PackItem Fountain = new PackItem(Worlds + "FountainColumn", new Vector3(-0.83f, 0f, -0.83f), new Vector3(0.83f, 1.14f, 0.83f), Mount.Floor);
         static readonly PackItem Planter = new PackItem(Worlds + "RaisedPlanter", new Vector3(-1.23f, 0f, -1.42f), new Vector3(1.23f, 5.33f, 1.42f), Mount.Floor);
         static readonly PackItem TempleChandelier = new PackItem(Worlds + "TempleChandelier", new Vector3(-1.46f, 0f, -1.46f), new Vector3(1.46f, 2.8f, 1.46f), Mount.Open);
-        static readonly PackItem LatticeScreen = new PackItem(Worlds + "LatticeScreen", new Vector3(-1.15f, 0f, -0.15f), new Vector3(1.15f, 3.3f, 0.15f), Mount.Floor);
         static readonly PackItem WritingDesk = new PackItem(Worlds + "WritingDesk", new Vector3(-0.62f, 0f, -0.25f), new Vector3(0.62f, 0.79f, 0.25f), Mount.Floor);
         static readonly PackItem Stool = new PackItem(Worlds + "Stool", new Vector3(-0.42f, 0f, -0.29f), new Vector3(0.42f, 0.83f, 0.29f), Mount.Floor);
         static readonly PackItem LecternStage = new PackItem(Worlds + "LecternStage", new Vector3(-5f, 0f, -1.09f), new Vector3(5f, 1.99f, 1.09f), Mount.Floor);
@@ -77,7 +76,7 @@ namespace ZombiesFPS.World
         /// <summary>Rooms whose ceiling lamps are chandeliers, and which.</summary>
         static readonly Dictionary<int, PackItem> ChandelierZones = new Dictionary<int, PackItem>
         {
-            [14] = Chandelier, [17] = TempleChandelier,
+            [14] = Chandelier,
         };
 
         /// <summary>What each room gets along its walls, by weight. Zones not listed keep just the barrels and crates.</summary>
@@ -99,7 +98,6 @@ namespace ZombiesFPS.World
             [14] = new[] { (Bookcase, 3), (ReadingTable, 2), (Candles, 2), (Cabinet, 1) },                // Scriptorium
             [15] = new[] { (Worktable, 2), (Jars, 2), (Crate, 2), (Barricade, 1) },                      // Alchemist's Furnace
             [16] = new[] { (Barricade, 3), (Crate, 2), (Bones, 1) },                                      // Rampart Ruins
-            [17] = new[] { (LatticeScreen, 4), (Candles, 2), (Bench, 1) },                                // Sunken Temple
         };
 
         /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the globe, the fountain, the lectern stage.</summary>
@@ -113,7 +111,7 @@ namespace ZombiesFPS.World
         static readonly Dictionary<int, int> TorchZones = new Dictionary<int, int>
         {
             [0] = 4, [1] = 3, [2] = 3, [4] = 4, [5] = 4, [6] = 3, [7] = 3, [8] = 4, [9] = 6, [10] = 3, [11] = 2,
-            [12] = 6, [13] = 4, [15] = 3, [16] = 4, [17] = 4,
+            [12] = 6, [13] = 4, [15] = 3, [16] = 4,
         };
 
         const int LabZone = 9;

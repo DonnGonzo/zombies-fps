@@ -133,7 +133,6 @@ namespace ZombiesFPS.World
             [14] = new[] { (TallBookcase, 2), (BookStand, 2), (CandleStand, 1) },                                                                // Scriptorium
             [15] = new[] { (Cauldron, 2), (Workbench, 1), (KitBarrel, 1), (StewPot, 1), (IronCrate, 1) },                                        // Alchemist's Furnace
             [16] = new[] { (WeaponRack, 2), (KitBarrel, 1), (WoodCrate, 1), (Dummy, 1), (WoodChest, 1) },                                        // Rampart Ruins
-            [17] = new[] { (CandleStand, 2), (BigVase, 2), (SmallVase, 1), (WoodChest, 1) },                                                     // Sunken Temple
         };
 
         /// <summary>The kits' big pieces, one each against a wall of its room.</summary>
@@ -174,7 +173,6 @@ namespace ZombiesFPS.World
             [14] = new[] { (ArchShelf, 1.6f, 3), (PlankShelf, 1.6f, 2) },
             [15] = new[] { (BottleShelf, 1.3f, 4), (PlankShelf, 1.6f, 2) },
             [16] = new[] { (WallShield, 2.4f, 3), (HangingBanner2, 5.6f, 2), (IronLantern, 2.4f, 2) },
-            [17] = new[] { (IronLantern, 2.4f, 2) },
         };
 
         /// <summary>Walk-over clutter on each room's floor, and how many.</summary>
@@ -195,7 +193,6 @@ namespace ZombiesFPS.World
             [14] = (new[] { Fantasy + "Scroll_2", Fantasy + "Book_7", Fantasy + "Book_Stack_2" }, 5),
             [15] = (new[] { Fantasy + "Bucket_Metal", Fantasy + "Pot_1_Lid", Fantasy + "Potion_4" }, 4),
             [16] = (new[] { Fantasy + "Vase_Rubble_Medium", Fantasy + "Rope_1", Fantasy + "Chain_Coil" }, 5),
-            [17] = (new[] { Fantasy + "Vase_Rubble_Medium", Fantasy + "Coin_Pile_2", Fantasy + "Chalice" }, 4),
         };
 
         /// <summary>Rooms whose ceiling lamps are the kit's candle chandeliers.</summary>
