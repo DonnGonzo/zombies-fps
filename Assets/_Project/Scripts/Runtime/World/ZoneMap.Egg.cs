@@ -327,7 +327,9 @@ namespace ZombiesFPS.World
             {
                 float ang = (k * 36f + 18f) * Mathf.Deg2Rad;
                 var p = c + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * 11.5f;
+                // None in the way back out, nor where the god rises from his pit (he'd stand inside it).
                 if (p.z < c.z - 9f && Mathf.Abs(p.x - c.x) < 4f) continue;
+                if (Vector3.Distance(p, GodSpot) < 4f) continue;
                 Greybox.Prim(PrimitiveType.Cylinder, "Sanctum Column", Root, p + Vector3.up * (ArenaHeight / 2f), new Vector3(1.3f, ArenaHeight / 2f, 1.3f), Shade(Basalt, 1.6f), surface: Surface.Concrete);
                 DecoPrim(PrimitiveType.Cylinder, p + Vector3.up * 0.25f, new Vector3(1.7f, 0.25f, 1.7f), Quaternion.identity, Basalt, Surface.Concrete);
                 DecoPrim(PrimitiveType.Cylinder, p + Vector3.up * (ArenaHeight - 0.4f), new Vector3(1.7f, 0.3f, 1.7f), Quaternion.identity, Basalt, Surface.Concrete);

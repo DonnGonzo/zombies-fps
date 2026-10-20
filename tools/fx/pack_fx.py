@@ -2,15 +2,16 @@
 
     python3 tools/fx/pack_fx.py <unzipped brackeys_vfx_bundle folder>
 
-Flipbooks keep their grid in the name (explosion_8x8), which FxSystem reads. Mipmaps are off so cells don't bleed.
+Flipbooks keep their grid in the name (explosion_5x5), which FxSystem reads. The two explosion sheets are 5x5
+whatever their file names say (wispy smoke really is 8x8). Mipmaps are off so cells don't bleed.
 """
 import os, sys, uuid
 from PIL import Image
 
 OUT = os.path.join(os.path.dirname(__file__), '..', '..', 'Assets', '_Project', 'Resources', 'Fx')
 PICK = {
-    'flipbooks/explosion_01_8x8.tga': 'explosion_8x8',
-    'flipbooks/explosion_smoke_01_8x8.tga': 'explosion_smoke_8x8',
+    'flipbooks/explosion_01_8x8.tga': 'explosion_5x5',
+    'flipbooks/explosion_smoke_01_8x8.tga': 'explosion_smoke_5x5',
     'flipbooks/wispy_smoke_01_8x8.tga': 'wispy_smoke_8x8',
     'particles/alpha/smoke_04_a.png': 'smoke',
     'particles/alpha/muzzle_01_a.png': 'muzzle_flame',

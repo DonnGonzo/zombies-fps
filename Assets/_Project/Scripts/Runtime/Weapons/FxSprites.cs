@@ -8,7 +8,7 @@ namespace ZombiesFPS.Weapons
     /// </summary>
     public static class FxSprites
     {
-        public const string Explosion = "explosion_8x8", ExplosionSmoke = "explosion_smoke_8x8", WispySmoke = "wispy_smoke_8x8";
+        public const string Explosion = "explosion_5x5", ExplosionSmoke = "explosion_smoke_5x5", WispySmoke = "wispy_smoke_8x8";
         public const string Smoke = "smoke", MuzzleFlame = "muzzle_flame", MuzzleStar = "muzzle_star";
 
         static readonly int SrcBlend = Shader.PropertyToID("_SrcBlend"), DstBlend = Shader.PropertyToID("_DstBlend");
