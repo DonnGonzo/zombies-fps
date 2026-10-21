@@ -87,6 +87,28 @@ namespace ZombiesFPS.Data
             "The Lantern is dead and Vale has gone quiet, but the dead didn't get the message. The Trader runs the radio now and pays bounties for every job. How long can you hold out?",
         };
 
+        /// <summary>The opening step before Act 1's jobs: start the gate generator so the doors can be bought.</summary>
+        public const string PrologueTitle = "Restore the Power";
+        public const string PrologueObjective = "Find the three notes with the start-up code in the Gate Yard, then enter the code at the generator panel by the south wall.";
+        /// <summary>What the squad is working towards in each act, for the story screen.</summary>
+        public static readonly string[] ActObjectives =
+        {
+            "Push into the facility. Open the doors, take the Dispatcher's jobs and find the reconditioning unit by the Lantern Core.",
+            "Keep the power flowing and find out what the Lantern is. Something on Sublevel 9 is waking up.",
+            "Vale lied. Break the Lantern's hold on the facility and survive the purge.",
+            "Hold the facility to round 50 so the old lift can carry you to the surface.",
+            "The story is over. Take the Trader's bounties and see how long you last. Round 500 is the record.",
+        };
+        /// <summary>The last round of each act (the aftermath never ends).</summary>
+        public static int ActEndRound(int act) => act == 0 ? 10 : act == 1 ? 25 : act == 2 ? 40 : act == 3 ? FinalRound : int.MaxValue;
+        public static int ActStartRound(int act) => act == 0 ? 1 : ActEndRound(act - 1) + 1;
+        /// <summary>The Dispatcher, once the generator is running.</summary>
+        public static readonly string[] PowerOn =
+        {
+            "That's the generator! I've got lights on the board. Every door in the facility is live now.",
+            "I'm putting your orders on your suit display. Check it whenever you're lost.",
+        };
+
         /// <summary>Which act a round belongs to: 0 Setup, 1 Rising stakes, 2 Twist, 3 Endgame, 4 the aftermath once the story is over.</summary>
         public static int ActFor(int round) => round <= 10 ? 0 : round <= 25 ? 1 : round <= 40 ? 2 : round <= FinalRound ? 3 : 4;
 
@@ -103,7 +125,8 @@ namespace ZombiesFPS.Data
             // Act 1: Setup.
             new StoryBeat(1, "Can anyone hear me? This is Dispatch, facility security. Good, you're awake.",
                 "The power's out on every level and the containment doors failed. Those things out there used to be staff.",
-                "Stay alive. Get the generators running and I can open the exits. I'll mark jobs for you as I find them."),
+                "Every door down there runs on the gate generator, and it's dead. The night shift left its start-up code on notes somewhere in your yard.",
+                "Find all three numbers and punch them into the panel by the generator. Then I can open the exits."),
             new StoryBeat(2, "Kills buy you everything down there. The doors, the wall guns, all of it still runs on facility credit."),
             new StoryBeat(3, "The yards and the depot should still have weapons lockers. Open the doors if you can afford it."),
             new StoryBeat(5, "Your vitals just spiked. The facility's field is reacting to you. Lean into it. It might keep you alive."),

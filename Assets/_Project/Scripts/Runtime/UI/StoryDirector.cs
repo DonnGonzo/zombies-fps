@@ -37,6 +37,9 @@ namespace ZombiesFPS.UI
         public static int CurrentAct { get; private set; }
         /// <summary>The last story call heard, for the pause menu.</summary>
         public static string LastBeat { get; private set; }
+        /// <summary>The last few lines this player heard (speaker, line, colour), newest last, for the story screen.</summary>
+        public static readonly List<(string speaker, string text, Color color)> Heard = new List<(string, string, Color)>();
+        const int HeardKept = 6;
         /// <summary>Raised on this machine when round 50 is cleared and the story's finale plays.</summary>
         public static event System.Action StoryCompleted;
 
@@ -53,10 +56,12 @@ namespace ZombiesFPS.UI
             _ambience.Play();
             CurrentAct = 0;
             LastBeat = null;
+            Heard.Clear();
             _traderIndex = Random.Range(0, 8);
             MissionBoard.MissionCompleted += OnMissionCompleted;
             MissionBoard.MissionFailed += OnMissionFailed;
             EasterEgg.LineSaid += OnScientistLine;
+            MapState.PowerRestored += OnPowerRestored;
         }
 
         void OnDestroy()
@@ -64,6 +69,13 @@ namespace ZombiesFPS.UI
             MissionBoard.MissionCompleted -= OnMissionCompleted;
             MissionBoard.MissionFailed -= OnMissionFailed;
             EasterEgg.LineSaid -= OnScientistLine;
+            MapState.PowerRestored -= OnPowerRestored;
+        }
+
+        void OnPowerRestored(ulong by)
+        {
+            foreach (var line in StoryData.PowerOn) Radio(line);
+            LastBeat = StoryData.PowerOn[0];
         }
 
         int Round => RoundManager.Instance != null ? RoundManager.Instance.DisplayRound : 1;
@@ -183,6 +195,8 @@ namespace ZombiesFPS.UI
             float duration = Mathf.Clamp(1.6f + text.Length * 0.055f, 2.5f, 8f);
             if (voice != null) duration = Mathf.Max(duration, voice.length + 0.6f);
             Subtitles.Show(speaker, text, color, radio, duration);
+            Heard.Add((speaker, text, color));
+            if (Heard.Count > HeardKept) Heard.RemoveAt(0);
             _radio.pitch = 1f;
             if (radio) _radio.PlayOneShot(ProceduralAudio.Radio, 0.6f);
             if (voice != null)

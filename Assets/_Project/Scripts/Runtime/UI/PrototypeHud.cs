@@ -45,6 +45,9 @@ namespace ZombiesFPS.UI
         bool _consoleWasOpen;
         bool _wasGameOver;
         bool _mapOpen;
+        /// <summary>The map screen shows the story tab instead of the map (only once the power is on).</summary>
+        bool _mapStory;
+        bool _storySeen;
 
         // Blackout atmosphere.
         float _blackout;
@@ -71,6 +74,8 @@ namespace ZombiesFPS.UI
             EasterEgg.StepStarted += OnEggStarted;
             EasterEgg.StepCompleted += OnEggCompleted;
             EasterEgg.Moment += OnEggMoment;
+            MapState.NoteRead += OnNoteRead;
+            MapState.PowerRestored += OnPowerRestored;
             // The pause menu has its own Resume button, so a click there mustn't drop straight back into the game.
             PlayerLook.ClickToResume = false;
             gameObject.AddComponent<StoryDirector>().Init(player);
@@ -90,6 +95,8 @@ namespace ZombiesFPS.UI
             EasterEgg.StepStarted -= OnEggStarted;
             EasterEgg.StepCompleted -= OnEggCompleted;
             EasterEgg.Moment -= OnEggMoment;
+            MapState.NoteRead -= OnNoteRead;
+            MapState.PowerRestored -= OnPowerRestored;
             PlayerLook.ClickToResume = true;
             SettingsMenu.Close();
             DebugConsole.Close();
@@ -147,6 +154,35 @@ namespace ZombiesFPS.UI
                 ? $"Switched on by {NameOf(builder)}. It helps for two minutes, then needs {BuildManager.RobotOfflineRounds} rounds to come back online."
                 : $"{NameOf(builder)} built it. Anyone can take one from a build station.", BuildManager.BuildableColors[item]);
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
+        }
+
+        /// <summary>What each of the night shift's notes says around its digit.</summary>
+        static readonly string[] NoteTexts =
+        {
+            "Gate generator start-up, first number: {0}. Don't leave this lying about. -R",
+            "Second number of the start-up code is {0}. Mira has the last one. If the power drops, the gates seal themselves.",
+            "Third number: {0}. The panel's by the generator on the south wall. All three, in order, and pray it catches.",
+        };
+
+        void OnNoteRead(int digit, ulong reader)
+        {
+            var map = MapState.Instance;
+            if (map == null) return;
+            int value = map.Digit(digit);
+            int found = Mathf.Max(map.NotesFound, 1);
+            string who = NameOf(reader);
+            string sub = string.Format(NoteTexts[Mathf.Clamp(digit, 0, NoteTexts.Length - 1)], value);
+            sub = (who == "You" ? "" : who + " read a note: ") + "\"" + sub + "\"";
+            ShowBanner($"CODE NUMBER {digit + 1} OF {ZoneMap.CodeDigits}: {value}", sub, Ui.Amber);
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.Pin, 0.9f);
+            if (found >= ZoneMap.CodeDigits) Tips.Offer("code", $"That's the whole start-up code: {map.KnownCode}. Enter it at the generator panel by the south wall ({K(GameAction.Interact)} opens the keypad).");
+        }
+
+        void OnPowerRestored(ulong by)
+        {
+            string who = by == ulong.MaxValue ? null : NameOf(by);
+            ShowBanner("POWER RESTORED", (who != null ? who + " started the generator. " : "") + $"The doors can be bought now. Press {K(GameAction.Map)} for your story missions.", Ui.Good);
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.8f);
         }
 
         void OnRobotBroke(int readyRound)
@@ -266,7 +302,15 @@ namespace ZombiesFPS.UI
             if (!SettingsMenu.IsCapturing && GameInput.DebugPressed(DebugKey.Console)) DebugConsole.Toggle();
             else if (DebugConsole.IsOpen && GameInput.PausePressed) DebugConsole.Toggle();
             if (!DebugConsole.IsOpen && GameInput.DebugPressed(DebugKey.ToggleHelp)) _showHelp = !_showHelp;
-            if (!DebugConsole.IsOpen && !SettingsMenu.IsCapturing && _player.Look.CursorLocked && GameInput.MapPressed) _mapOpen = !_mapOpen;
+            if (!DebugConsole.IsOpen && !SettingsMenu.IsCapturing && _player.Look.CursorLocked && GameInput.MapPressed)
+            {
+                _mapOpen = !_mapOpen;
+                // The first look once the power is on goes straight to the story missions.
+                if (_mapOpen && Powered && !_storySeen) _mapStory = true;
+            }
+            if (_mapOpen && !DebugConsole.IsOpen && GameInput.MapTabPressed) _mapStory = !_mapStory && Powered;
+            if (!Powered) _mapStory = false;
+            if (_mapOpen && _mapStory) _storySeen = true;
 
             bool gameOver = rounds != null && rounds.IsGameOver;
             if (gameOver) _mapOpen = false;
@@ -293,7 +337,8 @@ namespace ZombiesFPS.UI
                 // Esc closes the map first, then pauses.
                 if (!console && GameInput.PausePressed)
                 {
-                    if (_mapOpen) _mapOpen = false;
+                    if (_player.KeypadOpen) _player.CloseKeypad();
+                    else if (_mapOpen) _mapOpen = false;
                     else PlayerLook.SetCursorLocked(false);
                 }
             }
@@ -426,6 +471,8 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all the parts of the Scrap Cannon, Aegis Shield (four parts) or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
                     case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Aegis Shield or Buddy Bot here once the squad has all of its parts; after that, take one whenever you need it."); break;
                     case BuyableKind.Egg: Tips.Offer("eggspot", "Part of the map's secret. The pause menu's story card says what the squad is carrying and what comes next."); break;
+                    case BuyableKind.Note: Tips.Offer("note", $"A note from the night shift. Press {interact} to read it: each of the three notes holds one number of the generator's start-up code, and everyone gets the number."); break;
+                    case BuyableKind.PowerPanel: Tips.Offer("panel", $"The generator panel. Press {interact} for the keypad and type the three numbers from the notes in order."); break;
                     case BuyableKind.Reactor: Tips.Offer("reactor", "The Lantern reactor. Something in it is listening. With the whole squad in the room, touching it starts the map's secret, and seals you in until it's done."); break;
                 }
             }
@@ -433,6 +480,8 @@ namespace ZombiesFPS.UI
             if (motor != null && motor.Exhausted) Tips.Offer("stamina", "Out of breath! Sprinting drains the stamina bar under your health. Stop running for a moment and it refills; Fleet Foot makes it last twice as long.");
             if (motor != null && motor.IsMantling) Tips.Offer("mantle", $"Jump at anything your head can reach and keep pushing {K(GameAction.MoveForward)} to climb up onto it. Zombies climb after you.");
             if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
+            if (!Powered) Tips.Offer("power", "The doors have no power: their lamps are red. Three notes in the Gate Yard hold the generator's start-up code. Read them, then enter the code at the generator panel.");
+            else Tips.Offer("story", $"Power's on. Press {K(GameAction.Map)} for your story missions; Tab switches between the story and the map.");
             if (rounds.Round.Value >= 3) Tips.Offer("map", $"Press {K(GameAction.Map)} for the map: every zone, where your squad is, the high spots and the build stations.");
             if (_player.HasPowerUpOffer) Tips.Offer("powerup", "Power-up! Press 1, 2 or 3 to pick a card. Power-ups stack and stay for the whole game, even if you go down.");
             if (MissionBoard.Instance != null && MissionBoard.Instance.SetRound.Value > 0 && rounds.Round.Value >= 2)
@@ -525,7 +574,7 @@ namespace ZombiesFPS.UI
             DrawTip(w, h, u);
             DrawSubtitles(w, h, u);
             if (_showHelp) DrawHelp(w, h, u, rounds);
-            if (_mapOpen && _player.Look.CursorLocked) MapScreen.Draw(w, h, u, _player);
+            if (_mapOpen && _player.Look.CursorLocked) MapScreen.Draw(w, h, u, _player, _mapStory);
 
             if (DebugConsole.IsOpen) DebugConsole.Draw(w, h, u);
             else if (!_player.Look.CursorLocked) DrawPause(w, h, u);
@@ -724,6 +773,17 @@ namespace ZombiesFPS.UI
                 else Ui.Prompt(w / 2f, y, K(GameAction.Interact), "Browse the spawn shop", Ui.Body, Ui.Text, u);
                 return;
             }
+            if (b.Kind == BuyableKind.PowerPanel)
+            {
+                if (_player.KeypadOpen) DrawKeypad(w, h, u);
+                else if (MapState.Instance != null)
+                {
+                    var map = MapState.Instance;
+                    Ui.Prompt(w / 2f, y, K(GameAction.Interact), "Enter the generator's start-up code", Ui.Body, Ui.Text, u);
+                    Ui.Label(new Rect(0, y + 40 * u, w, 30 * u), $"Code found so far: {map.KnownCode}   ({map.NotesFound}/{ZoneMap.CodeDigits} notes)", Ui.Small, Ui.Muted, TextAnchor.MiddleCenter);
+                }
+                return;
+            }
             long price = _player.PriceFor(b, out string what);
             if (price < 0)
             {
@@ -771,6 +831,15 @@ namespace ZombiesFPS.UI
             if (rounds.IsBlackout)
             {
                 Ui.Label(new Rect(0, y, w, 26 * u), $"BLACKOUT  ·  {GameConfig.Round.blackoutPointsMultiplier:0}x POINTS", Ui.Small, Ui.Violet, TextAnchor.UpperCenter);
+                y += 26 * u;
+            }
+            var power = MapState.Instance;
+            if (power != null && !power.IsPowered)
+            {
+                string line = power.NotesFound < ZoneMap.CodeDigits
+                    ? $"NO POWER  ·  FIND THE START-UP CODE IN THE GATE YARD  ·  {power.KnownCode}"
+                    : $"NO POWER  ·  ENTER {power.KnownCode} AT THE GENERATOR PANEL";
+                Ui.Label(new Rect(0, y, w, 26 * u), line, Ui.Small, Door.NoPowerColor, TextAnchor.UpperCenter);
                 y += 26 * u;
             }
             var egg = EasterEgg.Instance;
@@ -1086,6 +1155,46 @@ namespace ZombiesFPS.UI
             Ui.Label(new Rect(r.x + 34 * u, r.y, 40 * u, bh), label, Ui.Tiny, count > 0 ? Ui.Muted : Ui.A(Ui.Muted, 0.5f), TextAnchor.MiddleLeft);
             Ui.Label(new Rect(r.x, r.y, bw - 8 * u, bh), count.ToString(), Ui.Bold, count > 0 ? color : Ui.A(Ui.Muted, 0.5f), TextAnchor.MiddleRight);
             return x - bw - 8 * u;
+        }
+
+        // ---------------------------------------------------------------- generator keypad
+
+        static bool Powered => MapState.Instance == null || MapState.Instance.IsPowered;
+
+        /// <summary>The generator panel's keypad: three digit windows, the keys, and what the squad has found.</summary>
+        void DrawKeypad(float w, float h, float u)
+        {
+            var map = MapState.Instance;
+            if (map == null) return;
+            float pw = 420 * u, ph = 330 * u;
+            var r = new Rect((w - pw) / 2f, Mathf.Max(20 * u, h * 0.5f - ph / 2f + 40 * u), pw, ph);
+            float wrong = Time.time - _player.KeypadWrongTime;
+            bool flash = wrong < 0.9f;
+            Color accent = flash ? Ui.Bad : Ui.Amber;
+            float shake = flash ? Mathf.Sin(wrong * 60f) * 8f * u * (1f - wrong / 0.9f) : 0f;
+            r.x += shake;
+            Ui.PanelBox(r, accent, u);
+            Ui.Label(new Rect(r.x + 24 * u, r.y + 16 * u, pw, 30 * u), "GENERATOR START-UP", Ui.Bold, accent, TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(r.x + 24 * u, r.y + 46 * u, pw - 48 * u, 24 * u), flash ? "WRONG CODE. The generator coughs and dies." : "Type the three-number code from the notes.",
+                Ui.Tiny, flash ? Ui.Bad : Ui.Muted, TextAnchor.MiddleLeft);
+
+            // The digit windows.
+            float cw = 78 * u, ch = 92 * u, gap = 16 * u;
+            float x0 = r.x + (pw - (cw * 3 + gap * 2)) / 2f, cy = r.y + 86 * u;
+            for (int i = 0; i < ZoneMap.CodeDigits; i++)
+            {
+                var cell = new Rect(x0 + i * (cw + gap), cy, cw, ch);
+                bool here = i == _player.KeypadCursor && !_player.KeypadWaiting;
+                Ui.RoundRect(cell, new Color(0.03f, 0.04f, 0.035f, 0.95f));
+                if (here) Ui.Fill(new Rect(cell.x + 10 * u, cell.yMax - 10 * u, cw - 20 * u, 3 * u), Ui.A(accent, 0.5f + 0.5f * Mathf.Sin(Time.time * 8f)));
+                int d = _player.KeypadDigit(i);
+                Ui.Label(cell, d >= 0 ? d.ToString() : "-", Ui.Huge, d >= 0 ? (flash ? Ui.Bad : Ui.Good) : Ui.A(Ui.Muted, 0.5f), TextAnchor.MiddleCenter);
+            }
+            float ly = cy + ch + 18 * u;
+            string known = $"Notes found: {map.NotesFound}/{ZoneMap.CodeDigits}   ·   code so far: {map.KnownCode}";
+            Ui.Label(new Rect(r.x, ly, pw, 24 * u), known, Ui.Small, Ui.Text, TextAnchor.MiddleCenter);
+            string keys = _player.KeypadWaiting ? "Checking..." : $"0-9 type   ·   Backspace rub out   ·   d-pad turn and take   ·   {K(GameAction.Interact)} close";
+            Ui.Label(new Rect(r.x, ly + 30 * u, pw, 24 * u), keys, Ui.Tiny, Ui.Muted, TextAnchor.MiddleCenter);
         }
 
         // ---------------------------------------------------------------- shop and power-up cards

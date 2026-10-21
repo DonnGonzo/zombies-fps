@@ -9,7 +9,8 @@ namespace ZombiesFPS.UI
     /// <summary>
     /// The full-screen map (the Map key, M by default): every zone with its name, which are open, the doors,
     /// where everyone is and which way they face, the high spots, the build stations, the shop and upgrade
-    /// machine, the current missions, and how many parts of each buildable the squad has found.
+    /// machine, the current missions, and how many parts of each buildable the squad has found. Once the power is
+    /// on, Tab switches it to the story screen (StoryScreen).
     /// </summary>
     public static class MapScreen
     {
@@ -25,11 +26,17 @@ namespace ZombiesFPS.UI
             s_Map.x + (world.x - Bounds.xMin) / Bounds.width * s_Map.width,
             s_Map.yMax - (world.z - Bounds.yMin) / Bounds.height * s_Map.height);
 
-        public static void Draw(float w, float h, float u, NetPlayer local)
+        public static void Draw(float w, float h, float u, NetPlayer local, bool story = false)
         {
             var map = GameConfig.Map;
             if (map == null) return;
             Ui.Fill(new Rect(0, 0, w, h), new Color(0f, 0f, 0f, 0.72f));
+            DrawTabs(w, u, story);
+            if (story)
+            {
+                StoryScreen.Draw(w, h, u, local);
+                return;
+            }
 
             // Fit the map, keeping its shape, with room for the title and the side panel.
             float side = 330 * u;
@@ -39,8 +46,6 @@ namespace ZombiesFPS.UI
             float mx = (w - mw - side - 30 * u) / 2f, my = (h - mh) / 2f + 20 * u;
             s_Map = new Rect(mx, my, mw, mh);
 
-            Ui.Label(new Rect(mx, my - 64 * u, mw, 40 * u), "MAP", Ui.Header, Ui.Text, TextAnchor.MiddleLeft);
-            Ui.Label(new Rect(mx, my - 64 * u, mw, 40 * u), $"{Bindings.Name(GameAction.Map)} to close", Ui.Small, Ui.Muted, TextAnchor.MiddleRight);
             Ui.Fill(new Rect(mx - 6 * u, my - 6 * u, mw + 12 * u, mh + 12 * u), Wall);
 
             int openMask = MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0;
@@ -72,7 +77,8 @@ namespace ZombiesFPS.UI
                 if (!open) Ui.Label(new Rect(c.x - 90 * u, c.y + 10 * u, 180 * u, 20 * u), "locked", Ui.Tiny, Ui.A(Ui.Muted, 0.8f), TextAnchor.MiddleCenter);
             }
 
-            // Doors: green once bought, amber with a price while closed.
+            // Doors: green once bought, amber with a price while closed, red while there's no power.
+            bool powered = MapState.Instance == null || MapState.Instance.IsPowered;
             for (int d = 0; d < ZoneMap.DoorLinks.Length; d++)
             {
                 bool open = (openMask & (1 << d)) != 0;
@@ -81,8 +87,8 @@ namespace ZombiesFPS.UI
                 bool alongX = ZoneMap.DoorInWallAlongZ(d);
                 float len = 3.2f * scale + 6 * u, thick = 8 * u;
                 var r = alongX ? new Rect(c.x - thick / 2f, c.y - len / 2f, thick, len) : new Rect(c.x - len / 2f, c.y - thick / 2f, len, thick);
-                Ui.Fill(r, open ? Ui.Good : Ui.Amber);
-                if (!open && GameConfig.Prices != null)
+                Ui.Fill(r, open ? Ui.Good : powered ? Ui.Amber : Door.NoPowerColor);
+                if (!open && powered && GameConfig.Prices != null)
                     Ui.Label(new Rect(c.x - 60 * u, c.y + (alongX ? 14 : 8) * u, 120 * u, 18 * u), GameConfig.Prices.DoorCost(d).ToString("N0"), Ui.Tiny, Ui.Amber, TextAnchor.MiddleCenter);
             }
 
@@ -94,6 +100,14 @@ namespace ZombiesFPS.UI
             for (int b = 0; b < ZoneMap.BenchCount; b++)
                 Marker(ZoneMap.BenchPosition(b), "B", "Build station", BuildManager.BuildableColors[0], u);
             DrawMissionMarkers(map, u);
+            if (!powered)
+            {
+                // The generator panel pulses until the code is in.
+                Vector2 pc = ToMap(ZoneMap.PanelPosition);
+                float pulse = 24 * u + 6 * u * Mathf.Sin(Time.unscaledTime * 5f);
+                Ui.RoundRect(new Rect(pc.x - pulse / 2f, pc.y - pulse / 2f, pulse, pulse), Ui.A(Door.NoPowerColor, 0.35f), small: true);
+                Marker(ZoneMap.PanelPosition, "P", "Generator panel", Door.NoPowerColor, u);
+            }
 
             var build = BuildManager.Instance;
             if (build != null && build.RobotActive) Dot(build.RobotPosition.Value, BuildManager.BuildableColors[BuildManager.Bot], 10 * u, null, u);
@@ -115,6 +129,25 @@ namespace ZombiesFPS.UI
             }
 
             DrawSidePanel(new Rect(s_Map.xMax + 30 * u, my, side, mh), u, local);
+        }
+
+        /// <summary>The Map and Story tabs along the top. Story opens once the generator is running.</summary>
+        static void DrawTabs(float w, float u, bool story)
+        {
+            bool powered = MapState.Instance == null || MapState.Instance.IsPowered;
+            float tw = 170 * u, th = 38 * u, gap = 10 * u, y = 18 * u;
+            float x = (w - tw * 2f - gap) / 2f;
+            Tab(new Rect(x, y, tw, th), "MAP", !story, true, u);
+            Tab(new Rect(x + tw + gap, y, tw, th), powered ? "STORY" : "STORY (no power)", story, powered, u);
+            string hint = powered ? $"Tab switches   ·   {Bindings.Name(GameAction.Map)} closes" : $"{Bindings.Name(GameAction.Map)} closes";
+            Ui.Label(new Rect(0, y + th + 4 * u, w, 22 * u), hint, Ui.Tiny, Ui.Muted, TextAnchor.MiddleCenter);
+        }
+
+        static void Tab(Rect r, string label, bool selected, bool enabled, float u)
+        {
+            Ui.RoundRect(r, selected ? Ui.A(Ui.Amber, 0.9f) : new Color(1f, 1f, 1f, enabled ? 0.08f : 0.03f), small: true);
+            var color = selected ? new Color(0.05f, 0.05f, 0.06f) : enabled ? Ui.Text : Ui.A(Ui.Muted, 0.6f);
+            Ui.Label(r, label, Ui.Small, color, TextAnchor.MiddleCenter);
         }
 
         static void Marker(Vector3 world, string glyph, string label, Color color, float u, bool small = false)
@@ -170,6 +203,16 @@ namespace ZombiesFPS.UI
             Ui.Label(new Rect(x, y + 20 * u, iw, 30 * u), here >= 0 ? ZoneMap.ZoneNames[here] : "-", Ui.Bold, Ui.Text, TextAnchor.MiddleLeft);
             y += 70 * u;
 
+            var power = MapState.Instance;
+            if (power != null && !power.IsPowered)
+            {
+                Ui.Label(new Rect(x, y, iw, 22 * u), "NO POWER", Ui.Tiny, Door.NoPowerColor, TextAnchor.MiddleLeft);
+                Ui.Label(new Rect(x, y + 22 * u, iw, 26 * u), "Start-up code", Ui.Small, Ui.Text, TextAnchor.MiddleLeft);
+                Ui.Label(new Rect(x, y + 22 * u, iw, 26 * u), power.KnownCode, Ui.Bold, Ui.Amber, TextAnchor.MiddleRight);
+                Ui.Label(new Rect(x, y + 48 * u, iw, 22 * u), $"{power.NotesFound}/{ZoneMap.CodeDigits} notes found in the Gate Yard", Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
+                y += 82 * u;
+            }
+
             var build = BuildManager.Instance;
             Ui.Label(new Rect(x, y, iw, 22 * u), "BUILDABLES", Ui.Tiny, Ui.Amber, TextAnchor.MiddleLeft);
             y += 26 * u;
@@ -219,7 +262,7 @@ namespace ZombiesFPS.UI
             string[] key =
             {
                 "$  spawn shop", "^  upgrade machine", "B  build station", "▲  high spot (climb up)",
-                "!  mission", "doors: amber closed, green open",
+                "!  mission", "P  generator panel", "doors: red no power, amber for sale, green open",
             };
             foreach (var line in key)
             {

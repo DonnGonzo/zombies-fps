@@ -31,6 +31,13 @@ namespace ZombiesFPS.Tests
             Assert.AreEqual(acts, StoryData.MissionSet.Length);
             Assert.AreEqual(acts, StoryData.MissionComplete.Length);
             Assert.AreEqual(acts, StoryData.TraderLore.Length);
+            Assert.AreEqual(acts, StoryData.ActObjectives.Length);
+            // The story screen's act ranges agree with ActFor.
+            for (int round = 1; round <= 60; round++)
+            {
+                int act = StoryData.ActFor(round);
+                Assert.That(round >= StoryData.ActStartRound(act) && round <= StoryData.ActEndRound(act), $"round {round}");
+            }
             Assert.Greater(StoryData.Finale.Length, 0);
             Assert.AreEqual(StoryData.TraderName, StoryData.RadioSpeaker(60), "the Trader has the radio after the story");
         }

@@ -41,7 +41,9 @@ namespace ZombiesFPS.UI
             "perks          every perk and full armour for everyone",
             "ammo           full ammo and throwables for everyone",
             "powerup [emp]  offer power-up cards (emp = empowered)",
-            "doors          open every door",
+            "doors          open every door (and start the generator)",
+            "power          start the generator (skip the start-up code)",
+            "code           show the start-up code",
             "parts          find every build part",
             "egg            finish the easter egg step being played (or the next one)",
             "egg serve      finish the last step the Serve way (Ashgrave) instead of Fight",
@@ -238,8 +240,23 @@ namespace ZombiesFPS.UI
                     break;
                 case "doors":
                     if (MapState.Instance != null)
+                    {
+                        MapState.Instance.ServerPowerOn(null);
                         for (int d = 0; d < ZoneMap.DoorLinks.Length; d++) MapState.Instance.ServerOpenDoor(d);
+                    }
                     Log("Every door is open.");
+                    break;
+                case "power":
+                    if (MapState.Instance == null) break;
+                    if (MapState.Instance.IsPowered) Log("The generator is already running.");
+                    else
+                    {
+                        MapState.Instance.ServerPowerOn(null);
+                        Log("Generator started: the doors can be bought.");
+                    }
+                    break;
+                case "code":
+                    if (MapState.Instance != null) Log($"Start-up code: {MapState.Instance.Code.Value:000} (found so far: {MapState.Instance.KnownCode}).");
                     break;
                 case "parts":
                     if (BuildManager.Instance != null) BuildManager.Instance.DebugCollectAll();
