@@ -89,6 +89,63 @@ namespace ZombiesFPS.Core
         /// <summary>A looping, throbbing charge for the reactor while it wakes.</summary>
         public static AudioClip ReactorSurge => s_Surge ? s_Surge : (s_Surge = MakeSurge());
 
+        static AudioClip s_GateRaise, s_PowerOn, s_KeyBeep;
+        /// <summary>A powered gate winding up: ratchet clicks over a grinding chain, a clunk as it locks open.</summary>
+        public static AudioClip GateRaise => s_GateRaise ? s_GateRaise : (s_GateRaise = MakeGateRaise());
+        /// <summary>A generator spinning up and catching: a rising whine over a settling thrum.</summary>
+        public static AudioClip PowerOn => s_PowerOn ? s_PowerOn : (s_PowerOn = MakePowerOn());
+        /// <summary>A keypad key.</summary>
+        public static AudioClip KeyBeep => s_KeyBeep ? s_KeyBeep : (s_KeyBeep = MakeTone("KeyBeep", 0.07f, 1450f, 1450f, 0.3f));
+
+        static AudioClip MakeGateRaise()
+        {
+            const float length = 2.1f, lift = 1.7f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            var rng = new System.Random(61);
+            float lp = 0f, click = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (noise - lp) * 0.06f;
+                // The chain grinds while it winds; a pawl clicks over the ratchet 14 times a second.
+                float wind = t < lift ? Mathf.Clamp01(t * 12f) * (0.8f + 0.2f * Mathf.Sin(2f * Mathf.PI * 3f * t)) : 0f;
+                float phase = t * 14f - Mathf.Floor(t * 14f);
+                if (t < lift && phase < 1f / (Rate / 14f) * 1.5f) click = 1f;
+                click *= 0.9975f;
+                float tick = click * noise * 0.55f;
+                float hum = Mathf.Sin(2f * Mathf.PI * 60f * t) * 0.12f * wind;
+                // The clunk as it locks at the top.
+                float lt = t - lift;
+                float clunk = lt > 0f ? (Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(110f, 55f, lt * 4f) * lt) * 0.9f + lp * 2.5f) * Mathf.Exp(-lt * 11f) : 0f;
+                d[i] = Mathf.Clamp(lp * 1.6f * wind + tick + hum + clunk, -1f, 1f) * 0.8f;
+            }
+            return Build("GateRaise", d);
+        }
+
+        static AudioClip MakePowerOn()
+        {
+            const float length = 3.2f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            var rng = new System.Random(67);
+            float lp = 0f, phase = 0f, low = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                lp += ((float)(rng.NextDouble() * 2.0 - 1.0) - lp) * 0.08f;
+                // A starter cranks, the whine climbs, then a steady thrum takes over.
+                float spin = Mathf.Clamp01(t / 1.6f);
+                phase += 2f * Mathf.PI * Mathf.Lerp(120f, 720f, spin * spin) / Rate;
+                low += 2f * Mathf.PI * Mathf.Lerp(18f, 50f, spin) / Rate;
+                float crank = t < 0.9f ? (0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 9f * t)) * lp * 1.6f : 0f;
+                float env = Mathf.Clamp01(t * 6f) * Mathf.Clamp01((length - t) * 1.5f);
+                d[i] = Mathf.Clamp((Mathf.Sin(phase) * 0.18f * spin + Mathf.Sin(low) * 0.45f + crank) * env, -1f, 1f);
+            }
+            return Build("PowerOn", d);
+        }
+
         /// <summary>A short syllable of placeholder "speech", for voice lines until real recordings exist.</summary>
         public static AudioClip RandomBlip()
         {

@@ -232,8 +232,11 @@ namespace ZombiesFPS.Net
         {
             SetRound.Value = setRound;
             _pool.Clear();
+            // The first set has no generator job: starting the facility's generator is the opening story step instead.
+            bool firstSet = setRound <= Data.SetStartRound(1);
             for (int id = 0; id < Data.Count; id++)
-                if (Data.IsEligible(id, round, k => GameConfig.ZombieType(k).firstRound)) _pool.Add(id);
+                if (Data.IsEligible(id, round, k => GameConfig.ZombieType(k).firstRound) && !(firstSet && Data.At(id).objective == MissionObjective.HoldGenerator))
+                    _pool.Add(id);
             for (int i = _pool.Count - 1; i > 0; i--)
             {
                 int j = UnityEngine.Random.Range(0, i + 1);

@@ -618,17 +618,18 @@ namespace ZombiesFPS.Net
             }
             if (canAct)
             {
-                int want = picking || ShopOpen ? -1 : GameInput.SlotPressed;
+                int want = picking || ShopOpen || KeypadOpen ? -1 : GameInput.SlotPressed;
                 if (GameInput.SwitchWeaponPressed) want = 1 - ActiveSlot.Value;
                 if (want >= 0 && want != ActiveSlot.Value && GunInSlot(want) >= 0) EquipSlot(want, saveCurrent: true);
             }
 
-            OwnerEquipmentTick(canAct && !picking && !ShopOpen);
+            OwnerEquipmentTick(canAct && !picking && !ShopOpen && !KeypadOpen);
 
             bool nearDowned = FindReviveTarget(transform.position) != null;
             FocusedBuyable = canAct && !nearDowned ? FindBuyable() : null;
             OwnerShopTick(canAct, picking);
-            if (FocusedBuyable != null && FocusedBuyable.Kind != BuyableKind.Shop && GameInput.InteractPressed)
+            OwnerKeypadTick(canAct, picking);
+            if (FocusedBuyable != null && FocusedBuyable.Kind != BuyableKind.Shop && FocusedBuyable.Kind != BuyableKind.PowerPanel && GameInput.InteractPressed)
                 BuyRpc(System.Array.IndexOf(GameConfig.Map.Buyables, FocusedBuyable));
 
             bool reviveHeld = IsAlive && GameInput.InteractHeld && _look.CursorLocked;
@@ -741,6 +742,8 @@ namespace ZombiesFPS.Net
                 if (b.Kind == BuyableKind.Door && MapState.Instance != null && MapState.Instance.IsDoorOpen(b.Index)) continue;
                 if (b.Kind == BuyableKind.Part && (BuildManager.Instance == null || BuildManager.Instance.PartWaitingAt(b.Index) < 0)) continue;
                 if (b.Kind == BuyableKind.Egg && (EasterEgg.Instance == null || !EasterEgg.Instance.SpotShown(b.Index))) continue;
+                if (b.Kind == BuyableKind.Note && (MapState.Instance == null || MapState.Instance.UnreadNoteAt(b.Index) < 0)) continue;
+                if (b.Kind == BuyableKind.PowerPanel && (MapState.Instance == null || MapState.Instance.IsPowered)) continue;
                 Vector3 d = b.Position - here;
                 // Up on a ledge or down below doesn't count.
                 if (Mathf.Abs(d.y - 1f) > 1.6f) continue;
@@ -764,6 +767,11 @@ namespace ZombiesFPS.Net
             if (b.Kind == BuyableKind.Door)
             {
                 if (MapState.Instance == null || MapState.Instance.IsDoorOpen(b.Index)) return -1;
+                if (!MapState.Instance.IsPowered)
+                {
+                    what = "No power. Find the start-up code and start the generator.";
+                    return -1;
+                }
                 what = "open the door to " + ZoneMap.ZoneNames[map.OtherSide(b.Index, transform.position)];
                 return GameConfig.Prices.DoorCost(b.Index);
             }
@@ -788,6 +796,7 @@ namespace ZombiesFPS.Net
             }
             if (b.Kind == BuyableKind.Reactor) return EasterEgg.Instance != null ? EasterEgg.Instance.ReactorPrice(this, out what) : -1;
             if (b.Kind == BuyableKind.Egg) return EasterEgg.Instance != null ? EasterEgg.Instance.SpotPrice(this, b.Index, out what) : -1;
+            if (b.Kind == BuyableKind.Note || b.Kind == BuyableKind.PowerPanel) return PowerPrice(b, out what);
             var entry = GameConfig.Prices.WallGunAt(b.Index);
             if (entry == null || entry.gun == null) return -1;
             bool owned = SlotOf(GameConfig.GunId(entry.gun)) >= 0;
@@ -1093,6 +1102,14 @@ namespace ZombiesFPS.Net
             else if (b.Kind == BuyableKind.Egg)
             {
                 EasterEgg.Instance.ServerUseSpot(this, b.Index);
+            }
+            else if (b.Kind == BuyableKind.Note)
+            {
+                MapState.Instance.ServerReadNote(this, b.Index);
+            }
+            else if (b.Kind == BuyableKind.PowerPanel)
+            {
+                return; // The keypad sends its own code.
             }
             else
             {

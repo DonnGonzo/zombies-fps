@@ -100,6 +100,30 @@ namespace ZombiesFPS.Core
             }
         }
 
+        /// <summary>A digit key 0-9 (top row or numpad) pressed this frame, for the generator's keypad, else -1.</summary>
+        public static int DigitPressed
+        {
+            get
+            {
+                if (Suspended) return -1;
+                for (int i = 0; i < 10; i++)
+                    if (KeyDown(KeyCode.Alpha0 + i) || KeyDown(KeyCode.Keypad0 + i)) return i;
+                return -1;
+            }
+        }
+
+        /// <summary>Rubs out the last keypad digit: Backspace or Delete.</summary>
+        public static bool BackspacePressed => !Suspended && (KeyDown(KeyCode.Backspace) || KeyDown(KeyCode.Delete));
+
+        /// <summary>The keypad on a gamepad: up and down turn the digit, right takes it, left steps back.</summary>
+        public static bool KeypadUpPressed => Pad(PadButton.DpadUp, down: true);
+        public static bool KeypadDownPressed => Pad(PadButton.DpadDown, down: true);
+        public static bool KeypadNextPressed => Pad(PadButton.DpadRight, down: true);
+        public static bool KeypadBackPressed => Pad(PadButton.DpadLeft, down: true);
+
+        /// <summary>Switches the map screen between the map and the story: Tab (unless bound to something else).</summary>
+        public static bool MapTabPressed => !Suspended && !Bindings.IsBound(KeyCode.Tab) && KeyDown(KeyCode.Tab);
+
         /// <summary>Redraw the power-up cards with a reroll: 4 or d-pad down.</summary>
         public static bool RerollPressed => (!Suspended && (KeyDown(KeyCode.Alpha4) || KeyDown(KeyCode.Keypad4))) || Pad(PadButton.DpadDown, down: true);
 

@@ -25,8 +25,12 @@ namespace ZombiesFPS.World
         Light _light;
         GeneratorState _state;
         float _progress;
+        bool _mains;
+        float _mainsAt = -100f;
 
         public GeneratorState State => _state;
+        /// <summary>The start-up generator, once its code is in: it runs (green) whenever no mission is using it.</summary>
+        public bool Mains => _mains;
 
         public void Init()
         {
@@ -50,19 +54,30 @@ namespace ZombiesFPS.World
         {
             _state = state;
             _progress = Mathf.Clamp01(progress);
-            var color = state == GeneratorState.Done ? DoneColor : state == GeneratorState.Active ? ActiveColor : IdleColor;
+            bool running = state == GeneratorState.Done || (state == GeneratorState.Idle && _mains);
+            var color = running ? DoneColor : state == GeneratorState.Active ? ActiveColor : IdleColor;
             _strip.sharedMaterial = Greybox.Unlit(color);
             _light.color = color;
-            _light.enabled = state != GeneratorState.Idle;
+            _light.enabled = state != GeneratorState.Idle || _mains;
             _gauge.gameObject.SetActive(state == GeneratorState.Active);
             _gauge.localScale = new Vector3(1.1f * Mathf.Max(0.01f, _progress), 0.1f, 0.02f);
             _gauge.localPosition = new Vector3(-0.55f + 0.55f * _progress, 0.6f, -0.47f);
         }
 
+        /// <summary>Starts (or stops) the generator as the facility's power supply; a mission's state still shows over it.</summary>
+        public void SetMains(bool on, bool instant)
+        {
+            if (on == _mains) return;
+            _mains = on;
+            _mainsAt = instant ? -100f : Time.time;
+            SetState(_state, _progress);
+        }
+
         void Update()
         {
-            // An active generator pulses so it's easy to find.
+            // An active generator pulses so it's easy to find; one just started stutters before it catches.
             if (_state == GeneratorState.Active) _light.intensity = 1.6f + Mathf.Sin(Time.time * 5f) * 0.8f;
+            else if (_mains && Time.time - _mainsAt < 1.6f) _light.intensity = Mathf.PerlinNoise(Time.time * 18f, 0.3f) > 0.45f ? 2.4f : 0.2f;
             else _light.intensity = 1.4f;
         }
     }

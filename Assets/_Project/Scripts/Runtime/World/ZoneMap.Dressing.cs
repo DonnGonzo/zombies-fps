@@ -118,6 +118,8 @@ namespace ZombiesFPS.World
             foreach (var f in _ladderFeet) _keepOut.Add((f, 1.4f));
             foreach (var p in PartSpots)
                 if (p.y < 0.5f) _keepOut.Add((p, 1.2f));
+            // The start-up code's notes, so nothing hides them (the generator panel is inside its generator's).
+            for (int s = 0; s < NoteSpotCount; s++) _keepOut.Add((NotePosition(s), 1.2f));
         }
 
         /// <summary>True when a point (with this much reach round it) is clear of every keep-out.</summary>

@@ -27,6 +27,10 @@ namespace ZombiesFPS.World
         Reactor,
         /// <summary>One of the easter egg's later places (relics, altars, the Watchman, portals); Index is the EggSpot.</summary>
         Egg,
+        /// <summary>The start-up generator's control panel, where the code is entered (opens a keypad, like the shop).</summary>
+        PowerPanel,
+        /// <summary>A note with one digit of the start-up code; Index is the note spot. Free to read.</summary>
+        Note,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -135,7 +139,7 @@ namespace ZombiesFPS.World
         static readonly Color Wood = new Color(0.4f, 0.29f, 0.17f);
         static readonly Color DarkWood = new Color(0.28f, 0.19f, 0.11f);
         static readonly Color Board = new Color(0.33f, 0.23f, 0.14f);
-        static readonly Color DoorWood = new Color(0.3f, 0.21f, 0.12f);
+        static readonly Color DoorIron = new Color(0.17f, 0.17f, 0.18f);
         static readonly Color Chalk = new Color(0.82f, 0.8f, 0.72f);
         static readonly Color Lamp = new Color(1f, 0.85f, 0.6f);
         static readonly Color LadderColor = new Color(0.55f, 0.44f, 0.14f);
@@ -267,6 +271,7 @@ namespace ZombiesFPS.World
             BuildLamps();
             BuildRoof();
             BuildGenerators();
+            BuildPower();
             BuildBeacons();
             BuildShop();
             BuildStations();
@@ -306,6 +311,7 @@ namespace ZombiesFPS.World
             // Reached from any side: the range is measured from the reactor's middle.
             buyables.Add(new Buyable { Kind = BuyableKind.Reactor, Index = 0, Position = ReactorBase + Vector3.up, Range = CoreDiameter / 2f + 1.6f });
             AddEggBuyables(buyables);
+            AddPowerBuyables(buyables);
             Buyables = buyables.ToArray();
 
             PlayerStart = StartPosition;
@@ -714,7 +720,7 @@ namespace ZombiesFPS.World
                 // A door in a wall running north-south faces along x.
                 var rot = DoorInWallAlongZ(i) ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
                 var go = Greybox.Box("Door " + ZoneNames[DoorLinks[i].x] + " - " + ZoneNames[DoorLinks[i].y], Root,
-                    c + Vector3.up * (GapHeight / 2f), new Vector3(GapWidth, GapHeight, 0.35f), DoorWood, surface: Surface.Wood, moving: true);
+                    c + Vector3.up * (GapHeight / 2f), new Vector3(GapWidth, GapHeight, 0.35f), DoorIron, surface: Surface.Metal, moving: true);
                 go.transform.localRotation = rot;
                 var door = go.AddComponent<Door>();
                 door.Init(i);
