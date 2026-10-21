@@ -154,6 +154,10 @@ namespace ZombiesFPS.Zombies
         // whichever this life wears.
         ZombieModel _zombieModel;
         readonly Dictionary<ZombieModel.Kit, ZombieModel> _kitModels = new Dictionary<ZombieModel.Kit, ZombieModel>();
+        // The Temple's guardian (EggBoss.Serpent) wears the Yuan-ti instead of any zombie model or the blocky rig,
+        // built the first time this zombie is one. It sits under the root, not the visual, so it keeps its own size.
+        SerpentModel _serpent;
+        bool _isSerpent;
         // The Warden's back spurs: worn over the zombie model, but the Mutant has horns of its own.
         Renderer[] _spurRenderers;
         static readonly Vector3 SpineRest = new Vector3(0f, 0.06f, 0f);
@@ -512,9 +516,9 @@ namespace ZombiesFPS.Zombies
         void SetModelMode(bool on)
         {
             _modelOn = on;
-            _model.gameObject.SetActive(on);
-            foreach (var r in _rigRenderers) r.enabled = !on;
-            foreach (var r in _spurRenderers) r.enabled = !on || _model == _zombieModel;
+            _model.gameObject.SetActive(on && !_isSerpent);
+            foreach (var r in _rigRenderers) r.enabled = !on && !_isSerpent;
+            foreach (var r in _spurRenderers) r.enabled = (!on || _model == _zombieModel) && !_isSerpent;
             if (!on)
             {
                 _spine.localPosition = SpineRest;
@@ -786,6 +790,7 @@ namespace ZombiesFPS.Zombies
         void ApplySpecial()
         {
             var special = _special.Value;
+            WearSerpent(special == EggBoss.Serpent && SerpentModel.Available);
             if (special == EggBoss.None)
             {
                 if (_specialLight != null) _specialLight.enabled = false;
@@ -797,7 +802,7 @@ namespace ZombiesFPS.Zombies
             var skinMat = Greybox.Lit(_skin * tint, Surface.Skin, true);
             foreach (var r in _skinRenderers) r.sharedMaterial = skinMat;
             for (int i = 0; i < _renderers.Length; i++) _baseMaterials[i] = _renderers[i].sharedMaterial;
-            if (_model != null)
+            if (_model != null && !_isSerpent)
             {
                 // Ashgrave is Warrok; Azhrakel the Mutant in red and fire; the Rotbloom the Mutant, tinted.
                 UseModel(special == EggBoss.General ? ZombieModel.Warrok : ZombieModel.Mutant);
@@ -812,11 +817,37 @@ namespace ZombiesFPS.Zombies
                 _specialLight.type = LightType.Point;
                 _specialLight.shadows = LightShadows.None;
             }
-            _specialLight.transform.localPosition = new Vector3(0f, 2.2f * _data.bodyScale.y * scale, 0.6f);
+            _specialLight.transform.localPosition = _isSerpent ? new Vector3(0f, 2.4f, 1.2f) : new Vector3(0f, 2.2f * _data.bodyScale.y * scale, 0.6f);
             _specialLight.color = EasterEggData.BossGlow(special);
             _specialLight.range = 9f;
             _specialLight.intensity = 2.5f;
             _specialLight.enabled = true;
+        }
+
+        /// <summary>
+        /// Puts the Yuan-ti on (or takes it off): it replaces both the zombie model and the blocky rig, which stays
+        /// underneath, hidden, to carry the hitboxes and the weak point along the serpent's spine.
+        /// </summary>
+        void WearSerpent(bool on)
+        {
+            if (on && _serpent == null)
+            {
+                _serpent = SerpentModel.Create(transform);
+                if (_serpent == null) on = false;
+            }
+            bool was = _isSerpent;
+            _isSerpent = on;
+            if (_serpent != null)
+            {
+                _serpent.gameObject.SetActive(on);
+                _serpent.transform.localPosition = Vector3.zero;
+                if (on) _serpent.ResetLife();
+            }
+            if (on == was) return;
+            if (_model != null) SetModelMode(_modelOn);
+            else
+                foreach (var r in _renderers)
+                    if (!r.transform.IsChildOf(_core.transform)) r.enabled = !on;
         }
 
         // ---------------------------------------------------------------- damage (host)
@@ -937,7 +968,8 @@ namespace ZombiesFPS.Zombies
                 _head.gameObject.SetActive(false);
                 FxSystem.Instance?.Impact(_head.position, Vector3.up, FxSystem.Blood, 18, 4.5f, 0.09f);
             }
-            if (_model != null) _model.Die((int)(NetworkObjectId + (ulong)_swingCount), headshot);
+            if (_isSerpent) _serpent.Die(headshot);
+            else if (_model != null) _model.Die((int)(NetworkObjectId + (ulong)_swingCount), headshot);
             _audio.Stop();
             SetFlash(false);
         }
@@ -1404,6 +1436,18 @@ namespace ZombiesFPS.Zombies
             if (_deathTime > 0f)
             {
                 float t = Time.time - _deathTime;
+                if (_isSerpent)
+                {
+                    // The serpent's own death clip, then it sinks into the floor like the rest.
+                    float sinkS = Mathf.Clamp01((t - DeathFallTime - CorpseTime) / SinkTime);
+                    _serpent.transform.localPosition = new Vector3(0f, -1.2f * sinkS, 0f);
+                    if (t < DeathFallTime + CorpseTime + 0.1f)
+                    {
+                        _serpent.Animate(dt, 0f, 0f, 1f, 1f, 0, false);
+                        FollowSerpent();
+                    }
+                    return;
+                }
                 if (_modelOn)
                 {
                     // The death clip does the falling; the body only sinks away at the end.
@@ -1461,6 +1505,7 @@ namespace ZombiesFPS.Zombies
             var white = Greybox.Lit(Color.white);
             for (int i = 0; i < _renderers.Length; i++) _renderers[i].sharedMaterial = flashing ? white : _baseMaterials[i];
             if (_model != null) _model.SetFlash(flashing);
+            if (_isSerpent) _serpent.SetFlash(flashing);
         }
 
         /// <summary>
@@ -1477,6 +1522,13 @@ namespace ZombiesFPS.Zombies
             bool stunned = IsStunned;
             bool runner = d.kind == ZombieKind.Runner;
 
+            if (_isSerpent)
+            {
+                _serpent.Animate(dt, speed, swing, d.attackWindup, d.attackWindup + d.attackRecovery, _swingCount, stunned);
+                _visual.localRotation = Quaternion.identity;
+                FollowSerpent();
+                return;
+            }
             if (_modelOn)
             {
                 _model.Animate(dt, speed, d.crawls, swing, d.attackWindup + d.attackRecovery, _swingCount, now - _spitStart, stunned);
@@ -1567,6 +1619,19 @@ namespace ZombiesFPS.Zombies
             if (forward.sqrMagnitude < 1e-6f) forward = transform.forward;
             _spine.SetPositionAndRotation(spine.position, Quaternion.LookRotation(forward, up));
             _head.position = _model.HeadCenter;
+        }
+
+        /// <summary>The hidden rig's spine and head hitbox on the serpent's chest and skull.</summary>
+        void FollowSerpent()
+        {
+            var spine = _serpent.Spine;
+            Vector3 up = _serpent.Neck.position - spine.position;
+            if (up.sqrMagnitude < 1e-6f) up = transform.up;
+            up.Normalize();
+            Vector3 forward = Vector3.Cross(_serpent.transform.right, up);
+            if (forward.sqrMagnitude < 1e-6f) forward = transform.forward;
+            _spine.SetPositionAndRotation(spine.position, Quaternion.LookRotation(forward, up));
+            _head.position = _serpent.HeadCenter;
         }
 
         /// <summary>

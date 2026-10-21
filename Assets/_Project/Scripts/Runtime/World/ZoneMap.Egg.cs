@@ -68,6 +68,9 @@ namespace ZombiesFPS.World
 
         public static Vector3 RelicSpot(int relic) => RelicSpots[Mathf.Clamp(relic, 0, RelicSpots.Length - 1)];
 
+        /// <summary>Where the Sunken Temple's guardian rises: the north end of the causeway, before the idol's dais.</summary>
+        public static Vector3 GuardianRise => L(EasterEggData.TempleZone, 0f, 0f, 21f);
+
         public static Vector3 WatchmanSpot => L(EasterEggData.CraneYardZone, -4f, 0f, -1f);
         public static Vector3 StonesCenter => L(EasterEggData.GreenhouseZone, 1.5f, 0f, 3.5f);
         const float StonesRadius = 3.4f;

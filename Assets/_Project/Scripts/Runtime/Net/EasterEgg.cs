@@ -145,6 +145,7 @@ namespace ZombiesFPS.Net
             Phase.OnValueChanged += OnPhaseChanged;
             Ending.OnValueChanged += OnEndingChanged;
             Paused.OnValueChanged += OnPausedChanged;
+            Guardian.OnValueChanged += OnGuardianChanged;
             ShowState();
         }
 
@@ -153,6 +154,7 @@ namespace ZombiesFPS.Net
         {
             if (_props != null) return;
             _lockdown = Lockdown.Build(map.Root, EasterEggData.LanternZone);
+            BuildSeals(map);
             _fx = ReactorFx.Build(map.Root, ZoneMap.ReactorBase, map.CoilTops);
             _props = EggProps.Build(map.Root);
             ShowState();
@@ -167,6 +169,8 @@ namespace ZombiesFPS.Net
             Phase.OnValueChanged -= OnPhaseChanged;
             Ending.OnValueChanged -= OnEndingChanged;
             Paused.OnValueChanged -= OnPausedChanged;
+            Guardian.OnValueChanged -= OnGuardianChanged;
+            DestroySeals();
             if (_lockdown != null) Destroy(_lockdown.gameObject);
             if (_fx != null) Destroy(_fx.gameObject);
             if (_props != null) Destroy(_props.gameObject);
@@ -297,14 +301,18 @@ namespace ZombiesFPS.Net
                         what = $"The altar needs its four relics ({RelicsPlaced}/4 set): two in the Chapel, two in the Sunken Temple";
                         return -1;
                     }
+                    // The room seals once it starts, so the whole squad has to be in it.
+                    if (!SquadIn(EasterEggData.ArchivesZone, "start the ritual", out what)) return -1;
                     what = "lay the spark on the altar and start the ritual";
                     return 0;
                 case EggSpot.Watchman:
+                    if (!SquadIn(CurrentStep.zone, "face the ambush with him", out what)) return -1;
                     what = "talk to the old soldier";
                     return 0;
                 case EggSpot.Stones:
                     if (StepsDone.Value == 3)
                     {
+                        if (!SquadIn(EasterEggData.GreenhouseZone, "wake the binding stones", out what)) return -1;
                         what = "set the charged spark in the binding stones";
                         return 0;
                     }
@@ -313,7 +321,13 @@ namespace ZombiesFPS.Net
                         what = "go down to the Blood Sanctum";
                         return 0;
                     }
-                    if (Active.Value || HoldsRound)
+                    if (Active.Value)
+                    {
+                        // Nobody joins a step that's being played.
+                        what = "The stones are shut while the squad is below";
+                        return -1;
+                    }
+                    if (HoldsRound)
                     {
                         what = "follow the squad down";
                         return 0;
@@ -362,6 +376,7 @@ namespace ZombiesFPS.Net
                 case EggSpot.Relic2:
                 case EggSpot.Relic3:
                     Relics.Value = (byte)(Relics.Value | (1 << index));
+                    CheckGuardian(index);
                     break;
                 case EggSpot.Altar:
                     if (RelicsCarried > 0) Relics.Value = (byte)((Relics.Value & 0xF0) | ((Relics.Value & 0xF) << 4));
@@ -373,10 +388,11 @@ namespace ZombiesFPS.Net
                 case EggSpot.Stones:
                     if (StepsDone.Value == 3) StartBoss(CurrentStep);
                     else if (StepsDone.Value >= 5) player.ServerTeleport(ZoneMap.SanctumArrival);
-                    else if (Active.Value || HoldsRound) player.ServerTeleport(Phase.Value >= EggPhase.GeneralSpeaks ? ZoneMap.KeepArrival : ZoneMap.SanctumArrival);
+                    else if (HoldsRound) player.ServerTeleport(Phase.Value >= EggPhase.GeneralSpeaks ? ZoneMap.KeepArrival : ZoneMap.SanctumArrival);
                     else SendSquad(ZoneMap.SanctumArrival);
                     break;
                 case EggSpot.BloodAltar:
+                    _wipeCheckFrom = Time.time + WipeGrace;
                     Kills.Value = 0;
                     Total.Value = 0;
                     Phase.Value = EggPhase.GodSpeaks;
@@ -442,6 +458,7 @@ namespace ZombiesFPS.Net
 
         void StartSurvival(EggStep step)
         {
+            _wipeCheckFrom = Time.time + WipeGrace;
             CollectSpawnSpots(step.zone);
             Kills.Value = 0;
             Total.Value = step.zombies;
@@ -453,6 +470,7 @@ namespace ZombiesFPS.Net
 
         void StartRitual(EggStep step)
         {
+            _wipeCheckFrom = Time.time + WipeGrace;
             CollectSpawnSpots(step.zone);
             // Not on or right against the altar's dais: they climb up to the squad, not out of the steps.
             var altar = ZoneMap.ArchivesAltar;
@@ -467,6 +485,7 @@ namespace ZombiesFPS.Net
 
         void StartRescue(EggStep step)
         {
+            _wipeCheckFrom = Time.time + WipeGrace;
             CollectSpawnSpots(step.zone);
             _spawnSpots.RemoveAll(p => (p - ZoneMap.WatchmanSpot).sqrMagnitude < 12f * 12f);
             _queue.Clear();
@@ -484,6 +503,7 @@ namespace ZombiesFPS.Net
 
         void StartBoss(EggStep step)
         {
+            _wipeCheckFrom = Time.time + WipeGrace;
             CollectSpawnSpots(step.zone);
             _spawnSpots.RemoveAll(p => (p - ZoneMap.StonesCenter).sqrMagnitude < 5f * 5f);
             Kills.Value = 0;
@@ -507,12 +527,19 @@ namespace ZombiesFPS.Net
         void ServerTick()
         {
             Lure = Active.Value && StepsDone.Value == 2 && Time.time >= _introEnds ? WatchmanPosition : (Vector3?)null;
-            if (!Active.Value) return;
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.IsGameOver) return;
+            if (ServerCheckWipe()) return;
+            int players = NetPlayer.All.Count;
+            if (Guardian.Value == GuardianRisen && !Active.Value)
+            {
+                _zombies.RemoveAll(z => z == null || !z.IsSpawned);
+                GuardianTick(players);
+                return;
+            }
+            if (!Active.Value) return;
             _zombies.RemoveAll(z => z == null || !z.IsSpawned);
             if (_boss != null && !_boss.IsSpawned) _boss = null;
-            int players = NetPlayer.All.Count;
             var step = CurrentStep;
             if (step == null) return;
             switch (step.kind)
@@ -808,7 +835,7 @@ namespace ZombiesFPS.Net
         void OnZombieDied(NetZombie zombie, DamageInfo info)
         {
             _zombies.Remove(zombie);
-            if (!Active.Value) return;
+            if (OnGuardianDied(zombie) || !Active.Value) return;
             if (zombie == _boss)
             {
                 _boss = null;
@@ -826,7 +853,7 @@ namespace ZombiesFPS.Net
         void OnZombieRecycled(NetZombie zombie)
         {
             _zombies.Remove(zombie);
-            if (!Active.Value) return;
+            if (OnGuardianRecycled(zombie) || !Active.Value) return;
             if (zombie == _boss)
             {
                 _boss = null;
@@ -866,6 +893,12 @@ namespace ZombiesFPS.Net
             if (_boss != null && _boss.IsSpawned) _boss.ServerRemove();
             _boss = null;
             _bossDue = false;
+            if (Guardian.Value == GuardianRisen)
+            {
+                // Only the test console skips a step mid-fight: count the guardian as beaten.
+                RemoveGuardian();
+                Guardian.Value = GuardianSlain;
+            }
             _queue.Clear();
             _strikes.Clear();
             _toSpawn = 0;
@@ -909,6 +942,8 @@ namespace ZombiesFPS.Net
             WatchmanHealth.Value = 1f;
             Phase.Value = EggPhase.None;
             Ending.Value = EggBoon.None;
+            RemoveGuardian();
+            Guardian.Value = GuardianAsleep;
             StepsDone.Value = 0;
             Lure = null;
         }
@@ -1104,7 +1139,7 @@ namespace ZombiesFPS.Net
             int done = StepsDone.Value;
             bool active = Active.Value;
             var phase = Phase.Value;
-            if (_lockdown != null) _lockdown.Sealed = active && done == 0;
+            UpdateSeals();
             if (_fx != null) _fx.SetState(active && done == 0 ? ReactorFx.State.Waking : done > 0 ? ReactorFx.State.Awake : ReactorFx.State.Dormant);
             if (_props == null) return;
             var v = new EggProps.View

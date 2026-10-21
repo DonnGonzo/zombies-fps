@@ -36,6 +36,8 @@ namespace ZombiesFPS.Data
         God,
         /// <summary>Lord-General Corvin Ashgrave, the Betrayer.</summary>
         General,
+        /// <summary>Ssethra, the serpent who guards the Sunken Temple's relics (the Yuan-ti model).</summary>
+        Serpent,
     }
 
     /// <summary>The permanent reward the easter egg's ending leaves on every player for the rest of the game.</summary>
@@ -290,6 +292,19 @@ namespace ZombiesFPS.Data
 
         public static readonly EggLine FirstRelic = new EggLine("s2_relic_1", "A relic! The monks hid them well. Bring all four to my altar in the Archives.");
         public static readonly EggLine AllRelics = new EggLine("s2_ready_1", "All four are home. Now lay the spark on the altar, and whatever happens, don't leave the room.");
+        public static readonly EggLine[] GuardianWakes =
+        {
+            new EggLine("s2_guard_1", "Wait. The water's moving. Something sleeps under that idol, and you've just taken its toys."),
+            new EggLine("s2_guard_2", "The doors have sealed! Kill it, or you're not leaving that temple."),
+        };
+        public static readonly EggLine GuardianSlain = new EggLine("s2_guard_3", "It's dead? Good. The doors are open. Bring those relics to me before anything else crawls out of the water.");
+        public static readonly EggLine GuardianWon = new EggLine("s2_guard_4", "It dragged the relics back into the water. Pick them up again when you're ready, and this time, keep your feet.");
+        public static readonly EggLine StepWiped = new EggLine("s0_wipe_1", "Get up! Get up. The room has let you go. Catch your breath, then start it again.");
+        /// <summary>Picking up both Temple relics wakes the guardian; it has these adds alive at once at most.</summary>
+        public const int GuardianAddsCap = 6;
+        public const float GuardianAddsInterval = 2.6f;
+        public const long GuardianReward = 1500;
+
         public static readonly EggLine[] ChoseFight =
         {
             new EggLine(EggSpeaker.God, "s5_fight_1", "Brave. Foolish. Delicious. Come, then!"),
@@ -368,6 +383,7 @@ namespace ZombiesFPS.Data
             EggBoss.Rotbloom => "The Rotbloom",
             EggBoss.God => "Azhrakel, the Ember Below",
             EggBoss.General => "Lord-General Ashgrave",
+            EggBoss.Serpent => "Ssethra, the Drowned Keeper",
             _ => null,
         };
 
@@ -377,6 +393,7 @@ namespace ZombiesFPS.Data
             EggBoss.Rotbloom => 1.6f,
             EggBoss.God => 2.6f,
             EggBoss.General => 2.2f,
+            EggBoss.Serpent => 1.1f,
             _ => 1f,
         };
 
@@ -386,6 +403,8 @@ namespace ZombiesFPS.Data
             EggBoss.Rotbloom => 1.12f,
             EggBoss.God => 1.3f,
             EggBoss.General => 0.62f,
+            // Only the hidden rig's hitboxes: the serpent's model keeps its own size (about 2.9 m reared up).
+            EggBoss.Serpent => 0.85f,
             _ => 1f,
         };
 
@@ -403,6 +422,7 @@ namespace ZombiesFPS.Data
             EggBoss.Rotbloom => new Color(0.5f, 1f, 0.3f),
             EggBoss.God => new Color(1f, 0.4f, 0.1f),
             EggBoss.General => new Color(0.55f, 0.6f, 1f),
+            EggBoss.Serpent => new Color(0.3f, 1f, 0.8f),
             _ => Color.white,
         };
 
@@ -412,6 +432,7 @@ namespace ZombiesFPS.Data
             EggBoss.Rotbloom => 13f,
             EggBoss.God => 9f,
             EggBoss.General => 14f,
+            EggBoss.Serpent => 12f,
             _ => 15f,
         };
 

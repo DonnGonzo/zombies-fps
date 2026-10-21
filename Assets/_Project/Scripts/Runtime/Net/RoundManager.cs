@@ -95,7 +95,8 @@ namespace ZombiesFPS.Net
                 return;
             }
 
-            if (NetPlayer.All.Count > 0 && !AnyPlayerStanding())
+            // A sealed easter egg room going down calls the step off and gets them up again, before the game ends.
+            if (NetPlayer.All.Count > 0 && !AnyPlayerStanding() && !(EasterEgg.Instance != null && EasterEgg.Instance.ServerCheckWipe()))
             {
                 Phase.Value = GamePhase.GameOver;
                 return;

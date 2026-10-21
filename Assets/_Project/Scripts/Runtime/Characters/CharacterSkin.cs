@@ -265,6 +265,8 @@ namespace ZombiesFPS.CharacterModels
                 foreach (var b in Bones)
                     if (b.name == UnrealNames[p]) { Parts[p] = b; break; }
             RestRotations = Capture(transform, Parts);
+            // Not a humanoid in these names (the Yuan-ti's Biped bones): whoever poses it finds its own bones.
+            if (Hips == null || Head == null) return;
             HipsRest = transform.InverseTransformPoint(Hips.position);
 
             // The skull's middle: halfway between the head bone and the top of the mesh, a little forward.

@@ -65,5 +65,16 @@ namespace ZombiesFPS.Net
         {
             if (_motor != null) _motor.Teleport(position);
         }
+
+        /// <summary>Host: back on their feet at half health (an easter egg step called off by a wipe).</summary>
+        public void ServerRaise()
+        {
+            if (!IsServer || State.Value != LifeState.Downed) return;
+            State.Value = LifeState.Alive;
+            Health.Value = MaxHealthNow * 0.5f;
+            ReviveProgress.Value = 0f;
+            BleedOutRemaining.Value = 0f;
+            _lastDamageTime = Time.time;
+        }
     }
 }
