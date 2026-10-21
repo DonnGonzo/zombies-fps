@@ -488,17 +488,7 @@ namespace ZombiesFPS.World
 
             BuildDepot();
 
-            // Garage: a roof reached by stairs to a landing and a parkour run; the first build station is up top.
-            Block("Garage Roof", 2, 9f, 7f, 16.7f, 14.7f, 4.5f, Concrete);
-            Block("Landing", 2, 1.5f, 3f, 4.5f, 6f, 2f, Concrete);
-            Stairs(2, 3f, 3f, Vector3.back, 2f, 2.4f);
-            Hop(2, 6.9f, 4.5f, 2.8f);
-            Hop(2, 10.8f, 4.5f, 3.6f);
-            Jump(2, 3.9f, 2f, 4.5f, 6.1f, 2.8f, 4.5f);
-            Jump(2, 7.7f, 2.8f, 4.5f, 9.9f, 3.6f, 4.5f);
-            Jump(2, 10.8f, 3.6f, 5.4f, 10.8f, 4.5f, 7.7f);
-            Greybox.Box("Wreck", Root, L(2, -8f, 0.75f, -7f), new Vector3(2f, 1.5f, 4.2f), new Color(0.22f, 0.28f, 0.36f), surface: Surface.Metal);
-            Greybox.Box("Wreck", Root, L(2, -6f, 0.75f, 6f), new Vector3(4.2f, 1.5f, 2f), new Color(0.45f, 0.24f, 0.15f), surface: Surface.Rust);
+            BuildGarage();
 
             // Chapel: piers down the nave, pews, the altar at its head and a choir loft up stairs at the north end.
             BuildChapel();

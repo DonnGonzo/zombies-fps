@@ -286,7 +286,7 @@ namespace ZombiesFPS.World
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
                 // Temple, Greenhouse and Depot use their own authored lighting.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone) WallLamps(f, rng);
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -1073,14 +1073,7 @@ namespace ZombiesFPS.World
         {
             var rng = new System.Random(1777);
 
-            // Garage: bay lines, the wrecks' wheels and windows, and oil under them.
-            Paint(2, -11f, -12f, -11f, -1.5f, 0.12f, FadedWhite);
-            Paint(2, -5f, -12f, -5f, -1.5f, 0.12f, FadedWhite);
-            Paint(2, -11f, -12f, -5f, -12f, 0.12f, FadedWhite);
-            CarDetails(L(2, -8f, 0f, -7f), new Vector3(2f, 1.5f, 4.2f), true, rng);
-            CarDetails(L(2, -6f, 0f, 6f), new Vector3(4.2f, 1.5f, 2f), false, rng);
-            Splat(L(2, -7.4f, 0f, -9.6f), 1.4f, 0.9f, 20f, 0.003f, new Color(0.04f, 0.035f, 0.03f), Surface.Metal);
-            Splat(L(2, -3.4f, 0f, 6.4f), 1.1f, 1.6f, 70f, 0.003f, new Color(0.04f, 0.035f, 0.03f), Surface.Metal);
+            // Garage's service bays and fabrication floor are authored in ZoneMap.Garage.cs.
 
             // Pump Station: flanges on the main, its drop into the pump and riser to the roof, the pump's motor and gauges, bands on the tank.
             var pipe = new Color(0.46f, 0.27f, 0.15f);
