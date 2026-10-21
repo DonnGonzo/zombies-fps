@@ -1398,7 +1398,7 @@ namespace ZombiesFPS.Zombies
         }
 
         /// <summary>Host: removes a zombie that can't reach anyone, without a kill. The round manager respawns it.</summary>
-        void ServerRecycle()
+        public void ServerRecycle()
         {
             if (!IsSpawned) return;
             Recycled?.Invoke(this);

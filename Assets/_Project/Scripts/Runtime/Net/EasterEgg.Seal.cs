@@ -202,6 +202,16 @@ namespace ZombiesFPS.Net
                 var at = p.transform.position;
                 if (arena ? ZoneMap.InArena(at) : ZoneMap.ZoneOfPoint(at) == zone) p.ServerRaise();
             }
+            // The round's zombies in the room crumble too (the round sends them back in elsewhere), so the squad
+            // gets up to a moment's quiet instead of straight back into the same hands.
+            foreach (var z in FindObjectsByType<NetZombie>(FindObjectsSortMode.None))
+            {
+                if (z == null || !z.IsSpawned || !z.IsAlive || z.Special != EggBoss.None || _zombies.Contains(z)) continue;
+                var at = z.transform.position;
+                if (!(arena ? ZoneMap.InArena(at) : ZoneMap.ZoneOfPoint(at) == zone)) continue;
+                BurstRpc(at, 0);
+                z.ServerRecycle();
+            }
             if (guardian)
             {
                 // The relics slide back into the water; picking them up again wakes it again.
