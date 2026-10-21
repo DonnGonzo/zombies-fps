@@ -126,6 +126,7 @@ namespace ZombiesFPS.World
             ChapelMakeover();
             TempleMakeover();
             GreenhouseMakeover();
+            DepotMakeover();
             foreach (var (big, zone) in Centrepieces)
                 for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 
@@ -133,7 +134,7 @@ namespace ZombiesFPS.World
             {
                 var f = _faces[i];
                 var set = RoomSet(f.Zone);
-                if (f.Length < 3f || set == null) continue;
+                if (f.Length < 3f || set == null || f.Zone == DepotZone) continue;
                 var rng = new System.Random(8300 + i * 4111);
                 int total = 0;
                 foreach (var (_, w) in set) total += w;

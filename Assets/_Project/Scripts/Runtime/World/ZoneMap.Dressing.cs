@@ -1035,12 +1035,7 @@ namespace ZombiesFPS.World
         {
             var rng = new System.Random(1213);
 
-            // Depot: aisle lines, racking and stock on the shelves.
-            foreach (float z in new[] { -3.4f, 2.4f })
-                Paint(1, -17f, z, 17f, z, 0.1f, FadedYellow);
-            Racking(L(1, -10f, 0f, -5f), 14f, 1f, 2.4f, rng);
-            Racking(L(1, -10f, 0f, 4f), 14f, 1f, 2.4f, rng);
-            Racking(L(1, 8f, 0f, -6f), 8f, 1f, 2.4f, rng);
+            // Depot racks and stock are now dressed in ZoneMap.Depot.cs.
 
             // Barracks: mattresses and pillows on the bunks, with the gap between the tiers.
             foreach (float z in new[] { -17f, -13f, -9f, 9f, 13f, 17f })

@@ -486,14 +486,7 @@ namespace ZombiesFPS.World
             Crates(L(0, -6f, 0f, -10f));
             Crates(L(0, 6f, 0f, 9f));
 
-            // Depot: long shelving runs and a storage loft up a ladder in the north-east corner.
-            Block("Storage Loft", 1, 10f, 6f, 20.7f, 11.7f, 4f, new Color(0.3f, 0.32f, 0.31f), Surface.Metal);
-            AddLadder(1, 15f, 6f, Vector3.back, 4f);
-            var shelf = new Color(0.24f, 0.26f, 0.28f);
-            Greybox.Box("Shelf", Root, L(1, -10f, 1.2f, -5f), new Vector3(14f, 2.4f, 1f), shelf, surface: Surface.Metal);
-            Greybox.Box("Shelf", Root, L(1, -10f, 1.2f, 4f), new Vector3(14f, 2.4f, 1f), shelf, surface: Surface.Metal);
-            Greybox.Box("Shelf", Root, L(1, 8f, 1.2f, -6f), new Vector3(8f, 2.4f, 1f), shelf, surface: Surface.Metal);
-            Crates(L(1, -18f, 0f, 8f));
+            BuildDepot();
 
             // Garage: a roof reached by stairs to a landing and a parkour run; the first build station is up top.
             Block("Garage Roof", 2, 9f, 7f, 16.7f, 14.7f, 4.5f, Concrete);
