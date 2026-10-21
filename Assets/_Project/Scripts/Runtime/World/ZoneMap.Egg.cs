@@ -72,7 +72,7 @@ namespace ZombiesFPS.World
         public static Vector3 GuardianRise => L(EasterEggData.TempleZone, 0f, 0f, 21f);
 
         public static Vector3 WatchmanSpot => L(EasterEggData.CraneYardZone, -4f, 0f, -1f);
-        public static Vector3 StonesCenter => L(EasterEggData.GreenhouseZone, 1.5f, 0f, 3.5f);
+        public static Vector3 StonesCenter => L(EasterEggData.GreenhouseZone, DomeX, 0f, DomeZ);
         const float StonesRadius = 3.4f;
 
         /// <summary>The Blood Sanctum: a 32 m square hall far to the south, past the skyline.</summary>

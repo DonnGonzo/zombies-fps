@@ -285,8 +285,8 @@ namespace ZombiesFPS.World
                 if (f.Length < 1.5f) continue;
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
-                // The Temple's only lights are its own fires and the moon.
-                if (f.Zone != Temple) WallLamps(f, rng);
+                // The Temple's only lights are its own fires and the moon; the Greenhouse hangs its own lanterns.
+                if (f.Zone != Temple && f.Zone != GreenhouseZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -1087,7 +1087,7 @@ namespace ZombiesFPS.World
             }
         }
 
-        /// <summary>The working zones: Garage, Pump Station, Lantern Core, Greenhouse.</summary>
+        /// <summary>The working zones: Garage, Pump Station, Lantern Core.</summary>
         void DressWorks()
         {
             var rng = new System.Random(1777);
@@ -1149,37 +1149,6 @@ namespace ZombiesFPS.World
             foreach (var d in new[] { Vector3.right, Vector3.left, Vector3.forward, Vector3.back })
                 Rod(L(9, 0f, 0.035f, 0f) + d * (CoreDiameter / 2f + 0.05f), L(9, 0f, 0.035f, 0f) + d * 11f, 0.07f, new Color(0.05f, 0.05f, 0.05f), Surface.Rubber);
             Glow(L(9, 0f, 2.69f, 15.98f), new Vector3(15.2f, 0.04f, 0.02f), Quaternion.identity, Shade(CoreGlow, 0.7f));
-
-            // Greenhouse: soil and plants in the planters, a roof of rafters with the odd surviving pane, upper
-            // panes in the south frame, and a door and window on the potting shed.
-            var soil = new Color(0.22f, 0.16f, 0.1f);
-            var plantColors = new[] { new Color(0.14f, 0.22f, 0.08f), new Color(0.18f, 0.26f, 0.1f), new Color(0.3f, 0.24f, 0.1f) };
-            void Planter(float x, float z)
-            {
-                Deco(L(11, x, 0.82f, z), new Vector3(5.8f, 0.04f, 1f), soil, Surface.Dirt);
-                for (float px = x - 2.5f; px <= x + 2.5f; px += Range(rng, 0.6f, 1f))
-                {
-                    var c = plantColors[rng.Next(plantColors.Length)];
-                    DecoPrim(PrimitiveType.Sphere, L(11, px, 0.92f, z + Range(rng, -0.25f, 0.25f)), new Vector3(Range(rng, 0.3f, 0.5f), 0.22f, Range(rng, 0.3f, 0.5f)), Quaternion.identity, c, Surface.Grass);
-                }
-            }
-            foreach (float z in new[] { -8f, -4.5f }) Planter(-9f, z);
-            foreach (float z in new[] { -8f, -4.5f, -1f, 2.5f }) Planter(9f, z);
-            var frame = new Color(0.26f, 0.3f, 0.29f);
-            var pane = new Color(0.55f, 0.75f, 0.7f, 0.1f);
-            for (int i = 0; i <= 8; i++)
-                Deco(L(11, 0f, WallHeight - 0.12f, -11f + i * 2.75f), new Vector3(34f, 0.16f, 0.1f), frame, Surface.Metal);
-            foreach (float x in new[] { -11f, -5.5f, 0f, 5.5f, 11f })
-                Deco(L(11, x, WallHeight - 0.24f, 0f), new Vector3(0.08f, 0.1f, 22f), frame, Surface.Metal);
-            for (int i = 0; i < 8; i++)
-                foreach (float x in new[] { -8.25f, -2.75f, 2.75f, 8.25f })
-                    if (rng.NextDouble() < 0.4)
-                        Glow(L(11, x, WallHeight - 0.16f, -11f + (i + 0.5f) * 2.75f), new Vector3(5.4f, 0.01f, 2.65f), Quaternion.identity, pane);
-            foreach (float x in new[] { -8f, 0f, 8f })
-                Glow(L(11, x, 4.6f, -9.5f), new Vector3(7.8f, 2.6f, 0.01f), Quaternion.identity, pane);
-            Deco(L(11, 0f, 3.25f, -9.5f), new Vector3(24f, 0.1f, 0.12f), frame, Surface.Metal);
-            Deco(L(11, -9.5f, 1.05f, 0.99f), new Vector3(1f, 2.1f, 0.02f), Shade(DarkWood, 0.8f), Surface.Wood);
-            Deco(L(11, -12f, 2.6f, 0.99f), new Vector3(1.2f, 0.9f, 0.02f), Glass, Surface.Metal);
         }
 
         // ---------------------------------------------------------------- skyline

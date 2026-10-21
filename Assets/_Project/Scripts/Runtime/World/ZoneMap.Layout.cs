@@ -47,7 +47,7 @@ namespace ZombiesFPS.World
         {
             new Vector3(0f, 0f, 0f), new Vector3(37f, 0f, 0f), new Vector3(33f, 0f, 27f), new Vector3(-4f, 0f, 37f),
             new Vector3(-35f, 0f, 35f), new Vector3(-35f, 0f, -3f), new Vector3(73f, 0f, -12f), new Vector3(69f, 0f, 27f),
-            new Vector3(67f, 0f, 71f), new Vector3(28f, 0f, 68f), new Vector3(-5f, 0f, 65f), new Vector3(-39f, 0f, 69f),
+            new Vector3(67f, 0f, 71f), new Vector3(28f, 0f, 68f), new Vector3(-5f, 0f, 65f), new Vector3(-44f, 0f, 72f),
             new Vector3(0f, 0f, -34f), new Vector3(38f, 0f, -21f), new Vector3(-13f, 0f, 84f), new Vector3(42f, 0f, 97f),
             new Vector3(101f, 0f, 40f), new Vector3(-66f, 0f, 0f),
         };
@@ -78,8 +78,8 @@ namespace ZombiesFPS.World
             // Archives: the big reading room (with the monks' altar), the stacks off the north-east, and two bays off
             // the south either side of the Chapel: the west stacks and the bindery.
             new[] { -22, 58, 12, 76, -4, 76, 12, 88, -22, 44, -12, 58, 4, 44, 12, 58 },
-            // Greenhouse.
-            new[] { -56, 58, -22, 80 },
+            // Greenhouse: the glass hall, its gallery along the north wall, and the pond garden off the south-west.
+            new[] { -66, 58, -22, 86, -66, 44, -46, 58 },
             // Gaol: a vaulted cell block under the old gate, its guard hall up against the gate passage.
             new[] { -16, -40, 18, -28, -10, -28, 10, -22 },
             // Plague Ward: the long infirmary hall, with the sick wing off the south-west.
@@ -319,7 +319,7 @@ namespace ZombiesFPS.World
             W(6, Side.South, -10, -2),   // Hair Trigger, Loading Dock
             W(5, Side.North, 7, -14),    // Fleet Foot, Courtyard
             W(10, Side.South, -21, 13), // Steady Hand, Archives (bindery)
-            W(11, Side.North, 11, 8),    // Hazard Ward, Greenhouse
+            W(11, Side.West, -22, 2),    // Hazard Ward, Greenhouse
             W(9, Side.South, -16, 10),   // Bloodline, Lantern Core
         };
 
@@ -341,7 +341,7 @@ namespace ZombiesFPS.World
             W(8, Side.North, 15, 14), W(8, Side.East, 23, -6), W(8, Side.West, -23, 10),
             W(9, Side.West, -16, -8), W(9, Side.South, -16, -10), W(9, Side.North, 16, -10),
             W(10, Side.North, 11, -2), W(10, Side.West, 1, 14), W(10, Side.East, 17, -14),
-            W(11, Side.West, -17, -6), W(11, Side.North, 11, 0), W(11, Side.South, -11, 10),
+            W(11, Side.West, -22, -7), W(11, Side.West, -22, -23), W(11, Side.South, -28, -4),
             W(12, Side.South, -6, -10), W(12, Side.West, -16, 3), W(12, Side.South, -6, 12),
             W(13, Side.South, -9, 12), W(13, Side.South, -19, -10), W(13, Side.East, 20, -3),
             W(14, Side.North, 12, -4), W(14, Side.North, 12, 16), W(14, Side.West, -9, 4),
@@ -355,7 +355,7 @@ namespace ZombiesFPS.World
         {
             W(0, Side.South, -14, 8), W(1, Side.North, 12, -14), W(2, Side.South, -15, 10), W(3, Side.East, 20, -12),
             W(4, Side.East, 11, 20), W(5, Side.East, 19, -10), W(6, Side.North, 10, -13), W(7, Side.North, 7, -10),
-            W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 11, -14), W(11, Side.South, -11, 0),
+            W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 11, -14), W(11, Side.North, 14, 14),
             W(12, Side.North, 6, -13), W(13, Side.East, 2, -14), W(14, Side.East, 23, 8), W(15, Side.East, 22, 0),
             W(16, Side.South, -20, 0), W(17, Side.West, -12, 14),
         };
@@ -371,14 +371,16 @@ namespace ZombiesFPS.World
         public const int HighSpotCount = 6;
         /// <summary>The Water Tower's deck, low enough to stand on under the roof.</summary>
         const float TowerHeight = 4.4f;
-        public static readonly string[] HighSpotNames = { "Depot Loft", "Garage Roof", "Water Tower", "Container Stack", "Records Loft", "Greenhouse Roof" };
+        /// <summary>The Greenhouse gallery's floor, along the north wall (ZoneMap.Greenhouse.cs).</summary>
+        const float GalleryTop = 4f;
+        public static readonly string[] HighSpotNames = { "Depot Loft", "Garage Roof", "Water Tower", "Container Stack", "Records Loft", "Greenhouse Gallery" };
         /// <summary>The zone each high spot is in.</summary>
         public static readonly int[] HighSpotZones = { 1, 2, 7, 8, 10, 11 };
         /// <summary>Where each high spot's signal beacon stands, on top.</summary>
         static readonly Vector3[] HighSpotPoints =
         {
             L(1, 16f, 4f, 10f), L(2, 15f, 4.5f, 9f), L(7, 4.2f, TowerHeight, 17.2f),
-            L(8, 11.2f, 3.6f, 7.5f), L(10, 12f, 4f, 20.5f), L(11, -9.5f, 4.5f, 3.5f),
+            L(8, 11.2f, 3.6f, 7.5f), L(10, 12f, 4f, 20.5f), L(11, -19f, GalleryTop, 11.5f),
         };
 
         public static Vector3 HighSpot(int spot) => HighSpotPoints[Mathf.Clamp(spot, 0, HighSpotCount - 1)];
@@ -420,7 +422,7 @@ namespace ZombiesFPS.World
             // Scrap Cannon: barrel, coil, grip.
             L(1, 13f, 4f, 9f), L(5, -16.2f, 3.2f, -12.2f), L(10, -15f, 0f, 3f),
             L(2, -13f, 0f, -11f), L(8, 7f, 3.6f, 7.5f), L(4, -8.2f, 2.6f, -5f),
-            L(3, -10.5f, 0f, -17.5f), L(6, 12f, 1.4f, -5f), L(11, 13f, 0f, 8f),
+            L(3, -10.5f, 0f, -17.5f), L(6, 12f, 1.4f, -5f), L(11, -4f, 0f, -17f),
             // Aegis Shield: armour plate, view module, power core, brace kit.
             L(7, 2.7f, TowerHeight, 18.5f), L(0, -12.7f, 2.2f, 13f), L(9, 12f, 0f, -10f),
             L(9, -2f, 3f, 18f), L(4, 8f, 0f, -20f), L(6, -6.5f, 3f, -3f),
@@ -428,16 +430,16 @@ namespace ZombiesFPS.World
             L(Gaol, -12f, 0f, -3f), L(PlagueWard, 8f, 0f, -5f), L(Temple, -9.5f, 0f, -10f),
             // Buddy Bot: chassis, rotor, brain.
             L(8, -18f, 0f, 12f), L(3, 17f, 0f, 4f), L(5, -16f, 0f, 4f),
-            L(11, -6.5f, 4.5f, 3f), L(2, -13f, 0f, 11f), L(0, -13f, 0f, -11f),
+            L(11, -3f, GalleryTop, 11.5f), L(2, -13f, 0f, 11f), L(0, -13f, 0f, -11f),
             L(6, -13f, 0f, -8f), L(9, -12f, 0f, 10f), L(10, 14f, 0f, -4.5f),
         };
 
         public static int PartSpotCount => PartSpots.Length;
         public static Vector3 PartSpot(int spot) => PartSpots[Mathf.Clamp(spot, 0, PartSpots.Length - 1)];
 
-        /// <summary>The two build stations: on the Garage Roof and the Greenhouse Roof. Each is a long bench, facing -z, with a place per buildable.</summary>
-        static readonly Vector3[] BenchPositions = { L(2, 13f, 4.5f, 13.8f), L(11, -10f, 4.5f, 9.6f) };
-        public static readonly string[] BenchNames = { "Garage Roof", "Greenhouse Roof" };
+        /// <summary>The two build stations: on the Garage Roof and the Greenhouse Gallery. Each is a long bench, facing -z, with a place per buildable.</summary>
+        static readonly Vector3[] BenchPositions = { L(2, 13f, 4.5f, 13.8f), L(11, -10f, GalleryTop, 12.9f) };
+        public static readonly string[] BenchNames = { "Garage Roof", "Greenhouse Gallery" };
         public static Vector3 BenchPosition(int bench) => BenchPositions[Mathf.Clamp(bench, 0, BenchCount - 1)];
         /// <summary>Where a player stands to build one buildable at a bench.</summary>
         public static Vector3 BenchPlace(int bench, int buildable) => BenchPosition(bench) + new Vector3((buildable - 1) * 1.8f, 1f, -1.2f);
