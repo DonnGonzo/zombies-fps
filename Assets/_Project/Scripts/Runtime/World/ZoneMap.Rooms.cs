@@ -216,7 +216,7 @@ namespace ZombiesFPS.World
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                if (!TorchZones.TryGetValue(f.Zone, out int max) || f.Length < 4f) continue;
+                if (f.Zone == DepotZone || !TorchZones.TryGetValue(f.Zone, out int max) || f.Length < 4f) continue;
                 var rng = new System.Random(9700 + i * 389);
                 for (float t = 2f; t < f.Length - 2f; t += Range(rng, 5f, 8f))
                 {

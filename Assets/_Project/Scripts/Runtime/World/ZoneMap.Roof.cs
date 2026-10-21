@@ -34,8 +34,8 @@ namespace ZombiesFPS.World
             for (int zone = 0; zone < ZoneCount; zone++)
             {
                 // The Temple draws its own ceiling, round the oculus (ZoneMap.Temple.cs), and the Greenhouse its own glass
-                // roof on arched trusses (ZoneMap.Greenhouse.cs).
-                if (zone == Temple || zone == GreenhouseZone) continue;
+                // roof on arched trusses (ZoneMap.Greenhouse.cs). The Depot has its own clerestory and crane trusses.
+                if (zone == Temple || zone == GreenhouseZone || zone == DepotZone) continue;
                 var (style, surface, color) = RoofLook(zone);
                 foreach (var r in ZoneRects(zone))
                 {

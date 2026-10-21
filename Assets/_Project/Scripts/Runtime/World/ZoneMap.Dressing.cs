@@ -285,8 +285,8 @@ namespace ZombiesFPS.World
                 if (f.Length < 1.5f) continue;
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
-                // The Temple's only lights are its own fires and the moon; the Greenhouse hangs its own lanterns.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone) WallLamps(f, rng);
+                // Temple, Greenhouse and Depot use their own authored lighting.
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
