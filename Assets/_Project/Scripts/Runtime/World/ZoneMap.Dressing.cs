@@ -286,7 +286,7 @@ namespace ZombiesFPS.World
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
                 // Temple, Greenhouse and Depot use their own authored lighting.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone) WallLamps(f, rng);
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -933,20 +933,7 @@ namespace ZombiesFPS.World
             Paint(0, -4f, -13.6f, 4f, -13.6f, 0.3f, FadedWhite);
             Paint(0, -3.5f, -8f, 3.5f, -8f, 0.1f, FadedYellow, 0.4f, 0.4f);
 
-            // Courtyard: water in the fountain, a mossy ring round its foot, bases and caps on the pillars,
-            // and rubble heaped where the north-west corner fell in.
-            DecoPrim(PrimitiveType.Cylinder, L(5, 4f, 0.805f, -1f), new Vector3(4.3f, 0.004f, 4.3f), Quaternion.identity, new Color(0.04f, 0.06f, 0.07f), Surface.Metal);
-            DecoPrim(PrimitiveType.Cylinder, L(5, 4f, 0.003f, -1f), new Vector3(5.5f, 0.003f, 5.5f), Quaternion.identity, new Color(0.17f, 0.2f, 0.12f), Surface.Grass);
-            foreach (var p in new[] { new Vector2(-3f, -8f), new Vector2(11f, -8f), new Vector2(-3f, 6f), new Vector2(11f, 6f) })
-            {
-                Deco(L(5, p.x, 0.06f, p.y), new Vector3(1.6f, 0.12f, 1.6f), new Color(0.4f, 0.38f, 0.35f), Surface.Concrete);
-                Deco(L(5, p.x, WallHeight - 0.15f, p.y), new Vector3(1.65f, 0.3f, 1.65f), new Color(0.4f, 0.38f, 0.35f), Surface.Concrete);
-            }
-            for (int i = 0; i < 16; i++)
-            {
-                var p = L(5, Range(rng, -18f, -9.5f), 0f, Range(rng, 2.5f, 6.4f));
-                if (FloorFree(p, 0.5f)) PlaceLitter(Litter.Rubble, p, 5, rng);
-            }
+            // Courtyard is authored in ZoneMap.Courtyard.cs.
 
             // Loading Dock's authored yard is built in ZoneMap.LoadingDock.cs.
 

@@ -42,7 +42,7 @@ namespace ZombiesFPS.World
         /// <summary>Zones whose walls get a shield or two hung up.</summary>
         static readonly int[] ShieldZones = { 0, 1, 4, 10, 12, 16 };
         /// <summary>Open-air zones that get a fire pit.</summary>
-        static readonly int[] FirePitZones = { 0, 5, 8, 16 };
+        static readonly int[] FirePitZones = { 0, 8, 16 };
 
         static readonly Color PropWood = new Color(0.36f, 0.25f, 0.15f);
         static readonly Color Ember = new Color(1f, 0.45f, 0.12f);

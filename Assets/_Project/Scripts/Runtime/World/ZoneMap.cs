@@ -503,30 +503,7 @@ namespace ZombiesFPS.World
                 Greybox.Box("Bunk", Root, L(4, 5f, 0.8f, z), new Vector3(2f, 1.6f, 1f), BunkGreen, surface: Surface.Metal);
             }
 
-            // Courtyard: a fountain ringed by pillars, and a parkour run up to a ruined ledge in the south-west corner.
-            var stone = new Color(0.48f, 0.46f, 0.42f);
-            var fountain = Greybox.Prim(PrimitiveType.Cylinder, "Fountain", Root, L(5, 4f, 0.4f, -1f), new Vector3(5f, 0.4f, 5f), stone, surface: Surface.Concrete);
-            Object.DestroyImmediate(fountain.GetComponent<Collider>());
-            var fountainCollider = fountain.AddComponent<MeshCollider>();
-            fountainCollider.convex = true;
-            // A marble basin standing in the middle (solid either way).
-            var basin = PropModels.GetPack(Fountain.Path, PackMaterial);
-            var column = Greybox.Box("Fountain Column", Root, L(5, 4f, 0.8f + 0.55f, -1f), new Vector3(1.3f, 1.1f, 1.3f), stone, surface: Surface.Concrete);
-            if (basin != null)
-            {
-                column.GetComponent<Renderer>().enabled = false;
-                AddModel(basin, L(5, 4f, 0.8f, -1f), Quaternion.identity, true);
-            }
-            foreach (var p in new[] { new Vector2(-3f, -8f), new Vector2(11f, -8f), new Vector2(-3f, 6f), new Vector2(11f, 6f) })
-                Greybox.Box("Pillar", Root, L(5, p.x, WallHeight / 2f, p.y), new Vector3(1.4f, WallHeight, 1.4f), new Color(0.42f, 0.28f, 0.2f), surface: Surface.Brick);
-            Block("Ruined Ledge", 5, -18.7f, -14.7f, -13.7f, -9.7f, 3.2f, stone);
-            Hop(5, -3.5f, -12.2f, 0.8f);
-            Hop(5, -7.4f, -12.2f, 1.6f);
-            Hop(5, -11.3f, -12.2f, 2.4f);
-            Jump(5, -3.5f, 0f, -9.9f, -3.5f, 0.8f, -11.5f);
-            Jump(5, -4.3f, 0.8f, -12.2f, -6.6f, 1.6f, -12.2f);
-            Jump(5, -8.2f, 1.6f, -12.2f, -10.5f, 2.4f, -12.2f);
-            Jump(5, -12.1f, 2.4f, -12.2f, -14.5f, 3.2f, -12.2f);
+            BuildCourtyard();
 
             BuildLoadingDock();
 
