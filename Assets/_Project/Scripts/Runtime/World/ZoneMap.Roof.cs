@@ -35,7 +35,7 @@ namespace ZombiesFPS.World
             {
                 // The Temple draws its own ceiling, round the oculus (ZoneMap.Temple.cs), and the Greenhouse its own glass
                 // roof on arched trusses (ZoneMap.Greenhouse.cs). The Depot has its own clerestory and crane trusses.
-                if (zone == Temple || zone == GreenhouseZone || zone == DepotZone || zone == LoadingDockZone || zone == GarageZone || zone == CourtyardZone || zone == PumpZone || zone == Rampart) continue;
+                if (zone == Temple || zone == GreenhouseZone || zone == DepotZone || zone == LoadingDockZone || zone == GarageZone || zone == CourtyardZone || zone == PumpZone || zone == Rampart || zone == StartZone) continue;
                 var (style, surface, color) = RoofLook(zone);
                 foreach (var r in ZoneRects(zone))
                 {
@@ -132,7 +132,7 @@ namespace ZombiesFPS.World
                 foreach (var r in ZoneRects(zone))
                 {
                     // Open-air yards have colliders only on their authored canopies.
-                    if (zone == LoadingDockZone || zone == CourtyardZone || zone == Rampart) continue;
+                    if (zone == LoadingDockZone || zone == CourtyardZone || zone == Rampart || zone == StartZone) continue;
                     var go = new GameObject("Ceiling " + ZoneNames[zone]);
                     go.transform.SetParent(holder, false);
                     go.transform.localPosition = new Vector3(r.center.x, WallHeight + RoofThickness / 2f, r.center.y);

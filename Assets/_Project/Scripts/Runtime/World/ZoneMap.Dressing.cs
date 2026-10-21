@@ -286,7 +286,7 @@ namespace ZombiesFPS.World
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
                 // Temple, Greenhouse and Depot use their own authored lighting.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone && f.Zone != PumpZone && f.Zone != Rampart) WallLamps(f, rng);
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone && f.Zone != PumpZone && f.Zone != Rampart && f.Zone != StartZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -926,12 +926,7 @@ namespace ZombiesFPS.World
         {
             var rng = new System.Random(811);
 
-            // Gate Yard: a faded road line up the old gate passage and across the yard, its kerb lines and a stop line.
-            Paint(0, 0f, -21.4f, 0f, 2.6f, 0.12f, FadedYellow, 1.2f, 1f);
-            Paint(0, -4.3f, -21.6f, -4.3f, -14.4f, 0.1f, FadedWhite);
-            Paint(0, 4.3f, -21.6f, 4.3f, -14.4f, 0.1f, FadedWhite);
-            Paint(0, -4f, -13.6f, 4f, -13.6f, 0.3f, FadedWhite);
-            Paint(0, -3.5f, -8f, 3.5f, -8f, 0.1f, FadedYellow, 0.4f, 0.4f);
+            // Gate Yard paving and entrance passages are authored in ZoneMap.GateYard.cs.
 
             // Courtyard is authored in ZoneMap.Courtyard.cs.
 

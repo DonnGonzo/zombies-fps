@@ -55,8 +55,8 @@ namespace ZombiesFPS.World
         /// <summary>The rectangles each zone is made of, in world metres: x0, z0, x1, z1. They never overlap.</summary>
         static readonly int[][] ZoneRectData =
         {
-            // Gate Yard: the walled yard, with the old gate's passage out to the south.
-            new[] { -16, -14, 16, 16, -5, -22, 5, -14 },
+            // Gate Yard: asymmetric spawn square, market pocket, trader recess and narrow entrance halls.
+            new[] { -16, -14, 12, 12, -16, 12, 0, 16, 12, -3, 16, 3, 12, -10, 16, -3, -5, -22, 5, -14, -16, -22, -5, -14 },
             // Depot: a long, low warehouse.
             new[] { 16, -12, 58, 12 },
             // Garage.
@@ -305,7 +305,7 @@ namespace ZombiesFPS.World
         public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 9, 3, 7, 8 };
         public static readonly WallSpot[] WallBuySpots =
         {
-            W(0, Side.South, -14, -10), W(1, Side.South, -12, -8), W(5, Side.West, -19, 0), W(2, Side.West, -17, -6),
+            W(0, Side.South, -22, -8), W(1, Side.South, -12, -8), W(5, Side.West, -19, 0), W(2, Side.West, -17, -6),
             W(4, Side.West, -11, 14), W(9, Side.East, 16, 8), W(3, Side.South, -21, -14), W(7, Side.West, -13, 16),
             W(8, Side.North, 15, -8),
         };
@@ -330,7 +330,7 @@ namespace ZombiesFPS.World
         /// <summary>Boarded windows zombies climb in through, three per zone.</summary>
         public static readonly WallSpot[] WindowSpots =
         {
-            W(0, Side.East, 5, -18), W(0, Side.South, -14, 12), W(0, Side.North, 16, 11),
+            W(0, Side.East, 5, -18), W(0, Side.South, -22, -12), W(0, Side.North, 12, 7),
             W(1, Side.South, -12, 0), W(1, Side.South, -12, 17), W(1, Side.East, 21, 1),
             W(2, Side.South, -15, -12), W(2, Side.East, 17, -11), W(2, Side.North, 15, -13),
             W(3, Side.North, 7, -17), W(3, Side.South, -21, 14), W(3, Side.West, -20, -14),

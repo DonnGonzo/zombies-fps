@@ -92,8 +92,8 @@ namespace ZombiesFPS.World
         /// <summary>Per zone (zone order), so each part of the facility reads as its own kind of place.</summary>
         static readonly ZoneLook[] Looks =
         {
-            // Gate Yard: an asphalt yard inside bare concrete walls, grimy at the foot.
-            new ZoneLook(Surface.Asphalt, new Color(0.2f, 0.2f, 0.21f), Surface.Concrete, new Color(0.42f, 0.41f, 0.38f), Surface.Concrete, new Color(0.28f, 0.28f, 0.27f), 0.9f),
+            // Gate Yard: weathered stone paving and ochre masonry around an open spawn square.
+            new ZoneLook(Surface.Masonry, new Color(0.43f, 0.4f, 0.33f), Surface.Ashlar, new Color(0.53f, 0.47f, 0.36f), Surface.Masonry, new Color(0.32f, 0.3f, 0.25f), 0.9f),
             // Depot: a flagstone floor and old brick walls on a stone plinth.
             new ZoneLook(Surface.Tile, new Color(0.4f, 0.39f, 0.36f), Surface.Brick, new Color(0.42f, 0.26f, 0.19f), Surface.Concrete, new Color(0.35f, 0.34f, 0.32f), 1f),
             // Garage: darker, sooty flagstones; walls limewashed green up to shoulder height.
@@ -477,14 +477,7 @@ namespace ZombiesFPS.World
         {
             var sign = new Color(1f, 0.9f, 0.6f);
 
-            // Gate Yard: a watch platform up a flight of stairs, a low wall, crates, and the fallen gate in the passage south.
-            Block("Watch Platform", 0, -15.7f, 10f, -9.7f, 15.7f, 2.2f, Concrete);
-            Stairs(0, -12.7f, 10f, Vector3.back, 2.2f, 2.4f);
-            Greybox.Box("Sandbags", Root, L(0, -9.95f, 2.45f, 12.85f), new Vector3(0.4f, 0.5f, 5.7f), new Color(0.42f, 0.37f, 0.26f), surface: Surface.Fabric);
-            Greybox.Box("Low wall", Root, L(0, 0f, 0.55f, 4f), new Vector3(6f, 1.1f, 0.5f), Concrete, surface: Surface.Concrete);
-            Greybox.Box("Fallen Gate", Root, L(0, 0f, 0.12f, -18.5f), new Vector3(5f, 0.24f, 1.6f), new Color(0.42f, 0.25f, 0.15f), surface: Surface.Rust);
-            Crates(L(0, -6f, 0f, -10f));
-            Crates(L(0, 6f, 0f, 9f));
+            BuildGateYard();
 
             BuildDepot();
 
