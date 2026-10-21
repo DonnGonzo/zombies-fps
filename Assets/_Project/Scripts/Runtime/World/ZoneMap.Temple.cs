@@ -32,7 +32,7 @@ namespace ZombiesFPS.World
         static readonly Color BoneWhite = new Color(0.72f, 0.68f, 0.58f);
 
         /// <summary>Zones dressed entirely by hand, which the generic dressing passes leave alone.</summary>
-        static bool HandDressed(int zone) => zone == ChapelZone || zone == Temple || zone == GreenhouseZone || zone == DepotZone || zone == LoadingDockZone || zone == GarageZone || zone == CourtyardZone || zone == PumpZone;
+        static bool HandDressed(int zone) => zone == ChapelZone || zone == Temple || zone == GreenhouseZone || zone == DepotZone || zone == LoadingDockZone || zone == GarageZone || zone == CourtyardZone || zone == PumpZone || zone == Rampart;
 
         const float CausewayHalf = 1.6f, CausewayTop = 0.3f, CausewaySouth = -15f, CausewayNorth = 19f;
         const float PoolOuter = 6.2f, PoolSouth = -15f, PoolNorth = 17f, KerbTop = 0.2f, WaterLevel = 0.12f;

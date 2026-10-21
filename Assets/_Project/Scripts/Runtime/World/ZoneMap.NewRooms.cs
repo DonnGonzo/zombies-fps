@@ -72,19 +72,7 @@ namespace ZombiesFPS.World
             foreach (float x in new[] { -16.5f, 16.5f })
                 Greybox.Box("Coal Bunker", Root, L(Furnace, x, 0.5f, -6.5f), new Vector3(3f, 1f, 2f), new Color(0.2f, 0.17f, 0.15f), surface: Surface.Concrete);
 
-            // Rampart Ruins: a broken battlement along the east wall, climbed by a run of fallen blocks, and masonry
-            // lying about the north end for cover.
-            Block("Broken Battlement", Rampart, 4.5f, -10f, 10.7f, 26f, 3.2f, Stone);
-            Hop(Rampart, -5.7f, -6f, 0.8f);
-            Hop(Rampart, -1.8f, -6f, 1.6f);
-            Hop(Rampart, 2.1f, -6f, 2.4f);
-            Jump(Rampart, -5.7f, 0f, -8.4f, -5.7f, 0.8f, -6.8f);
-            Jump(Rampart, -4.9f, 0.8f, -6f, -2.6f, 1.6f, -6f);
-            Jump(Rampart, -1f, 1.6f, -6f, 1.3f, 2.4f, -6f);
-            Jump(Rampart, 2.9f, 2.4f, -6f, 5.2f, 3.2f, -6f);
-            Stairs(Rampart, 7.6f, 26f, Vector3.forward, 3.2f, 2.4f);
-            foreach (var (x, z, h) in new[] { (-5f, 24f, 1.2f), (4f, 34f, 1f), (-6f, 40f, 1.4f), (1f, 12f, 1.1f) })
-                Greybox.Box("Fallen Masonry", Root, L(Rampart, x, h / 2f, z), new Vector3(2f, h, 1.3f), Shade(Stone, 0.9f), surface: Surface.Concrete);
+            BuildRampartRuins();
 
             // Sunken Temple: the causeway, colonnade, ruins and the stepped dais (ZoneMap.Temple.cs).
             BuildTemple();
@@ -132,15 +120,7 @@ namespace ZombiesFPS.World
             Rod(L(Furnace, 0f, 5.6f, 0f), L(Furnace, 0f, WallHeight + 0.3f, 0f), 1.1f, new Color(0.2f, 0.14f, 0.1f), Surface.Rust);
             Glow(L(Furnace, 0f, 1.1f, -2.32f), new Vector3(1.4f, 0.8f, 0.05f), Quaternion.identity, FurnaceGlow);
 
-            // Rampart Ruins: rubble strewn below the battlement, and banners hanging from its parapet.
-            for (int i = 0; i < 14; i++)
-                DecoPrim(PrimitiveType.Cube, L(Rampart, Range(rng, -2f, 4f), 0.12f, Range(rng, -2f, 26f)),
-                    new Vector3(Range(rng, 0.3f, 0.7f), Range(rng, 0.15f, 0.3f), Range(rng, 0.3f, 0.7f)), Quaternion.Euler(0f, Range(rng, 0f, 90f), 0f), Shade(Stone, Range(rng, 0.8f, 1.05f)), Surface.Concrete);
-            foreach (float z in new[] { 0f, 10f, 20f })
-            {
-                Deco(L(Rampart, 4.46f, 2.2f, z), new Vector3(0.04f, 2f, 1.2f), new Color(0.42f, 0.1f, 0.08f), Surface.Fabric);
-                Deco(L(Rampart, 4.44f, 2.4f, z), new Vector3(0.03f, 0.5f, 0.5f), new Color(0.62f, 0.5f, 0.2f), Surface.Fabric);
-            }
+            RampartMakeover();
         }
     }
 }

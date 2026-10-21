@@ -19,7 +19,7 @@ namespace ZombiesFPS.World
     ///   Temple       Courtyard    Gate Yard   Depot          Loading Dock    Ruins
     ///                             Gaol        Plague Ward
     ///
-    /// The whole map is roofed over at wall height.
+    /// Most rooms are roofed at wall height; the authored outdoor yards remain open to the sky.
     /// </summary>
     public partial class ZoneMap
     {
@@ -88,8 +88,8 @@ namespace ZombiesFPS.World
             new[] { -22, 76, -4, 96, -4, 88, 10, 96 },
             // Alchemist's Furnace: the furnace hall behind the Lantern Core, with a coal chute down to the Crane Yard.
             new[] { 20, 88, 64, 106, 44, 86, 64, 88 },
-            // Rampart Ruins: the broken east wall, a long climb of fallen masonry.
-            new[] { 88, 20, 112, 56, 90, 56, 112, 86 },
+            // Rampart Ruins: widened fortress yard and eastern wall walk (1920 square metres).
+            new[] { 88, 20, 118, 56, 90, 56, 118, 86 },
             // Sunken Temple: the old temple west of the Courtyard, its prayer hall reaching to the Barracks.
             new[] { -78, -18, -54, 20, -78, 20, -46, 34 },
         };
@@ -114,7 +114,7 @@ namespace ZombiesFPS.World
             return s_Rects[Mathf.Clamp(zone, 0, ZoneCount - 1)];
         }
 
-        const int MinX = -78, MaxX = 112, MinZ = -40, MaxZ = 106;
+        const int MinX = -78, MaxX = 118, MinZ = -40, MaxZ = 106;
 
         /// <summary>The map's outer edge, for the map screen (x, y here are world x, z).</summary>
         public static readonly Rect Bounds = new Rect(MinX, MinZ, MaxX - MinX, MaxZ - MinZ);
@@ -346,7 +346,7 @@ namespace ZombiesFPS.World
             W(13, Side.South, -9, 12), W(13, Side.South, -19, -10), W(13, Side.East, 20, -3),
             W(14, Side.North, 12, -4), W(14, Side.North, 12, 16), W(14, Side.West, -9, 4),
             W(15, Side.North, 9, -12), W(15, Side.North, 9, 12), W(15, Side.West, -22, 6),
-            W(16, Side.East, 11, -16), W(16, Side.North, 46, 0), W(16, Side.East, 11, 30),
+            W(16, Side.East, 17, -16), W(16, Side.North, 46, 0), W(16, Side.East, 17, 30),
             W(17, Side.West, -12, -10), W(17, Side.South, -18, 0), W(17, Side.North, 34, 10),
         };
 
