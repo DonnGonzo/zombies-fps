@@ -110,8 +110,8 @@ namespace ZombiesFPS.World
             new ZoneLook(Surface.Metal, new Color(0.3f, 0.32f, 0.35f), Surface.Metal, new Color(0.27f, 0.29f, 0.33f), Surface.Metal, new Color(0.15f, 0.16f, 0.19f), 1f),
             // Archives: parquet, yellowed plaster, tall wood panelling.
             new ZoneLook(Surface.Wood, new Color(0.38f, 0.27f, 0.17f), Surface.Plaster, new Color(0.52f, 0.47f, 0.38f), Surface.Wood, new Color(0.29f, 0.19f, 0.11f), 1.2f),
-            // Greenhouse: soil floor, brick walls on a low concrete kerb.
-            new ZoneLook(Surface.Dirt, new Color(0.27f, 0.21f, 0.15f), Surface.Brick, new Color(0.4f, 0.28f, 0.22f), Surface.Concrete, new Color(0.32f, 0.31f, 0.29f), 0.6f),
+            // Greenhouse: worn terracotta tiles, old brick walls on a low concrete kerb.
+            new ZoneLook(Surface.Tile, new Color(0.42f, 0.3f, 0.22f), Surface.Brick, new Color(0.4f, 0.28f, 0.22f), Surface.Concrete, new Color(0.32f, 0.31f, 0.29f), 0.6f),
             // Gaol: wet, dark flagstones and bare castle stone, blackened at the foot.
             new ZoneLook(Surface.Tile, new Color(0.26f, 0.26f, 0.26f), Surface.Concrete, new Color(0.34f, 0.33f, 0.31f), Surface.Concrete, new Color(0.2f, 0.2f, 0.2f), 1.2f),
             // Plague Ward: scrubbed boards, limewashed walls over a tiled dado.
@@ -168,13 +168,13 @@ namespace ZombiesFPS.World
             _ => (Surface.Wood, Wood),
         };
 
-        /// <summary>Stairs match the room: wooden in the Chapel and Barracks, steel in the Lantern Core, concrete elsewhere.</summary>
+        /// <summary>Stairs match the room: wooden in the Chapel, Barracks and Greenhouse, steel in the Lantern Core, concrete elsewhere.</summary>
         static (Surface surface, Color color) StairLook(int zone) => zone switch
         {
             3 => (Surface.Wood, new Color(0.3f, 0.21f, 0.13f)),
             4 => (Surface.Wood, new Color(0.33f, 0.24f, 0.15f)),
             9 or 15 => (Surface.Metal, new Color(0.3f, 0.32f, 0.35f)),
-            13 or 14 => (Surface.Wood, new Color(0.33f, 0.24f, 0.15f)),
+            11 or 13 or 14 => (Surface.Wood, new Color(0.33f, 0.24f, 0.15f)),
             _ => (Surface.Concrete, Concrete),
         };
 
@@ -610,18 +610,9 @@ namespace ZombiesFPS.World
             // either side, and a records loft up a ladder at the far end of the north wing.
             BuildArchives();
 
-            // Greenhouse: planters, glass frames, and a potting shed whose roof (up a ladder) holds the second build station.
-            Block("Potting Shed", 11, -14f, 1f, -5f, 10.7f, 4.5f, new Color(0.36f, 0.27f, 0.18f), Surface.Wood);
-            AddLadder(11, -5f, 6f, Vector3.right, 4.5f);
-            var planter = new Color(0.33f, 0.24f, 0.15f);
-            foreach (float z in new[] { -8f, -4.5f })
-                Greybox.Box("Planter", Root, L(11, -9f, 0.4f, z), new Vector3(6f, 0.8f, 1.2f), planter, surface: Surface.Wood);
-            foreach (float z in new[] { -8f, -4.5f, -1f, 2.5f })
-                Greybox.Box("Planter", Root, L(11, 9f, 0.4f, z), new Vector3(6f, 0.8f, 1.2f), planter, surface: Surface.Wood);
-            var frame = new Color(0.26f, 0.3f, 0.29f);
-            foreach (float x in new[] { -12f, -4f, 4f, 12f })
-                Greybox.Box("Frame", Root, L(11, x, 3f, -9.5f), new Vector3(0.15f, 6f, 0.15f), frame, collider: false, surface: Surface.Metal);
-            Greybox.Box("Frame", Root, L(11, 0f, 6f, -9.5f), new Vector3(24f, 0.15f, 0.15f), frame, collider: false, surface: Surface.Metal);
+            // Greenhouse: raised beds, the glass dome over the binding stones, the pond garden, and the gallery
+            // along the north wall (up stairs or a ladder) with the second build station (ZoneMap.Greenhouse.cs).
+            BuildGreenhouse();
 
             BuildNewRooms();
 
@@ -662,7 +653,7 @@ namespace ZombiesFPS.World
             for (int i = 0; i < ZoneCount; i++)
                 foreach (var r in ZoneRects(i))
                 {
-                    // The Chapel and the Temple hang their own lights.
+                    // The Chapel, the Temple and the Greenhouse hang their own lights.
                     if (r.width < 4 || r.height < 4 || HandDressed(i)) continue;
                     int nx = Mathf.Max(1, Mathf.RoundToInt(r.width / LampSpacing)), nz = Mathf.Max(1, Mathf.RoundToInt(r.height / LampSpacing));
                     bool beamsAlongX = r.width <= r.height;

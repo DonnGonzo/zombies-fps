@@ -135,7 +135,7 @@ namespace ZombiesFPS.UI
         {
             int item = BuildManager.ItemOf(part);
             string sub = found >= ZoneMap.PartsFor(item)
-                ? $"All parts found. Build the {BuildManager.BuildableNames[item]} at a build station (Garage Roof or Greenhouse Roof)."
+                ? $"All parts found. Build the {BuildManager.BuildableNames[item]} at a build station (Garage Roof or Greenhouse Gallery)."
                 : $"{BuildManager.BuildableNames[item]}: {found}/{ZoneMap.PartsFor(item)} parts";
             ShowBanner($"{NameOf(finder).ToUpperInvariant()} FOUND THE {BuildManager.PartNames[part].ToUpperInvariant()}", sub, BuildManager.BuildableColors[item]);
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.Purchase, 0.9f);

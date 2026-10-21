@@ -127,7 +127,6 @@ namespace ZombiesFPS.World
             [8] = new[] { (SfTarpLong, 1), (SfCrate, 2), (TechCrateBig, 2), (TechCrate, 1), (BarrelRack, 1), (WoodCrate, 1) },                  // Crane Yard
             [9] = new[] { (Console, 3), (SfChair, 1), (SfDeskSmall, 1), (SfShelfTall, 1), (SfLocker, 1), (TechChest, 1), (TechBarrel, 1), (ItemHolder, 1) },  // Lantern Core
             [10] = new[] { (TallBookcase, 2), (BookStand, 1) },                                                                                         // Archives
-            [11] = new[] { (AppleCrate, 1), (Pail, 1), (BigVase, 2), (AppleBarrel, 1) },                                                         // Greenhouse
             [12] = new[] { (Cage, 2), (Pail, 1), (KitStool, 1) },                                                                                // Gaol
             [13] = new[] { (Bunk2, 2), (Nightstand, 2), (Cauldron, 1), (CandleStand, 1) },                                                       // Plague Ward
             [14] = new[] { (TallBookcase, 2), (BookStand, 2), (CandleStand, 1) },                                                                // Scriptorium
@@ -167,7 +166,6 @@ namespace ZombiesFPS.World
             [5] = new[] { (IronLantern, 2.4f, 3), (HangingBanner1, 5.6f, 2) },
             [8] = new[] { (IronLantern, 2.4f, 2) },
             [10] = new[] { (ArchShelf, 1.6f, 3), (PlankShelf, 1.6f, 3) },
-            [11] = new[] { (IronLantern, 2.4f, 2), (PlankShelf, 1.5f, 2) },
             [12] = new[] { (PegRack, 1.8f, 2), (IronLantern, 2.4f, 2) },
             [13] = new[] { (BottleShelf, 1.3f, 3), (ArchShelf, 1.6f, 2) },
             [14] = new[] { (ArchShelf, 1.6f, 3), (PlankShelf, 1.6f, 2) },
@@ -240,6 +238,14 @@ namespace ZombiesFPS.World
                     Resources.Load<Texture2D>($"CC0/Quaternius/Textures/{f[1]}_albedo"),
                     f[2] == "-" ? null : Resources.Load<Texture2D>($"CC0/Quaternius/Textures/{f[2]}_normal"), metallic, gloss);
                 mat.color = tint;
+                // Kenney's trees and iron fence are pictures on crossed planes, cut out by their alpha. The cutout
+                // base is a material asset so its shader variant ships in builds.
+                var cutout = f[1] == "kr_tree" ? Resources.Load<Material>("Materials/PropCutout") : null;
+                if (cutout != null)
+                {
+                    var tex = mat.mainTexture;
+                    mat = new Material(cutout) { name = "Kit " + f[1], mainTexture = tex, color = tint, enableInstancing = true };
+                }
             }
             s_KitMaterials[key] = mat;
             return mat;
@@ -255,6 +261,7 @@ namespace ZombiesFPS.World
             : albedo.Contains("Trim_03") ? (0.05f, 0.45f)
             : albedo.Contains("PaddedWall") ? (0f, 0.35f)
             : albedo.StartsWith("fp_") ? (albedo.Contains("Props") ? 0.1f : 0f, albedo.Contains("Cloth") ? 0.05f : 0.2f)
+            : albedo.StartsWith("kr_") ? (0f, 0.15f)
             : (0.45f, 0.48f);
 
         // ---------------------------------------------------------------- placing

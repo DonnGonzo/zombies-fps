@@ -92,7 +92,6 @@ namespace ZombiesFPS.World
             [8] = new[] { (Barricade, 3), (Crate, 3) },                                                   // Crane Yard
             [9] = new[] { (Desk, 2), (Jars, 2), (Bones, 2), (Candles, 2), (Worktable, 2), (Pylon, 2) },   // Lantern Core
             [10] = new[] { (Bookcase, 4), (ReadingTable, 2), (Bookshelf, 1), (Cabinet, 1), (Chair, 1) },  // Archives
-            [11] = new[] { (Planter, 3), (GardenBench, 2), (Crate, 1) },                                  // Greenhouse
             [12] = new[] { (GaolCell, 5), (Bones, 2), (Candles, 1), (Barricade, 1) },                     // Gaol
             [13] = new[] { (SickBed, 5), (ApothecaryCabinet, 2), (Candles, 1), (Crate, 1) },              // Plague Ward
             [14] = new[] { (Bookcase, 3), (ReadingTable, 2), (Candles, 2), (Cabinet, 1) },                // Scriptorium
@@ -103,14 +102,14 @@ namespace ZombiesFPS.World
         /// <summary>The big pieces, each against a wall of its room: the lab's altar, slab and desk, the globe, the fountain, the lectern stage.</summary>
         static readonly (PackItem item, int zone)[] Centrepieces =
         {
-            (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (Globe, 10), (Fountain, 11),
+            (Altar, LabZone), (Slab, LabZone), (Desk, LabZone), (Globe, 10),
             (LecternStage, 14),
         };
 
         /// <summary>Rooms with torches on the walls (each a flickering light), and at most how many.</summary>
         static readonly Dictionary<int, int> TorchZones = new Dictionary<int, int>
         {
-            [0] = 4, [1] = 3, [2] = 3, [4] = 4, [5] = 4, [6] = 3, [7] = 3, [8] = 4, [9] = 6, [10] = 3, [11] = 2,
+            [0] = 4, [1] = 3, [2] = 3, [4] = 4, [5] = 4, [6] = 3, [7] = 3, [8] = 4, [9] = 6, [10] = 3,
             [12] = 6, [13] = 4, [15] = 3, [16] = 4,
         };
 
@@ -126,6 +125,7 @@ namespace ZombiesFPS.World
             ArchivesMakeover();
             ChapelMakeover();
             TempleMakeover();
+            GreenhouseMakeover();
             foreach (var (big, zone) in Centrepieces)
                 for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 
