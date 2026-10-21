@@ -69,8 +69,8 @@ namespace ZombiesFPS.World
             new[] { -54, -18, -16, 4, -44, 4, -16, 12 },
             // Loading Dock: an L, the yard along the south and the dock running up the east side.
             new[] { 58, -22, 88, -2, 72, -2, 88, 20 },
-            // Pump Station: a T, the pump hall with the water tower's yard off the north.
-            new[] { 50, 20, 88, 34, 62, 34, 76, 50 },
+            // Pump Station: expanded hall and broad northern inspection yard (996 square metres).
+            new[] { 50, 20, 88, 38, 56, 38, 82, 50 },
             // Crane Yard: the biggest open space, with a loading bay off the south.
             new[] { 44, 56, 90, 86, 56, 50, 80, 56 },
             // Lantern Core: a stepped octagon round the core, entered from the Garage by a short passage.
@@ -306,7 +306,7 @@ namespace ZombiesFPS.World
         public static readonly WallSpot[] WallBuySpots =
         {
             W(0, Side.South, -14, -10), W(1, Side.South, -12, -8), W(5, Side.West, -19, 0), W(2, Side.West, -17, -6),
-            W(4, Side.West, -11, 14), W(9, Side.East, 16, 8), W(3, Side.South, -21, -14), W(7, Side.West, -7, 16),
+            W(4, Side.West, -11, 14), W(9, Side.East, 16, 8), W(3, Side.South, -21, -14), W(7, Side.West, -13, 16),
             W(8, Side.North, 15, -8),
         };
 
@@ -337,7 +337,7 @@ namespace ZombiesFPS.World
             W(4, Side.West, -11, -16), W(4, Side.East, 11, -16), W(4, Side.North, 23, -8),
             W(5, Side.West, -19, -8), W(5, Side.South, -15, 8), W(5, Side.North, 15, 12),
             W(6, Side.South, -10, 5), W(6, Side.East, 15, 28), W(6, Side.West, -1, 20),
-            W(7, Side.South, -7, -12), W(7, Side.North, 7, -16), W(7, Side.East, 7, 10),
+            W(7, Side.South, -7, -12), W(7, Side.North, 11, -16), W(7, Side.East, 13, 16),
             W(8, Side.North, 15, 14), W(8, Side.East, 23, -6), W(8, Side.West, -23, 10),
             W(9, Side.West, -16, -8), W(9, Side.South, -16, -10), W(9, Side.North, 16, -10),
             W(10, Side.North, 11, -2), W(10, Side.West, 1, 14), W(10, Side.East, 17, -14),
@@ -354,7 +354,7 @@ namespace ZombiesFPS.World
         public static readonly WallSpot[] GeneratorSpots =
         {
             W(0, Side.South, -14, 8), W(1, Side.North, 12, -14), W(2, Side.South, -15, 10), W(3, Side.East, 20, -12),
-            W(4, Side.East, 11, 20), W(5, Side.East, 19, -10), W(6, Side.North, 10, -13), W(7, Side.North, 7, -10),
+            W(4, Side.East, 11, 20), W(5, Side.East, 19, -10), W(6, Side.North, 10, -13), W(7, Side.North, 23, 9),
             W(8, Side.South, -15, 18), W(9, Side.West, -16, 6), W(10, Side.North, 11, -14), W(11, Side.North, 14, 14),
             W(12, Side.North, 6, -13), W(13, Side.East, 2, -14), W(14, Side.East, 23, 8), W(15, Side.East, 22, 0),
             W(16, Side.South, -20, 0), W(17, Side.West, -12, 14),
@@ -426,7 +426,7 @@ namespace ZombiesFPS.World
             // Aegis Shield: armour plate, view module, power core, brace kit.
             L(7, 2.7f, TowerHeight, 18.5f), L(0, -12.7f, 2.2f, 13f), L(9, 12f, 0f, -10f),
             L(9, -2f, 3f, 18f), L(4, 8f, 0f, -20f), L(6, -6.5f, 3f, -3f),
-            L(10, 4f, 4f, 20.5f), L(1, -18f, 0f, -9f), L(7, 15f, 2.4f, 4f),
+            L(10, 4f, 4f, 20.5f), L(1, -18f, 0f, -9f), L(7, -7f, 2.4f, 15f),
             L(Gaol, -12f, 0f, -3f), L(PlagueWard, 8f, 0f, -5f), L(Temple, -9.5f, 0f, -10f),
             // Buddy Bot: chassis, rotor, brain.
             L(8, -18f, 0f, 12f), L(3, 17f, 0f, 4f), L(5, -16f, 0f, 4f),

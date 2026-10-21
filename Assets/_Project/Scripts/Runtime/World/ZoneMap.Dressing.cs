@@ -286,7 +286,7 @@ namespace ZombiesFPS.World
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
                 // Temple, Greenhouse and Depot use their own authored lighting.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone) WallLamps(f, rng);
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone && f.Zone != PumpZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -1062,24 +1062,7 @@ namespace ZombiesFPS.World
 
             // Garage's service bays and fabrication floor are authored in ZoneMap.Garage.cs.
 
-            // Pump Station: flanges on the main, its drop into the pump and riser to the roof, the pump's motor and gauges, bands on the tank.
-            var pipe = new Color(0.46f, 0.27f, 0.15f);
-            var dark = Shade(pipe, 0.6f);
-            for (float x = -6f; x <= 6.01f; x += 2f)
-                DecoPrim(PrimitiveType.Cylinder, L(7, x, 4.2f, -3f), new Vector3(0.64f, 0.04f, 0.64f), Quaternion.Euler(0f, 0f, 90f), dark, Surface.Rust);
-            Rod(L(7, -6f, 4.2f, -3f), L(7, -9f, 4.2f, -3f), 0.5f, pipe, Surface.Rust);
-            Rod(L(7, -9f, 4.2f, -3f), L(7, -9f, 2f, -3f), 0.5f, pipe, Surface.Rust);
-            DecoPrim(PrimitiveType.Sphere, L(7, -9f, 4.2f, -3f), Vector3.one * 0.54f, Quaternion.identity, pipe, Surface.Rust);
-            Rod(L(7, 6f, 4.2f, -3f), L(7, 6f, WallHeight + 0.4f, -3f), 0.5f, pipe, Surface.Rust);
-            DecoPrim(PrimitiveType.Sphere, L(7, 6f, 4.2f, -3f), Vector3.one * 0.54f, Quaternion.identity, pipe, Surface.Rust);
-            Rod(L(7, -11.4f, 2.32f, -3f), L(7, -9.6f, 2.32f, -3f), 0.6f, new Color(0.2f, 0.3f, 0.36f), Surface.Metal);
-            foreach (float x in new[] { -11f, -9.5f })
-            {
-                DecoPrim(PrimitiveType.Cylinder, L(7, x, 1.4f, -1.48f), new Vector3(0.3f, 0.015f, 0.3f), Quaternion.Euler(90f, 0f, 0f), new Color(0.6f, 0.58f, 0.52f), Surface.Plain);
-                Glow(L(7, x + 0.25f, 1.4f, -1.48f), new Vector3(0.04f, 0.04f, 0.01f), Quaternion.identity, new Color(0.2f, 1f, 0.3f));
-            }
-            foreach (float y in new[] { 1.85f, 3.15f })
-                DecoPrim(PrimitiveType.Cylinder, L(7, 4.2f, y, 16.5f), new Vector3(3.68f, 0.05f, 3.68f), Quaternion.identity, dark, Surface.Rust);
+            // Pump Station machinery is authored in ZoneMap.PumpStation.cs.
 
             // Lantern Core: metal and glowing bands on the core, a glowing ring and spokes on the floor, cables to the
             // consoles, screens on the consoles, and a glow strip under the catwalk's edge.

@@ -507,16 +507,7 @@ namespace ZombiesFPS.World
 
             BuildLoadingDock();
 
-            // Pump Station: the pump hall with a pump house up stairs, and a water tower up a tall ladder in the north yard.
-            Deck("Water Tower", 7, 1.7f, 14f, 6.7f, 19f, TowerHeight, Metal);
-            var tank = Greybox.Prim(PrimitiveType.Cylinder, "Tank", Root, L(7, 4.2f, 2.5f, 16.5f), new Vector3(3.6f, 1.1f, 3.6f), new Color(0.44f, 0.27f, 0.16f), collider: false, surface: Surface.Rust);
-            tank.name = "Tank";
-            AddLadder(7, 4.2f, 14f, Vector3.back, TowerHeight);
-            Block("Pump House", 7, 13f, 0f, 18.7f, 6.7f, 2.4f, new Color(0.4f, 0.42f, 0.4f));
-            Stairs(7, 13f, 3.35f, Vector3.left, 2.4f, 2.4f);
-            Greybox.Box("Pump", Root, L(7, -10f, 1f, -3f), new Vector3(4f, 2f, 3f), new Color(0.2f, 0.32f, 0.4f), surface: Surface.Metal);
-            Greybox.Prim(PrimitiveType.Cylinder, "Pipe", Root, L(7, 0f, 4.2f, -3f), new Vector3(0.5f, 6f, 0.5f), new Color(0.46f, 0.27f, 0.15f), collider: false, surface: Surface.Rust)
-                .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            BuildPumpStation();
 
             // Crane Yard: a parkour run up to the top of a container stack, the crane, and scattered containers.
             Block("Container Stack", 8, 4f, 6f, 12f, 9f, 3.6f, Rust, Surface.Rust);

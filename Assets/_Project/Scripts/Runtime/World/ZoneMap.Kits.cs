@@ -288,7 +288,7 @@ namespace ZombiesFPS.World
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                if (f.Length < 3f || f.Zone == DepotZone || f.Zone == LoadingDockZone || f.Zone == GarageZone || f.Zone == CourtyardZone || !WallKit.TryGetValue(f.Zone, out var set)) continue;
+                if (f.Length < 3f || f.Zone == DepotZone || f.Zone == LoadingDockZone || f.Zone == GarageZone || f.Zone == CourtyardZone || f.Zone == PumpZone || !WallKit.TryGetValue(f.Zone, out var set)) continue;
                 var rng = new System.Random(3300 + i * 571);
                 for (float t = Range(rng, 1.5f, 3f); t < f.Length - 1.5f; t += Range(rng, 2.5f, 4.5f))
                 {
