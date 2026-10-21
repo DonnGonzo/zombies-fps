@@ -538,16 +538,7 @@ namespace ZombiesFPS.World
             Jump(5, -8.2f, 1.6f, -12.2f, -10.5f, 2.4f, -12.2f);
             Jump(5, -12.1f, 2.4f, -12.2f, -14.5f, 3.2f, -12.2f);
 
-            // Loading Dock: a long raised dock up the east side with stairs, a truck with a ladder up the back, and containers.
-            Block("Dock", 6, 9f, -8f, 14.7f, 26f, 1.4f, Concrete);
-            Stairs(6, 9f, -4f, Vector3.left, 1.4f, 2.4f);
-            Stairs(6, 9f, 20f, Vector3.left, 1.4f, 2.4f);
-            Block("Truck", 6, -8f, -6f, -5f, 1f, 3f, new Color(0.46f, 0.47f, 0.47f), Surface.Metal);
-            Greybox.Box("Cab", Root, L(6, -6.5f, 1.2f, 2.2f), new Vector3(2.8f, 2.4f, 2.2f), new Color(0.48f, 0.12f, 0.09f), surface: Surface.Metal);
-            AddLadder(6, -6.5f, -6f, Vector3.back, 3f);
-            Jump(6, -6.5f, 3f, 0.3f, -6.5f, 2.4f, 2.2f);
-            Block("Container", 6, -10f, 6f, -4f, 8.6f, 2.6f, Rust, Surface.Rust);
-            Block("Container", 6, 1f, -7f, 7f, -4.4f, 2.6f, ContainerBlue, Surface.Metal);
+            BuildLoadingDock();
 
             // Pump Station: the pump hall with a pump house up stairs, and a water tower up a tall ladder in the north yard.
             Deck("Water Tower", 7, 1.7f, 14f, 6.7f, 19f, TowerHeight, Metal);

@@ -127,6 +127,7 @@ namespace ZombiesFPS.World
             TempleMakeover();
             GreenhouseMakeover();
             DepotMakeover();
+            LoadingDockMakeover();
             foreach (var (big, zone) in Centrepieces)
                 for (int i = 0; i < _faces.Count && !PlaceOnFace(big, _faces[i], zone, new System.Random(4400 + i)); i++) { }
 
@@ -134,7 +135,7 @@ namespace ZombiesFPS.World
             {
                 var f = _faces[i];
                 var set = RoomSet(f.Zone);
-                if (f.Length < 3f || set == null || f.Zone == DepotZone) continue;
+                if (f.Length < 3f || set == null || f.Zone == DepotZone || f.Zone == LoadingDockZone) continue;
                 var rng = new System.Random(8300 + i * 4111);
                 int total = 0;
                 foreach (var (_, w) in set) total += w;
@@ -216,7 +217,7 @@ namespace ZombiesFPS.World
             for (int i = 0; i < _faces.Count; i++)
             {
                 var f = _faces[i];
-                if (f.Zone == DepotZone || !TorchZones.TryGetValue(f.Zone, out int max) || f.Length < 4f) continue;
+                if (f.Zone == DepotZone || f.Zone == LoadingDockZone || !TorchZones.TryGetValue(f.Zone, out int max) || f.Length < 4f) continue;
                 var rng = new System.Random(9700 + i * 389);
                 for (float t = 2f; t < f.Length - 2f; t += Range(rng, 5f, 8f))
                 {

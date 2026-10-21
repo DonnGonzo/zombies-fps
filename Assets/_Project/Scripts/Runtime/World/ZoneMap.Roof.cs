@@ -35,7 +35,7 @@ namespace ZombiesFPS.World
             {
                 // The Temple draws its own ceiling, round the oculus (ZoneMap.Temple.cs), and the Greenhouse its own glass
                 // roof on arched trusses (ZoneMap.Greenhouse.cs). The Depot has its own clerestory and crane trusses.
-                if (zone == Temple || zone == GreenhouseZone || zone == DepotZone) continue;
+                if (zone == Temple || zone == GreenhouseZone || zone == DepotZone || zone == LoadingDockZone) continue;
                 var (style, surface, color) = RoofLook(zone);
                 foreach (var r in ZoneRects(zone))
                 {
@@ -131,6 +131,8 @@ namespace ZombiesFPS.World
             for (int zone = 0; zone < ZoneCount; zone++)
                 foreach (var r in ZoneRects(zone))
                 {
+                    // Loading Dock is open sky; its authored awnings already have matching colliders.
+                    if (zone == LoadingDockZone) continue;
                     var go = new GameObject("Ceiling " + ZoneNames[zone]);
                     go.transform.SetParent(holder, false);
                     go.transform.localPosition = new Vector3(r.center.x, WallHeight + RoofThickness / 2f, r.center.y);

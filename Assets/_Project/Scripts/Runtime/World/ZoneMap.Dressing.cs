@@ -286,7 +286,7 @@ namespace ZombiesFPS.World
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
                 // Temple, Greenhouse and Depot use their own authored lighting.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone) WallLamps(f, rng);
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -948,21 +948,7 @@ namespace ZombiesFPS.World
                 if (FloorFree(p, 0.5f)) PlaceLitter(Litter.Rubble, p, 5, rng);
             }
 
-            // Loading Dock: hazard striping along the dock edge, rubber bumpers on its face, bay lines, the truck and containers.
-            for (float z = -8f; z < 26f - 0.01f; z += 0.6f)
-            {
-                if (Mathf.Abs(z + 0.3f + 4f) < 1.6f || Mathf.Abs(z + 0.3f - 20f) < 1.6f) continue;
-                bool yellow = Mathf.RoundToInt((z + 8f) / 0.6f) % 2 == 0;
-                Deco(L(6, 9.17f, 1.404f, z + 0.3f), new Vector3(0.3f, 0.008f, 0.6f), yellow ? HazardYellow : Soot, Surface.Concrete);
-            }
-            foreach (float z in new[] { -7f, -1f, 3f, 8f, 13f, 16.5f, 24f })
-                Deco(L(6, 8.96f, 0.85f, z), new Vector3(0.08f, 0.5f, 0.35f), new Color(0.06f, 0.06f, 0.06f), Surface.Rubber);
-            Paint(6, -9.3f, -7f, -9.3f, 0f, 0.12f, FadedWhite);
-            Paint(6, -3.7f, -7f, -3.7f, 0f, 0.12f, FadedWhite);
-            Paint(6, -12f, -9f, -12f, -2f, 0.12f, FadedWhite);
-            TruckDetails();
-            ContainerDetails(6, -10f, 6f, -4f, 8.6f, 2.6f, Rust);
-            ContainerDetails(6, 1f, -7f, 7f, -4.4f, 2.6f, ContainerBlue);
+            // Loading Dock's authored yard is built in ZoneMap.LoadingDock.cs.
 
             // Crane Yard: tyre ruts through the dirt, the crane's bracing, cab and counterweight, and the containers.
             foreach (float z in new[] { -12.6f, -11f })
