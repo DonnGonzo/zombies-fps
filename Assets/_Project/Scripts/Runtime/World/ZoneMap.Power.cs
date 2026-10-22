@@ -44,15 +44,16 @@ namespace ZombiesFPS.World
         static NoteSpot[] s_NoteSpots;
         static NoteSpot[] NoteSpots => s_NoteSpots ??= new[]
         {
-            new NoteSpot(L(StartZone, -1.8f, 1.105f, 4.05f), Vector3.up, 20f),        // on the low wall
-            new NoteSpot(L(StartZone, -6.2f, 1.205f, -10.1f), Vector3.up, -35f),      // on the crates by the wall gun
-            new NoteSpot(L(StartZone, 6.9f, 1.205f, 9.3f), Vector3.up, 70f),          // on the crates by the north door
-            new NoteSpot(L(StartZone, -14.2f, 2.205f, 13.6f), Vector3.up, -10f),      // up on the watch platform
-            new NoteSpot(L(StartZone, 1.4f, 0.245f, -18.2f), Vector3.up, 110f),       // on the fallen gate
-            new NoteSpot(L(StartZone, -15.64f, 1.55f, 5f), Vector3.right, 4f),        // pinned to the west wall
-            new NoteSpot(L(StartZone, 4f, 1.55f, 15.64f), Vector3.back, -6f),         // pinned to the north wall
-            new NoteSpot(L(StartZone, 15.64f, 1.55f, -10.5f), Vector3.left, 3f),      // pinned to the east wall
-            new NoteSpot(L(StartZone, -4.64f, 1.5f, -19.5f), Vector3.right, -5f),     // pinned in the old gate passage
+            // Ground-level wall positions in the remodeled yard; no dependence on removed props.
+            new NoteSpot(L(StartZone, -15.64f, 1.55f, -4f), Vector3.right, 0f),
+            new NoteSpot(L(StartZone, -15.64f, 1.55f, 5f), Vector3.right, 0f),
+            new NoteSpot(L(StartZone, -15.64f, 1.55f, -12f), Vector3.right, 0f),
+            new NoteSpot(L(StartZone, -7f, 1.55f, 15.64f), Vector3.back, 0f),
+            new NoteSpot(L(StartZone, 3f, 1.55f, 11.64f), Vector3.back, 0f),
+            new NoteSpot(L(StartZone, 11.64f, 1.55f, 6f), Vector3.left, 0f),
+            new NoteSpot(L(StartZone, 11f, 1.55f, -13.64f), Vector3.forward, 0f),
+            new NoteSpot(L(StartZone, -6f, 1.55f, -21.64f), Vector3.forward, 0f),
+            new NoteSpot(L(StartZone, 4.64f, 1.55f, -18f), Vector3.left, 0f),
         };
 
         public static int NoteSpotCount => NoteSpots.Length;

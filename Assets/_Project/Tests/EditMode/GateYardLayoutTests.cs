@@ -83,6 +83,22 @@ namespace ZombiesFPS.Tests
                     if (collider.Raycast(new Ray(new Vector3(-12.7f, 2.4f, 13f), Vector3.down), out _, 0.3f)) supported = true;
                 Assert.IsTrue(supported, "Lookout collectible needs a supporting platform");
 
+                var powerBuyables = new List<Buyable>();
+                typeof(ZoneMap).GetMethod("AddPowerBuyables", flags).Invoke(map, new object[] { powerBuyables });
+                foreach (var buyable in powerBuyables)
+                {
+                    if (buyable.Kind != BuyableKind.Note) continue;
+                    var note = ZoneMap.NotePosition(buyable.Index);
+                    Assert.AreEqual(0, ZoneMap.ZoneOfPoint(note), "Note outside Gate Yard: " + buyable.Index);
+                    Assert.Less(note.y, 2f, "Every note should be readable from the ground");
+                    targets.Add(buyable.Position - Vector3.up);
+                    var eye = buyable.Position + Vector3.up * 0.55f;
+                    var direction = note - eye;
+                    foreach (var collider in colliders)
+                        Assert.IsFalse(collider.Raycast(new Ray(eye, direction.normalized), out _, direction.magnitude - 0.02f),
+                            "Note " + buyable.Index + " hidden by " + collider.name);
+                }
+
                 // Bake the room's real footprint, authored colliders and boundary walls; test walking paths,
                 // not just straight-line clearance. Closed buyable doors intentionally stay out of this bake.
                 foreach (var r in ZoneMap.ZoneRects(0))
@@ -96,6 +112,24 @@ namespace ZombiesFPS.Tests
                 }
                 Physics.SyncTransforms();
                 var sources = new List<NavMeshBuildSource>();
+                var roomColliders = root.GetComponentsInChildren<Collider>();
+                foreach (var buyable in powerBuyables)
+                {
+                    if (buyable.Kind != BuyableKind.Note) continue;
+                    var note = ZoneMap.NotePosition(buyable.Index);
+                    var eye = buyable.Position + Vector3.up * 0.55f;
+                    var sight = note - eye;
+                    var behind = note - buyable.Position;
+                    behind.y = 0f;
+                    bool wallBehind = false;
+                    foreach (var collider in roomColliders)
+                    {
+                        Assert.IsFalse(collider.Raycast(new Ray(eye, sight.normalized), out _, sight.magnitude - 0.02f),
+                            "Room boundary hides note " + buyable.Index);
+                        if (collider.Raycast(new Ray(note, behind.normalized), out _, 0.2f)) wallBehind = true;
+                    }
+                    Assert.IsTrue(wallBehind, "Note " + buyable.Index + " must be pinned to a real wall");
+                }
                 NavMeshBuilder.CollectSources(root.transform, ~0, NavMeshCollectGeometry.PhysicsColliders, 0, new List<NavMeshBuildMarkup>(), sources);
                 var settings = NavMesh.GetSettingsByIndex(0);
                 settings.minRegionArea = 0.5f;
