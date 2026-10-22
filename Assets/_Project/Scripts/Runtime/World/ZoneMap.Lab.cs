@@ -36,11 +36,17 @@ namespace ZombiesFPS.World
             Intercoms();
             foreach (var top in CoilTops)
                 Splat(new Vector3(top.x, 0f, top.z) + new Vector3(Range(rng, -0.6f, 0.6f), 0f, Range(rng, -0.6f, 0.6f)), 1.9f, 1.5f, Range(rng, 0f, 180f), 0.004f, Soot, Surface.Concrete);
-            for (int k = 0; k < 5; k++)
+            for (int k = 0; k < 3; k++)
             {
                 float a = Range(rng, 0f, Mathf.PI * 2f), d = Range(rng, 2.6f, 5f);
                 Splat(ReactorBase + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d), Range(rng, 0.5f, 1.1f), Range(rng, 0.4f, 0.9f), Range(rng, 0f, 180f), 0.005f, Soot, Surface.Concrete);
             }
+            // Small wayfinding accents only: no movement of reactor, coils, consoles or ritual anchors.
+            foreach (float x in new[] { -2.8f, 2.8f })
+                Glow(L(LabZone, x, 0.035f, -22f), new Vector3(0.07f, 0.02f, 6f), Quaternion.identity, new Color(0.14f, 0.4f, 0.3f));
+            RemodelSign(LabZone, "LANTERN CORE", 0f, 4.8f, -23.5f, 0f, 5.2f);
+            foreach (float z in new[] { -2.2f, 2.2f })
+                Glow(L(LabZone, 15.6f, 3.8f, z), new Vector3(0.04f, 0.8f, 0.08f), Quaternion.identity, new Color(0.18f, 0.42f, 0.31f));
         }
 
         /// <summary>Four coils at the room's diagonals, or the nearest open floor to them.</summary>

@@ -81,13 +81,13 @@ namespace ZombiesFPS.World
             // Greenhouse: the glass hall, its gallery along the north wall, and the pond garden off the south-west.
             new[] { -66, 58, -22, 86, -66, 44, -46, 58 },
             // Gaol: a vaulted cell block under the old gate, its guard hall up against the gate passage.
-            new[] { -16, -40, 18, -28, -10, -28, 10, -22 },
+            new[] { -16, -44, 18, -28, -10, -28, 10, -22 },
             // Plague Ward: the long infirmary hall, with the sick wing off the south-west.
-            new[] { 18, -30, 58, -12, 18, -40, 40, -30 },
+            new[] { 18, -30, 58, -12, 18, -46, 40, -30 },
             // Scriptorium: the copying hall, its lectern gallery reaching east over the Archives' stacks.
-            new[] { -22, 76, -4, 96, -4, 88, 10, 96 },
+            new[] { -22, 76, -4, 102, -4, 88, 10, 102 },
             // Alchemist's Furnace: the furnace hall behind the Lantern Core, with a coal chute down to the Crane Yard.
-            new[] { 20, 88, 64, 106, 44, 86, 64, 88 },
+            new[] { 20, 88, 64, 112, 44, 86, 64, 88 },
             // Rampart Ruins: widened fortress yard and eastern wall walk (1920 square metres).
             new[] { 88, 20, 118, 56, 90, 56, 118, 86 },
             // Sunken Temple: the old temple west of the Courtyard, its prayer hall reaching to the Barracks.
@@ -114,7 +114,7 @@ namespace ZombiesFPS.World
             return s_Rects[Mathf.Clamp(zone, 0, ZoneCount - 1)];
         }
 
-        const int MinX = -78, MaxX = 118, MinZ = -40, MaxZ = 106;
+        const int MinX = -78, MaxX = 118, MinZ = -46, MaxZ = 112;
 
         /// <summary>The map's outer edge, for the map screen (x, y here are world x, z).</summary>
         public static readonly Rect Bounds = new Rect(MinX, MinZ, MaxX - MinX, MaxZ - MinZ);
@@ -342,10 +342,10 @@ namespace ZombiesFPS.World
             W(9, Side.West, -16, -8), W(9, Side.South, -16, -10), W(9, Side.North, 16, -10),
             W(10, Side.North, 11, -2), W(10, Side.West, 1, 14), W(10, Side.East, 17, -14),
             W(11, Side.West, -22, -7), W(11, Side.West, -22, -23), W(11, Side.South, -28, -4),
-            W(12, Side.South, -6, -10), W(12, Side.West, -16, 3), W(12, Side.South, -6, 12),
-            W(13, Side.South, -9, 12), W(13, Side.South, -19, -10), W(13, Side.East, 20, -3),
-            W(14, Side.North, 12, -4), W(14, Side.North, 12, 16), W(14, Side.West, -9, 4),
-            W(15, Side.North, 9, -12), W(15, Side.North, 9, 12), W(15, Side.West, -22, 6),
+            W(12, Side.South, -10, -10), W(12, Side.West, -16, 3), W(12, Side.South, -10, 12),
+            W(13, Side.South, -9, 12), W(13, Side.South, -25, -10), W(13, Side.East, 20, -3),
+            W(14, Side.North, 18, -4), W(14, Side.North, 18, 16), W(14, Side.West, -9, 4),
+            W(15, Side.North, 15, -12), W(15, Side.North, 15, 12), W(15, Side.West, -22, 6),
             W(16, Side.East, 17, -16), W(16, Side.North, 46, 0), W(16, Side.East, 17, 30),
             W(17, Side.West, -12, -10), W(17, Side.South, -18, 0), W(17, Side.North, 34, 10),
         };

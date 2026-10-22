@@ -24,53 +24,10 @@ namespace ZombiesFPS.World
 
         void BuildNewRooms()
         {
-            // Gaol: two squat pillars hold up the vault; the guard hall has a rack and a gibbet cage.
-            foreach (float x in new[] { -6f, 6f })
-                Greybox.Box("Pillar", Root, L(Gaol, x, WallHeight / 2f, -0.5f), new Vector3(1.3f, WallHeight, 1.3f), Stone, surface: Surface.Concrete);
-            Greybox.Box("Rack", Root, L(Gaol, 6.5f, 0.45f, 9.5f), new Vector3(2.2f, 0.9f, 1f), Timber, surface: Surface.Wood);
-
-            // Plague Ward: a row of timber posts down the hall.
-            foreach (float x in new[] { -12f, -4f, 4f, 12f })
-                Greybox.Box("Post", Root, L(PlagueWard, x, WallHeight / 2f, 0f), new Vector3(0.45f, WallHeight, 0.45f), Timber, surface: Surface.Wood);
-
-            // Scriptorium: rows of writing desks, each with its stool, facing the lectern stage on the north wall.
-            var desk = PropModels.GetPack(WritingDesk.Path, PackMaterial);
-            var stool = PropModels.GetPack(Stool.Path, PackMaterial);
-            var deskRng = new System.Random(1414);
-            foreach (float x in new[] { -5f, -2.4f, 2.4f, 5f })
-                foreach (float z in new[] { -5f, -1.5f, 2f })
-                {
-                    var at = L(Scriptorium, x, 0f, z);
-                    var face = Quaternion.Euler(0f, 180f, 0f);
-                    // One collider over desk and stool together.
-                    var box = Greybox.Box("Writing Desk", Root, at + new Vector3(0f, 0.4f, -0.3f), new Vector3(1.3f, 0.8f, 1.15f), Timber, surface: Surface.Wood);
-                    if (desk == null) continue;
-                    box.GetComponent<Renderer>().enabled = false;
-                    AddModel(desk, at, face, true);
-                    TableTop(WritingDesk, at, face, Scriptorium, deskRng);
-                    if (stool != null) AddModel(stool, at + new Vector3(0f, 0f, -0.62f), face, true);
-                }
-
-            // Alchemist's Furnace: the furnace in the middle (its drum is the collider either way), glowing from inside.
-            var core = Greybox.Prim(PrimitiveType.Cylinder, "Furnace", Root, L(Furnace, 0f, 2.6f, 0f), new Vector3(4.6f, 2.6f, 4.6f), new Color(0.3f, 0.2f, 0.14f), surface: Surface.Rust);
-            var furnace = PropModels.GetPack(FurnaceCore.Path, PackMaterial);
-            if (furnace != null)
-            {
-                core.GetComponent<Renderer>().enabled = false;
-                AddModel(furnace, L(Furnace, 0f, 0f, 0f), Quaternion.identity, true, 0.95f);
-            }
-            var glow = new GameObject("Furnace Light").AddComponent<Light>();
-            glow.transform.SetParent(Root, false);
-            glow.transform.localPosition = L(Furnace, 0f, 2.4f, -3.2f);
-            glow.type = LightType.Point;
-            glow.color = FurnaceGlow;
-            glow.range = 14f;
-            glow.intensity = 2.4f;
-            glow.shadows = LightShadows.None;
-            glow.gameObject.AddComponent<Flicker>().Seed = 77;
-            // Coal bunkers either side.
-            foreach (float x in new[] { -16.5f, 16.5f })
-                Greybox.Box("Coal Bunker", Root, L(Furnace, x, 0.5f, -6.5f), new Vector3(3f, 1f, 2f), new Color(0.2f, 0.17f, 0.15f), surface: Surface.Concrete);
+            BuildGaol();
+            BuildPlagueWard();
+            BuildScriptorium();
+            BuildFurnace();
 
             BuildRampartRuins();
 
@@ -81,45 +38,10 @@ namespace ZombiesFPS.World
         /// <summary>The new rooms' colliderless dressing.</summary>
         void DressNewRooms()
         {
-            var rng = new System.Random(1717);
-
-            // Gaol: straw on the floor, a drain down the middle, and a hanging gibbet cage in the guard hall.
-            Deco(L(Gaol, 1f, 0.005f, -0.5f), new Vector3(30f, 0.01f, 0.5f), new Color(0.12f, 0.12f, 0.12f), Surface.Metal);
-            for (int i = 0; i < 18; i++)
-                Deco(L(Gaol, Range(rng, -15f, 17f), 0.008f, Range(rng, -5.5f, -3f)), new Vector3(Range(rng, 0.4f, 1.2f), 0.012f, Range(rng, 0.3f, 0.8f)),
-                    Quaternion.Euler(0f, Range(rng, 0f, 180f), 0f), new Color(0.5f, 0.42f, 0.22f), Surface.Fabric);
-            var cage = L(Gaol, -4f, 0f, 9f);
-            Rod(cage + Vector3.up * WallHeight, cage + Vector3.up * 4.4f, 0.04f, new Color(0.1f, 0.1f, 0.1f), Surface.Metal);
-            for (int k = 0; k < 8; k++)
-            {
-                var d = Quaternion.Euler(0f, k * 45f, 0f) * Vector3.forward * 0.55f;
-                Rod(cage + d + Vector3.up * 4.4f, cage + d + Vector3.up * 2.6f, 0.035f, new Color(0.12f, 0.11f, 0.1f), Surface.Rust);
-            }
-            DecoPrim(PrimitiveType.Cylinder, cage + Vector3.up * 2.6f, new Vector3(1.2f, 0.03f, 1.2f), Quaternion.identity, new Color(0.12f, 0.11f, 0.1f), Surface.Rust);
-            DecoPrim(PrimitiveType.Cylinder, cage + Vector3.up * 4.4f, new Vector3(1.2f, 0.03f, 1.2f), Quaternion.identity, new Color(0.12f, 0.11f, 0.1f), Surface.Rust);
-
-            // Plague Ward: linen curtains hanging between the bays along the north wall, and bundles of herbs drying
-            // on a line across the hall.
-            foreach (float x in new[] { -16f, -8f, 0f, 8f, 16f })
-                Deco(L(PlagueWard, x, 1.6f, 7.4f), new Vector3(0.04f, 2.6f, 3.1f), new Color(0.62f, 0.58f, 0.48f), Surface.Fabric);
-            Rod(L(PlagueWard, -19.7f, 4.6f, -3f), L(PlagueWard, 19.7f, 4.6f, -3f), 0.02f, new Color(0.3f, 0.25f, 0.18f), Surface.Fabric);
-            for (float x = -18f; x < 18f; x += Range(rng, 0.8f, 1.6f))
-                DecoPrim(PrimitiveType.Capsule, L(PlagueWard, x, 4.3f, -3f), new Vector3(0.18f, 0.25f, 0.18f), Quaternion.identity,
-                    rng.NextDouble() < 0.5 ? new Color(0.25f, 0.3f, 0.14f) : new Color(0.38f, 0.32f, 0.16f), Surface.Grass);
-
-            // Scriptorium: a long runner up the middle aisle.
-            Deco(L(Scriptorium, 0f, 0.006f, 1f), new Vector3(2.4f, 0.01f, 15f), new Color(0.32f, 0.1f, 0.08f), Surface.Fabric);
-            Deco(L(Scriptorium, 0f, 0.009f, 1f), new Vector3(2f, 0.01f, 14.6f), new Color(0.45f, 0.3f, 0.12f), Surface.Fabric);
-
-            // Alchemist's Furnace: coal heaped in the bunkers and spilled round them, the flue up to the roof and a
-            // glowing mouth on the furnace.
-            foreach (float x in new[] { -16.5f, 16.5f })
-                for (int i = 0; i < 9; i++)
-                    DecoPrim(PrimitiveType.Sphere, L(Furnace, x + Range(rng, -1.3f, 1.3f), 1f + Range(rng, 0f, 0.15f), -6.5f + Range(rng, -0.8f, 0.8f)),
-                        new Vector3(Range(rng, 0.4f, 0.8f), 0.3f, Range(rng, 0.4f, 0.8f)), Quaternion.identity, new Color(0.06f, 0.06f, 0.06f), Surface.Concrete);
-            Rod(L(Furnace, 0f, 5.6f, 0f), L(Furnace, 0f, WallHeight + 0.3f, 0f), 1.1f, new Color(0.2f, 0.14f, 0.1f), Surface.Rust);
-            Glow(L(Furnace, 0f, 1.1f, -2.32f), new Vector3(1.4f, 0.8f, 0.05f), Quaternion.identity, FurnaceGlow);
-
+            GaolMakeover();
+            PlagueWardMakeover();
+            ScriptoriumMakeover();
+            FurnaceMakeover();
             RampartMakeover();
         }
     }

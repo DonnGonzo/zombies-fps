@@ -487,15 +487,7 @@ namespace ZombiesFPS.World
             // Chapel: piers down the nave, pews, the altar at its head and a choir loft up stairs at the north end.
             BuildChapel();
 
-            // Barracks: two rows of bunks down the hall, and a mezzanine along the west wall with stairs and a ladder.
-            Block("Mezzanine", 4, -10.7f, -8f, -5.7f, 8f, 2.6f, new Color(0.34f, 0.25f, 0.16f), Surface.Wood);
-            Stairs(4, -8.2f, 8f, Vector3.forward, 2.6f, 2.4f);
-            AddLadder(4, -5.7f, -3f, Vector3.right, 2.6f);
-            foreach (float z in new[] { -17f, -13f, -9f, 9f, 13f, 17f })
-            {
-                Greybox.Box("Bunk", Root, L(4, 0f, 0.8f, z), new Vector3(2f, 1.6f, 1f), BunkGreen, surface: Surface.Metal);
-                Greybox.Box("Bunk", Root, L(4, 5f, 0.8f, z), new Vector3(2f, 1.6f, 1f), BunkGreen, surface: Surface.Metal);
-            }
+            BuildBarracks();
 
             BuildCourtyard();
 
@@ -503,22 +495,7 @@ namespace ZombiesFPS.World
 
             BuildPumpStation();
 
-            // Crane Yard: a parkour run up to the top of a container stack, the crane, and scattered containers.
-            Block("Container Stack", 8, 4f, 6f, 12f, 9f, 3.6f, Rust, Surface.Rust);
-            Hop(8, -6.2f, 7.5f, 0.9f);
-            Hop(8, -2.3f, 7.5f, 1.8f);
-            Hop(8, 1.6f, 7.5f, 2.7f);
-            Jump(8, -8.7f, 0f, 7.5f, -6.9f, 0.9f, 7.5f);
-            Jump(8, -5.4f, 0.9f, 7.5f, -3.1f, 1.8f, 7.5f);
-            Jump(8, -1.5f, 1.8f, 7.5f, 0.8f, 2.7f, 7.5f);
-            Jump(8, 2.4f, 2.7f, 7.5f, 4.7f, 3.6f, 7.5f);
-            // Low enough to stand under the roof.
-            Greybox.Box("Crane", Root, L(8, 12f, 3.1f, -10f), new Vector3(1.5f, 6.2f, 1.5f), CraneYellow, surface: Surface.Metal);
-            Greybox.Box("Boom", Root, L(8, 7f, 5.9f, -10f), new Vector3(11f, 0.6f, 0.6f), CraneYellow, collider: false, surface: Surface.Metal);
-            Greybox.Box("Cable", Root, L(8, 2.5f, 5.1f, -10f), new Vector3(0.05f, 1.6f, 0.05f), new Color(0.12f, 0.12f, 0.12f), collider: false, surface: Surface.Metal);
-            Block("Container", 8, -11f, -9.3f, -5f, -6.7f, 2.6f, ContainerGreen, Surface.Metal);
-            Block("Container", 8, 4.7f, -9f, 7.3f, -3f, 2.6f, Rust, Surface.Rust);
-            Block("Container", 8, -20f, 2f, -14f, 4.6f, 2.6f, ContainerBlue, Surface.Metal);
+            BuildCraneYard();
 
             // Lantern Core: the reactor (or the old glowing drum without its model), consoles round it, and a catwalk
             // at the north end with stairs and a ladder. The drum's collider stands for the reactor either way.

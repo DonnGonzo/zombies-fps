@@ -286,7 +286,7 @@ namespace ZombiesFPS.World
                 var rng = new System.Random(5100 + i * 7919);
                 Stains(f, rng);
                 // Temple, Greenhouse and Depot use their own authored lighting.
-                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone && f.Zone != PumpZone && f.Zone != Rampart && f.Zone != StartZone) WallLamps(f, rng);
+                if (f.Zone != Temple && f.Zone != GreenhouseZone && f.Zone != DepotZone && f.Zone != LoadingDockZone && f.Zone != GarageZone && f.Zone != CourtyardZone && f.Zone != PumpZone && f.Zone != Rampart && f.Zone != StartZone && !RemodeledRoom(f.Zone)) WallLamps(f, rng);
                 WallRuns(f);
                 if (!HandDressed(f.Zone)) WallClutter(f, rng);
             }
@@ -932,16 +932,8 @@ namespace ZombiesFPS.World
 
             // Loading Dock's authored yard is built in ZoneMap.LoadingDock.cs.
 
-            // Crane Yard: tyre ruts through the dirt, the crane's bracing, cab and counterweight, and the containers.
-            foreach (float z in new[] { -12.6f, -11f })
-                Paint(8, -21f, z, 21f, z, 0.45f, new Color(0.17f, 0.14f, 0.1f), 2f, 0f);
-            foreach (float x in new[] { 1f, 2.6f })
-                Paint(8, x, -12f, x, -17f, 0.45f, new Color(0.17f, 0.14f, 0.1f), 2f, 0f);
-            CraneDetails();
-            ContainerDetails(8, 4f, 6f, 12f, 9f, 3.6f, Rust);
-            ContainerDetails(8, -11f, -9.3f, -5f, -6.7f, 2.6f, ContainerGreen);
-            ContainerDetails(8, 4.7f, -9f, 7.3f, -3f, 2.6f, Rust);
-            ContainerDetails(8, -20f, 2f, -14f, 4.6f, 2.6f, ContainerBlue);
+            // Crane Yard is authored in ZoneMap.CraneYard.cs.
+
         }
 
         void TruckDetails()
@@ -1005,20 +997,7 @@ namespace ZombiesFPS.World
 
             // Depot racks and stock are now dressed in ZoneMap.Depot.cs.
 
-            // Barracks: mattresses and pillows on the bunks, with the gap between the tiers.
-            foreach (float z in new[] { -17f, -13f, -9f, 9f, 13f, 17f })
-                foreach (float x in new[] { 0f, 5f })
-                {
-                    var c = L(4, x, 0f, z);
-                    var ticking = new Color(0.33f, 0.34f, 0.28f);
-                    Deco(c + Vector3.up * 1.65f, new Vector3(1.9f, 0.1f, 0.9f), ticking, Surface.Fabric);
-                    Deco(c + new Vector3(-0.65f, 1.74f, 0f), new Vector3(0.42f, 0.08f, 0.6f), new Color(0.55f, 0.53f, 0.47f), Surface.Fabric);
-                    foreach (float s in new[] { -1f, 1f })
-                    {
-                        Deco(c + new Vector3(0f, 1.05f, s * 0.505f), new Vector3(1.85f, 0.4f, 0.01f), new Color(0.03f, 0.03f, 0.03f), Surface.Plain);
-                        Deco(c + new Vector3(0f, 0.78f, s * 0.505f), new Vector3(1.85f, 0.14f, 0.012f), ticking, Surface.Fabric);
-                    }
-                }
+            // Barracks furniture is authored in ZoneMap.Barracks.cs.
 
             // Archives: books on every stack (the bookcase models get theirs as they're placed), and bookcases or
             // filing cabinets along the records loft. The books draw from their own generator, so the rest
