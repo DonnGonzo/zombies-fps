@@ -291,6 +291,7 @@ namespace ZombiesFPS.World
             surface.BuildNavMesh();
             AddNavLinks();
             SealWallTops();
+            SealRampartPillars();
             RoofColliders();
 
             // Doors and wall-buy panels go in after the bake: closed doors carve the NavMesh instead.

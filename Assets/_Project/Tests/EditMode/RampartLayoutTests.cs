@@ -42,6 +42,7 @@ namespace ZombiesFPS.Tests
                 decor.SetValue(map, Activator.CreateInstance(decor.FieldType, true));
                 typeof(ZoneMap).GetMethod("BuildRampartRuins", flags).Invoke(map, null);
                 typeof(ZoneMap).GetMethod("RampartMakeover", flags).Invoke(map, null);
+                typeof(ZoneMap).GetMethod("SealRampartPillars", flags).Invoke(map, null);
                 Physics.SyncTransforms();
                 var origin = ZoneMap.ZoneCenter(16);
                 var corridors = new[]
@@ -52,6 +53,28 @@ namespace ZombiesFPS.Tests
                 };
                 var names = new[] { "Pump Station", "Crane Yard", "Central avenue" };
                 var colliders = root.GetComponentsInChildren<Collider>();
+                int seals = 0;
+                foreach (var collider in colliders)
+                {
+                    if (collider.name != "Rampart pillar seal") continue;
+                    seals++;
+                    Assert.IsFalse(collider.isTrigger);
+                    Assert.IsNull(collider.GetComponent<Renderer>(), "Pillar seals must be invisible");
+                    Assert.AreEqual(0, ZoneMap.ShotMask & (1 << collider.gameObject.layer), "Shots must pass through seals");
+                    Assert.Less(collider.bounds.min.y, 3.6f, "Seal must overlap the pillar below its cap");
+                    Assert.Greater(collider.bounds.max.y, 50f, "Seal must not create another reachable perch");
+                }
+                Assert.AreEqual(4, seals, "Protect both pairs of gatehouse pillars");
+                foreach (float z in new[] { 3f, 21f })
+                    foreach (float x in new[] { -5.5f, 5.5f })
+                    {
+                        bool blocked = false;
+                        // Sweep a player's body from the wall walk towards each pier cap.
+                        var ray = new Ray(origin + new Vector3(x + 2f, 4.2f, z), Vector3.left);
+                        foreach (var collider in colliders)
+                            if (collider.name == "Rampart pillar seal" && collider.Raycast(ray, out _, 2f)) blocked = true;
+                        Assert.IsTrue(blocked, "Jump onto pillar must be blocked at " + x + ", " + z);
+                    }
                 for (int i = 0; i < corridors.Length; i++)
                     foreach (var collider in colliders)
                         Assert.IsFalse(collider.bounds.Intersects(corridors[i]), names[i] + " approach blocked by " + collider.name);

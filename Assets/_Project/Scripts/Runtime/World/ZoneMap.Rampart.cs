@@ -10,6 +10,21 @@ namespace ZombiesFPS.World
         static readonly Color RampRed = new Color(0.38f, 0.07f, 0.06f);
         static Vector3 RR(float x, float y, float z) => L(Rampart, x, y, z);
 
+        // Added after the navigation bake, like the outer wall seals. These narrow columns cover
+        // the pier caps and extend well above jumping height without blocking shots or the arches.
+        void SealRampartPillars()
+        {
+            const float bottom = 0.35f, height = 60f;
+            foreach (float z in new[] { 3f, 21f })
+                foreach (float x in new[] { -5.5f, 5.5f })
+                {
+                    var seal = new GameObject("Rampart pillar seal") { layer = BlockerLayer };
+                    seal.transform.SetParent(Root, false);
+                    seal.transform.localPosition = RR(x, bottom + height / 2f, z);
+                    seal.AddComponent<BoxCollider>().size = new Vector3(1.85f, height, 2.05f);
+                }
+        }
+
         void BuildRampartRuins()
         {
             // A continuous eastern wall walk with two broad stairways and a mid-route escape ladder.
