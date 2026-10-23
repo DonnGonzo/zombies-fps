@@ -118,6 +118,36 @@
       "mask": "Assets/_Project/ImportedModels/tommy-gun/Textures/Material_90_mask.png"
     },
     {
+      "slug": "zombie-dans",
+      "key": "head",
+      "albedo": "Assets/_Project/ImportedModels/zombie-dans/Textures/head_albedo.png",
+      "normal": "Assets/_Project/ImportedModels/zombie-dans/Textures/head_Normal.png"
+    },
+    {
+      "slug": "zombie-dans",
+      "key": "top",
+      "albedo": "Assets/_Project/ImportedModels/zombie-dans/Textures/top_albedo.png",
+      "normal": "Assets/_Project/ImportedModels/zombie-dans/Textures/top_Normal.png"
+    },
+    {
+      "slug": "zombie-dans",
+      "key": "bottom",
+      "albedo": "Assets/_Project/ImportedModels/zombie-dans/Textures/bottom_albedo.png",
+      "normal": "Assets/_Project/ImportedModels/zombie-dans/Textures/bottom_Normal.png"
+    },
+    {
+      "slug": "zombie-dans",
+      "key": "bow",
+      "albedo": "Assets/_Project/ImportedModels/zombie-dans/Textures/bow_albedo.png",
+      "normal": "Assets/_Project/ImportedModels/zombie-dans/Textures/bow_Normal.png"
+    },
+    {
+      "slug": "zombie-dans",
+      "key": "hair",
+      "albedo": "Assets/_Project/ImportedModels/zombie-dans/Textures/hair_albedo.png",
+      "normal": "Assets/_Project/ImportedModels/zombie-dans/Textures/hair_Normal.png"
+    },
+    {
       "slug": "zombie-hazmat",
       "key": "HazMatSuit",
       "albedo": "Assets/_Project/ImportedModels/zombie-hazmat/Textures/HazMatSuit_albedo.png",

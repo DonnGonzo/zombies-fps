@@ -35,7 +35,7 @@ namespace ZombiesFPS.Editor
             boot.missionData = LoadOrCreate<MissionData>("MissionData");
             boot.shopData = LoadOrCreate<ShopData>("ShopData");
             var types = new System.Collections.Generic.List<ZombieData>();
-            foreach (var name in new[] { "Zombie_Runner", "Zombie_Crawler", "Zombie_Brute", "Zombie_Spitter", "Zombie_Boss" })
+            foreach (var name in new[] { "Zombie_Runner", "Zombie_Crawler", "Zombie_Brute", "Zombie_Spitter", "Zombie_Boss", "Zombie_Stalker" })
             {
                 // No fallback assets: a missing type uses the built-in values.
                 var type = AssetDatabase.LoadAssetAtPath<ZombieData>($"{DataFolder}/{name}.asset");

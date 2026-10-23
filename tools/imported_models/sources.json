@@ -180,6 +180,15 @@
     "textureLimit": 2048
   },
   {
+    "id": "zombie-dans",
+    "archive": "zombie-dans.zip",
+    "sha256": "c2ab52eb1daa37cfe8c7e6a82100719e4b3deb3d4e8b18bbb025beefd59671d7",
+    "sourceModels": [
+      "source\\Zombie dans.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
     "id": "zombie-hazmat",
     "archive": "zombie-hazmat.zip",
     "sha256": "3e117bda9b921c76e4a273a8461f99ae6444eeb2b404611aeb83f26fe54e5417",

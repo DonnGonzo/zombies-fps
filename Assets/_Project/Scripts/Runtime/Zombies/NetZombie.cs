@@ -765,6 +765,7 @@ namespace ZombiesFPS.Zombies
                 // re-dress it in ApplySpecial). Until its textures are in, the plain Mutant stands in.
                 bool hazmat = d.kind == ZombieKind.Spitter || (d.kind == ZombieKind.Walker && (_seed % 4u) == 0u);
                 UseModel(d.IsBoss ? (ZombieModel.BioMutant.Dressed ? ZombieModel.BioMutant : ZombieModel.Mutant)
+                    : d.kind == ZombieKind.Stalker && ImportedModels.Get("zombie-dans") != null ? ZombieModel.Dans
                     : hazmat && ImportedModels.Get("zombie-hazmat") != null ? ZombieModel.Hazmat : null);
                 _model.UseVariant(null);
                 // Keep the horde grounded in horror: human zombies, hazmat infected and realistic mutant bosses.
@@ -1529,7 +1530,7 @@ namespace ZombiesFPS.Zombies
             float now = Time.time;
             float speed = _speedEstimate;
             bool stunned = IsStunned;
-            bool runner = d.kind == ZombieKind.Runner;
+            bool runner = d.kind == ZombieKind.Runner || d.kind == ZombieKind.Stalker;
 
             if (_isSerpent)
             {

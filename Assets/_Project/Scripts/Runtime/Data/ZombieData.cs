@@ -18,13 +18,15 @@ namespace ZombiesFPS.Data
         Brute,
         Spitter,
         Boss,
+        // Appended after Boss: the order is the network id.
+        Stalker,
     }
 
     /// <summary>One zombie type. Health is not here: it comes from RoundData so every type scales the same way.</summary>
     [CreateAssetMenu(menuName = "Zombies FPS/Zombie Data", fileName = "Zombie_New")]
     public class ZombieData : ScriptableObject
     {
-        public const int KindCount = 6;
+        public const int KindCount = 7;
 
         public ZombieKind kind = ZombieKind.Walker;
         public string displayName = "Walker";
@@ -160,6 +162,17 @@ namespace ZombiesFPS.Data
                     z.bodyScale = new Vector3(1.1f, 1f, 1.1f);
                     z.skinTint = new Color(0.8f, 1.15f, 0.7f); z.clothColor = new Color(0.2f, 0.3f, 0.12f);
                     z.pointsPerKill = 100;
+                    break;
+                case ZombieKind.Stalker:
+                    // The Dans zombie: lean and quick, a little tougher than a runner, and her grab drags you down.
+                    z.healthMultiplier = 0.9f;
+                    z.walkSpeed = 3f; z.jogSpeed = 4.8f; z.sprintSpeed = 6.2f;
+                    z.damage = 30f; z.attackWindup = 0.32f; z.attackRecovery = 0.45f;
+                    z.slowOnHit = 0.6f; z.slowTime = 1.5f;
+                    z.firstRound = 15; z.spawnWeight = 0.18f; z.rampRounds = 10; z.maxAlive = 6;
+                    z.bodyScale = new Vector3(0.85f, 0.97f, 0.85f);
+                    z.skinTint = new Color(1.05f, 0.95f, 0.95f); z.clothColor = new Color(0.4f, 0.36f, 0.34f);
+                    z.pointsPerKill = 90; z.pointsPerHeadshotKill = 140;
                     break;
                 case ZombieKind.Boss:
                     z.displayName = "Warden";

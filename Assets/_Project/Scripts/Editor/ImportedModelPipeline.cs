@@ -25,6 +25,8 @@ namespace ZombiesFPS.Editor
                 if (job == "inspect") Inspect();
                 if (job == "build") Build();
                 if (job == "october") Build(true);
+                // "build <slug>": rebuild one model's prefab only.
+                if (job.StartsWith("build ")) Build(only: job.Substring(6).Trim());
                 if (job == "clips") ReportClips();
                 if (job == "poses") InspectPoses();
                 if (job == "tests") ImportedModelValidation.RunTests();
@@ -94,7 +96,7 @@ namespace ZombiesFPS.Editor
         [MenuItem("Zombies FPS/Imported Models/Build prefabs and previews")]
         public static void BuildFromMenu() => Build();
 
-        public static void Build(bool octoberOnly = false)
+        public static void Build(bool octoberOnly = false, string only = null)
         {
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             var sets = JsonUtility.FromJson<TextureManifest>(File.ReadAllText(Source + "/materials.json")).materials;
@@ -106,6 +108,7 @@ namespace ZombiesFPS.Editor
             {
                 string slug = Path.GetFileName(Path.GetDirectoryName(path));
                 if (octoberOnly && !OctoberModels.Contains(slug)) continue;
+                if (only != null && slug != only) continue;
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (asset == null) continue;
                 var root = new GameObject(slug);
@@ -126,7 +129,7 @@ namespace ZombiesFPS.Editor
                 }
                 model.transform.localRotation = Orientation(slug) * model.transform.localRotation;
                 bool nativeAnimation = OctoberModels.Contains(slug) && AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Any(c => !c.name.StartsWith("__preview__"));
-                bool animated = slug == "zombie-hazmat";
+                bool animated = Rigged.Contains(slug);
                 try
                 {
                     foreach (var t in model.GetComponentsInChildren<Transform>().Reverse())
@@ -161,8 +164,8 @@ namespace ZombiesFPS.Editor
                         root = model;
                         root.name = slug;
                         MergeSkin(root, output + "/" + slug + "_Skin.asset");
-                        Directory.CreateDirectory(output + "/HazmatAnimations");
-                        foreach (var clip in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview__")))
+                        if (slug == "zombie-hazmat") Directory.CreateDirectory(output + "/HazmatAnimations");
+                        foreach (var clip in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Where(c => slug == "zombie-hazmat" && !c.name.StartsWith("__preview__")))
                         {
                             string clipPath = output + "/HazmatAnimations/" + clip.name + ".anim";
                             var copy = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
@@ -184,6 +187,8 @@ namespace ZombiesFPS.Editor
             File.WriteAllText("Temp/model-import/built.txt", report.ToString());
         }
 
+        // Skinned characters worn over the zombie rig: the prefab keeps the imported skeleton as it is.
+        static readonly HashSet<string> Rigged = new HashSet<string> { "zombie-hazmat", "zombie-dans" };
         static readonly HashSet<string> OctoberModels = new HashSet<string> { "a-slot-machine", "animated-oak-trees", "gambling-table", "geometrynodes-scifi-sphere", "mp5-gun", "sci-fi-capsule", "stylized-old-mage-animated-character", "wizard-spell" };
         static void NativeAnimation(GameObject model, string source, string output, string slug)
         {
@@ -253,7 +258,7 @@ namespace ZombiesFPS.Editor
                 mat.SetFloat("_Metallic", 0.5f);
                 if (key == "emission") { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", new Color(0.1f, 1f, 2f)); }
             }
-            if (key == "foliage" || slug == "wizard-spell" || key == "FX1" || key.StartsWith("Hologram") || key == "Halo")
+            if (key == "foliage" || slug == "wizard-spell" || key == "FX1" || key.StartsWith("Hologram") || key == "Halo" || slug == "zombie-dans" && key == "hair")
             {
                 mat.SetFloat("_Mode", 1); mat.SetInt("_SrcBlend", 1); mat.SetInt("_DstBlend", 0); mat.SetInt("_ZWrite", 1);
                 mat.EnableKeyword("_ALPHATEST_ON"); mat.SetFloat("_Cutoff", 0.25f); mat.renderQueue = 2450;
@@ -414,7 +419,7 @@ namespace ZombiesFPS.Editor
                     materials.Add(r.sharedMaterials[i]);
                 }
             }
-            var combined = new Mesh { name = "Hazmat combined skin", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+            var combined = new Mesh { name = root.name + " combined skin", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
             combined.SetVertices(vertices); combined.SetNormals(normals); combined.SetUVs(0, uv);
             combined.boneWeights = weights.ToArray(); combined.bindposes = poses.ToArray();
             combined.subMeshCount = triangles.Count;
@@ -441,13 +446,14 @@ namespace ZombiesFPS.Editor
                 combined = existing;
             }
             if (combined.vertexCount != vertices.Count || combined.boneWeights.Length != vertices.Count)
-                throw new InvalidOperationException("Hazmat mesh lost its vertices or skin weights during generation.");
+                throw new InvalidOperationException(root.name + " mesh lost its vertices or skin weights during generation.");
             combined.UploadMeshData(false);
             EditorUtility.SetDirty(combined);
             foreach (var r in renderers) UnityEngine.Object.DestroyImmediate(r);
             var renderer = root.AddComponent<SkinnedMeshRenderer>();
             renderer.sharedMesh = combined; renderer.bones = bones.ToArray(); renderer.sharedMaterials = materials.ToArray();
-            renderer.rootBone = bones.FirstOrDefault(t => t.name.EndsWith(":Hips"));
+            // Mixamo's hips, or Character Creator's.
+            renderer.rootBone = bones.FirstOrDefault(t => t.name.EndsWith(":Hips") || t.name == "CC_Base_Hip");
             renderer.localBounds = new Bounds(Vector3.up, new Vector3(3f, 3f, 3f));
             renderer.updateWhenOffscreen = true;
         }
@@ -471,7 +477,7 @@ namespace ZombiesFPS.Editor
                     foreach (var r in rs) report.AppendLine("  " + r.name + " materials=" + string.Join(",", r.sharedMaterials.Select(m => m == null ? "NULL" : m.name)));
                     foreach (var c in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>())
                         report.AppendLine("  CLIP " + c.name + " duration=" + c.length + " frames=" + c.frameRate);
-                    if (path.Contains("hazmat")) foreach (var t in go.GetComponentsInChildren<Transform>()) report.AppendLine("  BONE " + t.name);
+                    if (path.Contains("hazmat") || path.Contains("zombie-dans")) foreach (var t in go.GetComponentsInChildren<Transform>()) report.AppendLine("  BONE " + t.name);
                 }
                 finally { UnityEngine.Object.DestroyImmediate(go); }
             }

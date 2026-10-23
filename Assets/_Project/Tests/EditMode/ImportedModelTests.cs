@@ -30,6 +30,7 @@ namespace ZombiesFPS.Tests
         [TestCase("sci-fi-capsule")]
         [TestCase("stylized-old-mage-animated-character")]
         [TestCase("wizard-spell")]
+        [TestCase("zombie-dans")]
         [TestCase("zombie-hazmat")]
         [TestCase("zombie-pickup-truck")]
         public void AllSuppliedPacksHaveUsableTexturedPrefabs(string id)
@@ -108,19 +109,24 @@ namespace ZombiesFPS.Tests
         }
 
         [Test]
-        public void HazmatCombatRigCanAnimateAndDieWithTexturedSkin()
+        public void HazmatCombatRigCanAnimateAndDieWithTexturedSkin() => WornZombieAnimatesAndDies(ZombiesFPS.Zombies.ZombieModel.Hazmat, 2);
+
+        [Test]
+        public void DansStalkerRigCanAnimateAndDieWithTexturedSkin() => WornZombieAnimatesAndDies(ZombiesFPS.Zombies.ZombieModel.Dans, 5);
+
+        static void WornZombieAnimatesAndDies(ZombiesFPS.Zombies.ZombieModel.Kit kit, int materials)
         {
-            var parent = new GameObject("Hazmat combat smoke test");
+            var parent = new GameObject("Worn zombie combat smoke test");
             try
             {
-                var model = ZombiesFPS.Zombies.ZombieModel.Create(parent.transform, 1.8f, ZombiesFPS.Zombies.ZombieModel.Hazmat);
+                var model = ZombiesFPS.Zombies.ZombieModel.Create(parent.transform, 1.8f, kit);
                 Assert.IsNotNull(model);
                 model.UseSkin(null, 0);
                 model.ResetLife(42);
                 model.Animate(0.016f, 1f, false, 0f, 1f, 0, 0f, false);
                 var visible = parent.GetComponentsInChildren<SkinnedMeshRenderer>().Where(r => r.enabled).ToArray();
                 Assert.AreEqual(1, visible.Length);
-                Assert.AreEqual(2, visible[0].sharedMaterials.Length);
+                Assert.AreEqual(materials, visible[0].sharedMaterials.Length);
                 Assert.IsTrue(visible[0].sharedMaterials.All(m => m.mainTexture != null));
                 var baked = new Mesh();
                 try
@@ -131,7 +137,8 @@ namespace ZombiesFPS.Tests
                     Assert.IsTrue(source.boneWeights.All(w => w.weight0 + w.weight1 + w.weight2 + w.weight3 > 0.99f), "Unweighted vertices");
                     Assert.IsTrue(source.bindposes.All(m => Mathf.Abs(m.determinant) > 1e-12f), "Singular bind poses");
                     Assert.Greater(visible[0].transform.lossyScale.y, 0.0001f, "Skin scale");
-                    visible[0].BakeMesh(baked);
+                    // Unscaled, in the renderer's own space: the size and centre below put its scale back exactly once.
+                    visible[0].BakeMesh(baked, true);
                     baked.RecalculateBounds();
                     var size = Vector3.Scale(baked.bounds.size, visible[0].transform.lossyScale);
                     Assert.That(size.y, Is.InRange(1f, 2.5f), "Deformed skin must remain human-sized: " + size);

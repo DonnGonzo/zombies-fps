@@ -431,6 +431,7 @@ namespace ZombiesFPS.UI
                         ZombieKind.Crawler => "Crawlers: low to the ground, and they go for your legs.",
                         ZombieKind.Brute => "Brutes: armoured bodies. Aim for the head.",
                         ZombieKind.Spitter => "Spitters: they lob acid where you stand. Keep moving.",
+                        ZombieKind.Stalker => "Stalkers: fast, and their grab slows you. Don't let them close.",
                         _ => $"{type.displayName}s are coming.",
                     };
             return null;

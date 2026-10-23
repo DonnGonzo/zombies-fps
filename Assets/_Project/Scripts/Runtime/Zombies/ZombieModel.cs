@@ -88,6 +88,10 @@ namespace ZombiesFPS.Zombies
         public static readonly Kit Hazmat = new Kit("Zombies/Character", "Zombies/Animations/", Zombie.Files,
             undead: false, skinFolder: "ImportedModels/zombie-hazmat");
 
+        /// <summary>The supplied Dans zombie (a Character Creator 4 rig) on the same clips: the Stalker.</summary>
+        public static readonly Kit Dans = new Kit("Zombies/Character", "Zombies/Animations/", Zombie.Files,
+            undead: false, skinFolder: "ImportedModels/zombie-dans");
+
         /// <summary>Warrok, worn over the Mutant playing its clips: General Ashgrave.</summary>
         public static readonly Kit Warrok = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, skinFolder: "Creatures/Warrok");
 
@@ -207,7 +211,8 @@ namespace ZombiesFPS.Zombies
         static GameObject FindCharacter(string folder)
         {
             foreach (var go in Resources.LoadAll<GameObject>(folder))
-                if (go.transform.parent == null && go.GetComponentInChildren<SkinnedMeshRenderer>(true) != null && FindBone(go.transform, "Head") != null)
+                if (go.transform.parent == null && go.GetComponentInChildren<SkinnedMeshRenderer>(true) != null
+                    && (FindBone(go.transform, "Head") != null || FindBone(go.transform, "CC_Base_Head") != null))
                     return go;
             return null;
         }
@@ -804,7 +809,16 @@ namespace ZombiesFPS.Zombies
             var shared = skin.Renderer.sharedMaterials;
             _worn = new Material[shared.Length];
             for (int m = 0; m < shared.Length; m++)
+            {
                 _worn[m] = shared[m] != null ? OwnSkin(shared[m], _kit.SkinFolder + "/Textures/", null) : Greybox.Lit(Color.white);
+                // Hair cards keep their cutout.
+                if (shared[m] != null && shared[m].IsKeywordEnabled("_ALPHATEST_ON"))
+                {
+                    var mat = _worn[m];
+                    mat.SetFloat("_Mode", 1); mat.SetInt("_SrcBlend", 1); mat.SetInt("_DstBlend", 0); mat.SetInt("_ZWrite", 1);
+                    mat.EnableKeyword("_ALPHATEST_ON"); mat.SetFloat("_Cutoff", shared[m].GetFloat("_Cutoff")); mat.renderQueue = 2450;
+                }
+            }
             return _worn;
         }
     }

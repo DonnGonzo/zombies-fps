@@ -18,6 +18,7 @@ SETS = {
  'low-poly-9mm-hand-gun': {'default': ['1K_HandgunTXTR']},
  'submachine-gun': {'default': ['Tec_9_low_lambert1_BaseColor','Tec_9_sketchfab_normal','Tec_9_low_lambert1_Metallic','Tec_9_low_lambert1_Roughness']},
  'tommy-gun': {key:[prefix+'_BaseColor',prefix+'_Normal',prefix+'_Metallic',prefix+'_Roughness'] for key,prefix in [('Material #26','xport500_Material__26'),('Material #31','xport500_Material__31'),('Material #90','bullet_low_Material__90')]},
+ 'zombie-dans': {key:[key+'_Diffuse',key+'_Normal'] for key in ['head','top','bottom','bow','hair']},
  'zombie-hazmat': {'HazMatSuit':['HazMatSuit_BaseMap','HazMatSuit_Normal','HazMatMetallic','HazMatRoughness','HazMatAO'],'ZombieHead':['ZombieHead_BaseMap','HeadNorm',None,'ZombieHead_Roughness','ZombieHead_AO']},
  'zombie-pickup-truck': {'02- Default':['Zombie_Pickup_Interior_Diffuse.tga'],'03 - Default':['Zombie_Pickup_Chassis.tga'],'13 - Default':['Zombie_Pickup_Mod.tga']},
 }
@@ -47,6 +48,10 @@ def main():
                 gloss=Image.open(folder/'Bench_2_Glossiness.png').convert('L')
                 zero=Image.new('L',gloss.size,0)
                 maps['mask']=Image.merge('RGBA',(zero,zero,zero,gloss))
+            if slug=='zombie-dans' and key=='hair':
+                # Character Creator ships hair coverage as its own map: it becomes the albedo's alpha (cutout).
+                opacity=Image.open(folder/'hair_Opacity.png').convert('L').resize(maps['albedo'].size)
+                maps['albedo']=Image.merge('RGBA',(*maps['albedo'].convert('RGB').split(),opacity))
             entry={'slug':slug,'key':key}
             for kind in ['albedo','normal','mask','ao','emission']:
                 if kind not in maps: continue

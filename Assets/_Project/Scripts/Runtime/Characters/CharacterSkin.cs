@@ -57,6 +57,22 @@ namespace ZombiesFPS.CharacterModels
             "RightHandPinky1", "RightHandPinky2", "RightHandPinky3",
         };
 
+        // Character Creator 4 ("CC_Base_"): its Hip carries the Waist (spine) and, through the Pelvis, the thighs.
+        static readonly string[] CCNames =
+        {
+            "CC_Base_Hip", "CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02", "CC_Base_NeckTwist01", "CC_Base_Head",
+            "CC_Base_L_Clavicle", "CC_Base_L_Upperarm", "CC_Base_L_Forearm", "CC_Base_L_Hand",
+            "CC_Base_R_Clavicle", "CC_Base_R_Upperarm", "CC_Base_R_Forearm", "CC_Base_R_Hand",
+            "CC_Base_L_Thigh", "CC_Base_L_Calf", "CC_Base_L_Foot", "CC_Base_L_ToeBase",
+            "CC_Base_R_Thigh", "CC_Base_R_Calf", "CC_Base_R_Foot", "CC_Base_R_ToeBase",
+            "CC_Base_L_Thumb1", "CC_Base_L_Thumb2", "CC_Base_L_Thumb3", "CC_Base_L_Index1", "CC_Base_L_Index2", "CC_Base_L_Index3",
+            "CC_Base_L_Mid1", "CC_Base_L_Mid2", "CC_Base_L_Mid3", "CC_Base_L_Ring1", "CC_Base_L_Ring2", "CC_Base_L_Ring3",
+            "CC_Base_L_Pinky1", "CC_Base_L_Pinky2", "CC_Base_L_Pinky3",
+            "CC_Base_R_Thumb1", "CC_Base_R_Thumb2", "CC_Base_R_Thumb3", "CC_Base_R_Index1", "CC_Base_R_Index2", "CC_Base_R_Index3",
+            "CC_Base_R_Mid1", "CC_Base_R_Mid2", "CC_Base_R_Mid3", "CC_Base_R_Ring1", "CC_Base_R_Ring2", "CC_Base_R_Ring3",
+            "CC_Base_R_Pinky1", "CC_Base_R_Pinky2", "CC_Base_R_Pinky3",
+        };
+
         sealed class Data
         {
             public string[] Names;
@@ -127,6 +143,9 @@ namespace ZombiesFPS.CharacterModels
             skin.Parts = FindMixamo(model.transform);
             // Unreal-style skeletons (pelvis, spine_01, ...) too, such as the Biomechanical Mutant.
             if (skin.Parts[(int)Part.Hips] == null) skin.Parts = FindUnreal(model.transform);
+            // And Character Creator ones, such as the Dans zombie.
+            bool cc = false;
+            if (skin.Parts[(int)Part.Hips] == null) { skin.Parts = FindCC(model.transform); cc = true; }
             if (skin.Renderer == null || skin.Hips == null || skin.Head == null)
             {
                 Destroy(model);
@@ -141,6 +160,12 @@ namespace ZombiesFPS.CharacterModels
                 if (t.name.EndsWith("HeadTop_End")) { top = t; break; }
             var head = skin.Head;
             var topPos = top != null ? top.position : head.position + model.transform.up * (head.position - skin.Hips.position).magnitude * 0.35f;
+            // Character Creator has no head-top bone; its merged mesh (in the model's own space) reaches the crown.
+            if (top == null && cc && skin.Renderer.transform == model.transform && skin.Renderer.sharedMesh != null)
+            {
+                var headLocal = model.transform.InverseTransformPoint(head.position);
+                topPos = model.transform.TransformPoint(new Vector3(headLocal.x, skin.Renderer.sharedMesh.bounds.max.y, headLocal.z));
+            }
             skin.Height = model.transform.InverseTransformPoint(topPos).y;
             var center = Vector3.Lerp(head.position, topPos, 0.45f) + model.transform.TransformVector(new Vector3(0f, 0f, 0.02f * skin.Height));
             skin.HeadCenterLocal = head.InverseTransformPoint(center);
@@ -339,6 +364,17 @@ namespace ZombiesFPS.CharacterModels
             for (int p = 0; p < PartCount; p++)
                 foreach (var t in all)
                     if (string.Equals(t.name, UnrealNames[p], System.StringComparison.OrdinalIgnoreCase)) { parts[p] = t; break; }
+            return parts;
+        }
+
+        /// <summary>A Character Creator skeleton's parts under <paramref name="root"/>.</summary>
+        public static Transform[] FindCC(Transform root)
+        {
+            var parts = new Transform[PartCount];
+            var all = root.GetComponentsInChildren<Transform>(true);
+            for (int p = 0; p < PartCount; p++)
+                foreach (var t in all)
+                    if (t.name == CCNames[p]) { parts[p] = t; break; }
             return parts;
         }
 

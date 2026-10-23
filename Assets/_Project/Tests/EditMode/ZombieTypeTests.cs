@@ -9,7 +9,7 @@ namespace ZombiesFPS.Tests
         [Test]
         public void Types_ArriveOnTheirRounds()
         {
-            var expected = new[] { (ZombieKind.Runner, 8), (ZombieKind.Crawler, 12), (ZombieKind.Brute, 20), (ZombieKind.Spitter, 30) };
+            var expected = new[] { (ZombieKind.Runner, 8), (ZombieKind.Crawler, 12), (ZombieKind.Brute, 20), (ZombieKind.Spitter, 30), (ZombieKind.Stalker, 15) };
             foreach (var (kind, first) in expected)
             {
                 var data = ZombieData.CreateDefault(kind);
