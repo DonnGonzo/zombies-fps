@@ -38,6 +38,7 @@ namespace ZombiesFPS.Weapons
             { "Service 9mm", ("harker9", 1f, false) },
             { "TEC-9", ("sable9", 1f, false) },
             { "Tommy Gun", ("sable9", 1f, false) },
+            { "MP5", ("sable9", 1f, false) },
         };
 
         static readonly Dictionary<string, string> ImportedGuns = new Dictionary<string, string>
@@ -45,6 +46,7 @@ namespace ZombiesFPS.Weapons
             ["Rook-9 Carbine"] = "gun-m4a1", ["Hatchet .44"] = "desert-eagle-gun",
             ["Wren-7 SMG"] = "gun-rhino-smg", ["Talon LMG"] = "heavy-pulse-machine-gun",
             ["Service 9mm"] = "low-poly-9mm-hand-gun", ["TEC-9"] = "submachine-gun", ["Tommy Gun"] = "tommy-gun",
+            ["MP5"] = "mp5-gun",
         };
         static GameObject ImportedGun(GunData data) => data != null && ImportedGuns.TryGetValue(data.displayName, out string id) ? ImportedModels.Get(id) : null;
         static float BoreBelowSight(string name) => name switch

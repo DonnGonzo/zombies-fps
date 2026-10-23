@@ -59,6 +59,7 @@ namespace ZombiesFPS.Editor
                 (zone: 12, build: "BuildGaol", dress: "GaolMakeover", eye: new Vector3(-0.5f,2f,-0.5f), target: new Vector3(-5f,1.2f,-6f)),
                 (zone: 2, build: "BuildGarage", dress: "GarageMakeover", eye: new Vector3(0f,2f,-12f), target: new Vector3(-8f,1.7f,-6f)),
                 (zone: 6, build: "BuildLoadingDock", dress: "LoadingDockMakeover", eye: new Vector3(1f,2.3f,7f), target: new Vector3(-6.5f,1.6f,-1f)),
+                (zone: 1, build: "BuildDepot", dress: "DepotMakeover", eye: new Vector3(-6f,3.5f,3f), target: new Vector3(-7f,0.5f,-11f)),
             })
             {
                 var root = new GameObject("Review " + room.zone);
@@ -87,6 +88,7 @@ namespace ZombiesFPS.Editor
                     typeof(ZoneMap).GetMethod(room.build, flags).Invoke(map, null);
                     if (room.dress.Length > 0) typeof(ZoneMap).GetMethod(room.dress, flags).Invoke(map, null);
                     if (room.zone == 3) typeof(ZoneMap).GetMethod("ChapelWindows", flags).Invoke(map, null);
+                    if (room.zone == 1) typeof(ZoneMap).GetMethod("BuildCasinoAndResearchProps", flags).Invoke(map, null);
                     field.FieldType.GetMethod("Build").Invoke(decor, new object[] { root.transform });
                     preview.AddSingleGO(root);
                     preview.camera.transform.position = ZoneMap.ZoneCenter(room.zone) + room.eye;

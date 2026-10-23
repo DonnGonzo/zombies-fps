@@ -233,7 +233,7 @@ namespace ZombiesFPS.Net
 
             var view = Greybox.Empty("Weapon", camGo.transform, Vector3.zero).gameObject.AddComponent<WeaponView>();
             _look.Init(_pivot, camGo.transform);
-            _gun.Init(GameConfig.Gun, cam, _look, _motor, () => IsAlive, gunAudio, _uiAudio, view);
+            _gun.Init(GameConfig.Gun, cam, _look, _motor, () => IsAlive && !CasinoOpen, gunAudio, _uiAudio, view);
             view.Init(_gun, _motor, _look);
             _gun.Fired += (origin, dir, primary) => ShootRpc(origin, dir, primary);
             ResetLoadoutAmmo();
@@ -618,18 +618,19 @@ namespace ZombiesFPS.Net
             }
             if (canAct)
             {
-                int want = picking || ShopOpen || KeypadOpen ? -1 : GameInput.SlotPressed;
-                if (GameInput.SwitchWeaponPressed) want = 1 - ActiveSlot.Value;
+                int want = picking || ShopOpen || KeypadOpen || CasinoOpen ? -1 : GameInput.SlotPressed;
+                if (!CasinoOpen && GameInput.SwitchWeaponPressed) want = 1 - ActiveSlot.Value;
                 if (want >= 0 && want != ActiveSlot.Value && GunInSlot(want) >= 0) EquipSlot(want, saveCurrent: true);
             }
 
-            OwnerEquipmentTick(canAct && !picking && !ShopOpen && !KeypadOpen);
+            OwnerEquipmentTick(canAct && !picking && !ShopOpen && !KeypadOpen && !CasinoOpen);
 
             bool nearDowned = FindReviveTarget(transform.position) != null;
             FocusedBuyable = canAct && !nearDowned ? FindBuyable() : null;
             OwnerShopTick(canAct, picking);
             OwnerKeypadTick(canAct, picking);
-            if (FocusedBuyable != null && FocusedBuyable.Kind != BuyableKind.Shop && FocusedBuyable.Kind != BuyableKind.PowerPanel && GameInput.InteractPressed)
+            OwnerCasinoTick(canAct, picking);
+            if (FocusedBuyable != null && FocusedBuyable.Kind != BuyableKind.Casino && FocusedBuyable.Kind != BuyableKind.Shop && FocusedBuyable.Kind != BuyableKind.PowerPanel && GameInput.InteractPressed)
                 BuyRpc(System.Array.IndexOf(GameConfig.Map.Buyables, FocusedBuyable));
 
             bool reviveHeld = IsAlive && GameInput.InteractHeld && _look.CursorLocked;
@@ -642,6 +643,7 @@ namespace ZombiesFPS.Net
 
         void ServerTick(float dt)
         {
+            ServerCasinoTick();
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.IsGameOver) return;
 

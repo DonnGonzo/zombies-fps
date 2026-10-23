@@ -53,6 +53,8 @@ namespace ZombiesFPS.World
         /// </summary>
         public static GameObject WatchmanModel;
         public const string WatchmanModelPath = "Characters/Brannock";
+        /// <summary>The supplied animated old mage (ImportedModels), who stands in for Brannock when it's in the project.</summary>
+        public const string MageModel = "stylized-old-mage-animated-character";
 
         Vector3 _watchmanAt, _watchmanFacing = Vector3.back;
         float _watchmanSpeed;
@@ -87,8 +89,21 @@ namespace ZombiesFPS.World
             _column = column.transform;
 
             _watchman = Figure.Watchman(transform, ZoneMap.WatchmanSpot);
-            var model = WatchmanModel != null ? WatchmanModel : Resources.Load<GameObject>(WatchmanModelPath);
-            if (model != null) _watchman.UseModel(model);
+            // The supplied old mage first; then the built Brannock, then the packed one.
+            var model = ImportedModels.Get(MageModel);
+            if (model == null) model = WatchmanModel;
+            if (model == null) model = Resources.Load<GameObject>(WatchmanModelPath);
+            if (model != null)
+            {
+                _watchman.UseModel(model);
+                var spell = ImportedModels.Get("wizard-spell");
+                if (spell != null)
+                {
+                    var ring = Object.Instantiate(spell, _watchman.Root, false);
+                    ring.transform.localScale = Vector3.one * 2f;
+                    ring.transform.localPosition = Vector3.up * 0.025f;
+                }
+            }
             _watchmanAt = ZoneMap.WatchmanSpot;
 
             _stonesSpark = Spark("Stones Spark", ZoneMap.StonesCenter + Vector3.up * 1.0f, ZoneMap.ManaColor);
@@ -448,6 +463,12 @@ namespace ZombiesFPS.World
                 go.transform.localPosition = Vector3.zero;
                 go.transform.localRotation = Quaternion.identity;
                 foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
+                if (prefab.name == MageModel)
+                {
+                    var rs = go.GetComponentsInChildren<Renderer>(); var bounds = rs[0].bounds;
+                    foreach (var r in rs) bounds.Encapsulate(r.bounds);
+                    go.transform.localScale *= 1.8f / Mathf.Max(0.1f, bounds.size.y);
+                }
                 _model = go.transform;
                 _animator = go.GetComponentInChildren<Animator>();
                 if (_animator != null)

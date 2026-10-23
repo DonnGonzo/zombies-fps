@@ -767,6 +767,12 @@ namespace ZombiesFPS.UI
 
             var b = _player.FocusedBuyable;
             if (b == null) return;
+            if (b.Kind == BuyableKind.Casino)
+            {
+                if (_player.CasinoOpen) DrawCasino(w, h, u, b.Index);
+                else Ui.Prompt(w / 2f, y, K(GameAction.Interact), b.Index == ZoneMap.BlackjackStation ? "Play blackjack" : "Play slots", Ui.Body, Ui.Amber, u);
+                return;
+            }
             if (b.Kind == BuyableKind.Shop)
             {
                 if (_player.ShopOpen) DrawShop(w, h, u);
@@ -1198,6 +1204,47 @@ namespace ZombiesFPS.UI
         }
 
         // ---------------------------------------------------------------- shop and power-up cards
+
+        /// <summary>A slot machine or the blackjack table: the hand or reels, the bets and the house rules.</summary>
+        void DrawCasino(float w, float h, float u, int station)
+        {
+            bool blackjack = station == ZoneMap.BlackjackStation;
+            var v = _player.Casino;
+            bool current = v.station == station;
+            float width = 780 * u, x = (w-width)/2, top = h*0.16f;
+            Ui.RoundRect(new Rect(x, top, width, 600*u), Ui.Panel);
+            void Line(float y, string text, Color color) => Ui.Label(new Rect(x+24*u, top+y*u, width-48*u, 34*u), text, Ui.Body, color, TextAnchor.MiddleLeft);
+            Line(18, blackjack ? "THE WATCH'S TABLE  /  BLACKJACK" : "LAST CHANCE  /  SLOTS", Ui.Amber);
+            Line(58, $"Balance: {_player.Points.Value:N0} points", Ui.Text);
+            if (blackjack)
+            {
+                Line(106, "DEALER   " + (current ? v.dealer : "Waiting for your bet"), Ui.Muted);
+                if (current) for (int i=0; i<v.hands.Length; i++) Line(156+i*42, v.hands[i], i==v.active && v.playing ? Ui.Amber : Ui.Text);
+                Line(350, current ? v.result : "Choose a wager to deal.", Ui.Text);
+                Line(396, current && v.playing ? "[1] HIT    [2] STAND" + (v.doubleAllowed ? "    [3] DOUBLE" : "") + (v.splitAllowed ? "    [4] SPLIT" : "") : "BET:  [1] 100    [2] 250    [3] 500    [4] 1,000", Ui.Amber);
+                Line(442, "6 decks • Dealer stands on all 17s • Blackjack pays 3:2", Ui.Muted);
+                Line(476, "Win 1:1 • Push returns bet • Double on any first two cards", Ui.Muted);
+                Line(510, "Up to 4 split hands • Split aces: one card • No insurance", Ui.Muted);
+            }
+            else
+            {
+                for (int i=0; i<3; i++)
+                {
+                    bool rolling = current && v.reels.Length==3 && Time.unscaledTime < _player.CasinoRevealAt - (2-i)*0.35f;
+                    string symbol = rolling ? CasinoRules.Symbols[((int)(Time.unscaledTime*17)+i*3)%6] : current && v.reels.Length==3 ? CasinoRules.Symbols[v.reels[i]] : "—";
+                    var r = new Rect(x+(24+i*246)*u, top+128*u, 232*u, 112*u);
+                    Ui.RoundRect(r, Ui.PanelLight); Ui.Label(r, symbol, Ui.Bold, Ui.Amber, TextAnchor.MiddleCenter);
+                }
+                Line(272, Time.unscaledTime < _player.CasinoRevealAt ? "Spinning..." : current ? v.result : "Choose a wager to spin.", Ui.Text);
+                Line(328, "BET:  [1] 100    [2] 250    [3] 500    [4] 1,000", Ui.Amber);
+                Line(380, "3 alike: CHERRY 5x • LEMON 10x • BELL 20x • BAR 40x", Ui.Muted);
+                Line(414, "DIAMOND 100x • SEVEN 500x • Exactly 2 CHERRIES 1x", Ui.Muted);
+                Line(448, "Payouts include your bet. Every other result loses the bet.", Ui.Muted);
+                Line(482, "Symbol odds: 40% / 25% / 18% / 10% / 5% / 2% per reel", Ui.Muted);
+                Line(516, "Long-run return: 93.739% • Each reel spins independently", Ui.Muted);
+            }
+            Line(558, $"[{K(GameAction.Interact)}] LEAVE • Leaving / 60s idle stands all hands. Stay alert.", Ui.Muted);
+        }
 
         /// <summary>The spawn shop menu: attachments for the gun in hand, unlocked by level, bought with points.</summary>
         void DrawShop(float w, float h, float u)

@@ -132,8 +132,18 @@ namespace ZombiesFPS.World
                 var p = L(LabZone, s.x, 0f, s.y);
                 if (!FloorFree(p, 1f)) continue;
                 placed++;
-                Greybox.Prim(PrimitiveType.Cylinder, "Specimen Tank", Root, p + Vector3.up * 1.3f, new Vector3(1.2f, 1.3f, 1.2f), Glass, surface: Surface.Metal)
+                // The supplied sci-fi capsule where it's in the project, its glass facing the reactor.
+                var facing = ReactorBase - p;
+                float yaw = Mathf.Atan2(facing.x, facing.z) * Mathf.Rad2Deg;
+                bool capsule = AuthoredVisual("sci-fi-capsule", p, 2.5f, yaw) != null;
+                Greybox.Prim(PrimitiveType.Cylinder, "Specimen Tank", Root, p + Vector3.up * 1.3f, capsule ? new Vector3(1.5f, 1.3f, 1.5f) : new Vector3(1.2f, 1.3f, 1.2f), Glass, surface: Surface.Metal)
                     .GetComponent<Renderer>().enabled = false;
+                if (capsule)
+                {
+                    DecoPrim(PrimitiveType.Capsule, p + Vector3.up * 1.25f, new Vector3(0.32f, 0.4f, 0.24f), Quaternion.Euler(12f, 30f, 8f), new Color(0.32f, 0.36f, 0.3f), Surface.Skin);
+                    TankLight(p);
+                    continue;
+                }
                 DecoPrim(PrimitiveType.Cylinder, p + Vector3.up * 0.2f, new Vector3(1.35f, 0.2f, 1.35f), Quaternion.identity, CoilBase, Surface.Metal);
                 DecoPrim(PrimitiveType.Cylinder, p + Vector3.up * 2.5f, new Vector3(1.35f, 0.1f, 1.35f), Quaternion.identity, CoilBase, Surface.Metal);
                 Rod(p + Vector3.up * 2.6f, p + Vector3.up * WallHeight, 0.14f, Copper, Surface.Metal);
@@ -142,15 +152,20 @@ namespace ZombiesFPS.World
                 DecoPrim(PrimitiveType.Sphere, p + Vector3.up * 2f, Vector3.one * 0.28f, Quaternion.identity, new Color(0.32f, 0.36f, 0.3f), Surface.Skin);
                 Glow(PrimitiveType.Cylinder, p + Vector3.up * 1.35f, new Vector3(1.1f, 1.05f, 1.1f), Quaternion.identity, Fluid);
                 Glow(PrimitiveType.Cylinder, p + Vector3.up * 2.42f, new Vector3(1.1f, 0.01f, 1.1f), Quaternion.identity, new Color(0.45f, 1f, 0.6f));
-                var light = new GameObject("Tank Light").AddComponent<Light>();
-                light.transform.SetParent(Root, false);
-                light.transform.localPosition = p + Vector3.up * 1.6f;
-                light.type = LightType.Point;
-                light.color = new Color(0.35f, 1f, 0.55f);
-                light.range = 4.5f;
-                light.intensity = 1.1f;
-                light.shadows = LightShadows.None;
+                TankLight(p);
             }
+        }
+
+        void TankLight(Vector3 p)
+        {
+            var light = new GameObject("Tank Light").AddComponent<Light>();
+            light.transform.SetParent(Root, false);
+            light.transform.localPosition = p + Vector3.up * 1.6f;
+            light.type = LightType.Point;
+            light.color = new Color(0.35f, 1f, 0.55f);
+            light.range = 4.5f;
+            light.intensity = 1.1f;
+            light.shadows = LightShadows.None;
         }
 
         /// <summary>Doctor Morrow's chalkboard: sums, a sketch of the Lantern and a note to himself.</summary>

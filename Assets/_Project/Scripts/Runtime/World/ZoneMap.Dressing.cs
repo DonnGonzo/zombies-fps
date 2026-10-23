@@ -115,6 +115,7 @@ namespace ZombiesFPS.World
             Spot(RerollSpot, 2.4f);
             _keepOut.Add((MachinePosition, 3.5f));
             _keepOut.Add((ShopPosition, 3.5f));
+            CasinoKeepOuts();
             foreach (var f in _ladderFeet) _keepOut.Add((f, 1.4f));
             foreach (var p in PartSpots)
                 if (p.y < 0.5f) _keepOut.Add((p, 1.2f));

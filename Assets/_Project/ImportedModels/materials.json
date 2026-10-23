@@ -147,6 +147,468 @@
       "slug": "zombie-pickup-truck",
       "key": "13 - Default",
       "albedo": "Assets/_Project/ImportedModels/zombie-pickup-truck/Textures/13_-_Default_albedo.png"
+    },
+    {
+      "slug": "a-slot-machine",
+      "key": "default",
+      "albedo": "Assets/_Project/ImportedModels/a-slot-machine/Textures/Image_0.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "animated-oak-trees",
+      "key": "bark",
+      "albedo": "Assets/_Project/ImportedModels/animated-oak-trees/Textures/Image_0.png",
+      "normal": "Assets/_Project/ImportedModels/animated-oak-trees/Textures/bark_normal.png",
+      "emission": null
+    },
+    {
+      "slug": "animated-oak-trees",
+      "key": "foliage",
+      "albedo": "Assets/_Project/ImportedModels/animated-oak-trees/Textures/oak_color.png",
+      "normal": "Assets/_Project/ImportedModels/animated-oak-trees/Textures/oak_normal.png",
+      "emission": null
+    },
+    {
+      "slug": "gambling-table",
+      "key": "Material.004",
+      "albedo": "Assets/_Project/ImportedModels/gambling-table/Textures/hazard_table3b.png",
+      "normal": "Assets/_Project/ImportedModels/gambling-table/Textures/hazard_table3_n.png",
+      "emission": null
+    },
+    {
+      "slug": "gambling-table",
+      "key": "Material.005",
+      "albedo": "Assets/_Project/ImportedModels/gambling-table/Textures/table_bits.png",
+      "normal": "Assets/_Project/ImportedModels/gambling-table/Textures/table_bits_n.png",
+      "emission": null
+    },
+    {
+      "slug": "gambling-table",
+      "key": "Material.001",
+      "albedo": "Assets/_Project/ImportedModels/gambling-table/Textures/table_bits.png",
+      "normal": "Assets/_Project/ImportedModels/gambling-table/Textures/table_bits_n.png",
+      "emission": null
+    },
+    {
+      "slug": "gambling-table",
+      "key": "default",
+      "albedo": "Assets/_Project/ImportedModels/gambling-table/Textures/hazard_table3b.png",
+      "normal": "Assets/_Project/ImportedModels/gambling-table/Textures/hazard_table3_n.png",
+      "emission": null
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "BodyMage",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/BodyLP_Body_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/BodyLP_Body_Normal.png",
+      "emission": null
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "Cloth2",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/ClothLP_Cloth_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/ClothLP_Cloth_Normal.png",
+      "emission": null
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "FaceGrp1",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/FaceGrpLP_FaceGrp_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/FaceGrpLP_FaceGrp_Normal.png",
+      "emission": null
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "Props1",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/PropsLP_Props_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/PropsLP_Props_Normal.png",
+      "emission": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/PropsLP_Props_Emissive.png"
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "Book",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/MagicBookReady_Book_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/MagicBookReady_Book_Normal.png",
+      "emission": null
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "FX1",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/FXMage_(1).png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/FXMage_(1).png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Capsule",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Capsule_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Capsule_Normal.png",
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Capsule_Emissive.png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Supports",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Supports_BaseColor.png",
+      "normal": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Supports_Normal.png",
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Supports_Emissive.png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Glass",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Glass_BaseColor.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/Capsula_Low_Glass_Emissive.png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Hologram_1",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/hexagon_keyboard_by_hxtremechaos_d865owr-f.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/hexagon_keyboard_by_hxtremechaos_d865owr-f.png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Hologram_2",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/hexagon_keyboard_by_hxtremechaos_d865owr-f.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/hexagon_keyboard_by_hxtremechaos_d865owr-f.png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Hologram_3",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/hexagon_keyboard_by_hxtremechaos_d865owr-f.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/hexagon_keyboard_by_hxtremechaos_d865owr-f.png"
+    },
+    {
+      "slug": "sci-fi-capsule",
+      "key": "Halo",
+      "albedo": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/kisspng-light-green-white-point-halo-green.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/sci-fi-capsule/Textures/kisspng-light-green-white-point-halo-green.png"
+    },
+    {
+      "slug": "wizard-spell",
+      "key": "Material.002",
+      "albedo": "Assets/_Project/ImportedModels/wizard-spell/Textures/Image_1.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/wizard-spell/Textures/Image_1.png"
+    },
+    {
+      "slug": "wizard-spell",
+      "key": "Material.003",
+      "albedo": "Assets/_Project/ImportedModels/wizard-spell/Textures/Image_0.png",
+      "normal": null,
+      "emission": "Assets/_Project/ImportedModels/wizard-spell/Textures/Image_0.png"
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Adjustment_Back_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Adjustment_Back_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Adjustment_Back_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Bullet_Cover_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Bullet_Cover_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Bullet_Cover_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Butt_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Albedo_MP_2k.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Normal_MP_2k.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Butt_Plug_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Plug_Albedo_MP_1K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Plug_Normal_MP_1K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Butt_Stock_Gum_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Stock_Gum_Albedo_MP_1K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Stock_Gum_Normal_MP_1K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Butt_Stock_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Butt_Stock_Albedo_MP_1_5K.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Clip_Side_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clip_Side_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clip_Side_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Clip_Side_Screw_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clipper_Screw_Albedo_MP_256.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clip_Side_Screw_Normal_MP_256.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Clip_Top_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clip_Top_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clip_Top_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Clipper_Screw_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clipper_Screw_Albedo_MP_256.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clipper_Screw_Normal_MP_256.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Connection_Guns_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Connection_Guns_Albedo_MP_1K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Connection_Guns_Normal_MP_1K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Detail_Top_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Detail_Top_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Detail_Top_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Gun_Clip_End_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Clip_Top_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Clip_End_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Gun_Cylinder_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Cylinder_Albedo_MP_1K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Cylinder_Normal_MP_1K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Gun_Rail_Front_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Rail_Front_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Rail_Fron__NormalMP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Handle_Core_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Core_Albedo_MP_2k.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Core_Normal_MP_2K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Handle_Front_Jammers_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Front_Jammers_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Front_Jammers_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Handle_Front_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Front_Albedo_MP_1_5K.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Handle_Screw_Left_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Screw_Left_Albedo_MP_256.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Handle_Screw_Right_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Screw_Right_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Handle_Screw_Right_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Hanger_Side_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Hanger_Side_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Hanger_Side_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Hanger_Side_Screw_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Hanger_Side_Screw_Albedo_MP_256.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Hanger_Side_Screw_Normal_MP_256.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Magazine_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Magazine_Albedo_MP_2K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Magazine_Normal_MP_2k.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Magazine_Trigger_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Magazine_Trigger_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Magazine_Trigger_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Mid_Gun_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Mid_Gun_Albedo_MP_3K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Mid_Gun_Normal_MP_3K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Mid_Ring_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Cylinder_Albedo_MP_1K.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Muzzle_Cotter_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Muzzle_Albedo_MP_1k.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Muzzle_Cotter_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Muzzle_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Muzzle_Albedo_MP_1k.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Muzzle_Normal_MP_1K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Optic_Bottom_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Detail_Top_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Optic_Bottom_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Optic_Cylinder_Bottom_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Cylinder_Albedo_MP_1K.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Optic_Cylinder_Top_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Gun_Cylinder_Albedo_MP_1K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Optic_Cylinder_Top_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Optic_Screw_Hider_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Detail_Top_Albedo_MP_512.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Optic_Top_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Detail_Top_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Optic_Top_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Rail_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Rail_Albedo_MP_2K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Rail_Normal_MP_2K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Screw_Butt_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Screw_Butt_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Screw_Butt_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Screw_Butt_Side_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Screw_Butt_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Screw_Bitt_Side_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Screw_Side_2_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Screw_Side_2_Albedo_MP_512.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Screw_Sides_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Screw_Side_2_Albedo_MP_512.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Switch_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Switch_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Switch_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Top_Gun_End_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Top_Gun_End_Albedo_MP_1K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Top_Gun_End_Normal_MP_1K.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Trigger_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Magazine_Trigger_Albedo_MP_512.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Trigger_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Zipper_Barrel_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Zipper_Barell_Albedo_MP_1_5K.png",
+      "normal": null,
+      "emission": null
+    },
+    {
+      "slug": "mp5-gun",
+      "key": "Zipper_MP",
+      "albedo": "Assets/_Project/ImportedModels/mp5-gun/Textures/Zipper_Barell_Albedo_MP_1_5K.png",
+      "normal": "Assets/_Project/ImportedModels/mp5-gun/Textures/Zipper_Normal_MP_512.png",
+      "emission": null
+    },
+    {
+      "slug": "stylized-old-mage-animated-character",
+      "key": "20 - Default1",
+      "albedo": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/EyesTest_vertexcolor.png",
+      "normal": "Assets/_Project/ImportedModels/stylized-old-mage-animated-character/Textures/EyesTest_normal.png",
+      "emission": null
     }
   ]
 }

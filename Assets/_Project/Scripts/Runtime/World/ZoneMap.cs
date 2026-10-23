@@ -31,6 +31,8 @@ namespace ZombiesFPS.World
         PowerPanel,
         /// <summary>A note with one digit of the start-up code; Index is the note spot. Free to read.</summary>
         Note,
+        /// <summary>A slot machine or the blackjack table; Index is the station (ZoneMap.CasinoPositions).</summary>
+        Casino,
     }
 
     /// <summary>Something a player can stand at and press E to buy. Index is the door or wall-buy number.</summary>
@@ -274,6 +276,7 @@ namespace ZombiesFPS.World
             BuildPower();
             BuildBeacons();
             BuildShop();
+            BuildCasinoAndResearchProps();
             BuildStations();
             BuildBenches();
             // Everything solid is in place now, so the dressing can keep clear of it.
@@ -313,6 +316,8 @@ namespace ZombiesFPS.World
             buyables.Add(new Buyable { Kind = BuyableKind.Reactor, Index = 0, Position = ReactorBase + Vector3.up, Range = CoreDiameter / 2f + 1.6f });
             AddEggBuyables(buyables);
             AddPowerBuyables(buyables);
+            for (int i = 0; i < CasinoPositions.Length; i++)
+                buyables.Add(new Buyable { Kind = BuyableKind.Casino, Index = i, Position = CasinoPositions[i] + Vector3.up, Range = CasinoRange(i) });
             Buyables = buyables.ToArray();
 
             PlayerStart = StartPosition;
@@ -825,6 +830,8 @@ namespace ZombiesFPS.World
             obstacle.size = Vector3.one;
             obstacle.carving = true;
             Greybox.Box("Top", machine, new Vector3(0f, 2.35f, 0f), new Vector3(2.6f, 0.3f, 1.6f), new Color(0.22f, 0.2f, 0.26f), surface: Surface.Metal);
+            // The supplied hex-shell sphere turns slowly over the machine, clear of its top.
+            AuthoredVisual("geometrynodes-scifi-sphere", MachinePosition + Vector3.up * 2.75f, 1.25f);
             // Glowing slot and strips facing the room.
             Greybox.Prim(PrimitiveType.Cube, "Slot", machine, new Vector3(0f, 1.25f, -0.71f), new Vector3(1.2f, 0.25f, 0.02f), glow, collider: false, unlit: true);
             Greybox.Prim(PrimitiveType.Cube, "StripL", machine, new Vector3(-1.05f, 1.1f, -0.71f), new Vector3(0.08f, 1.8f, 0.02f), glow, collider: false, unlit: true);

@@ -302,13 +302,14 @@ namespace ZombiesFPS.World
         static WallSpot W(int zone, Side side, float line, float along) => new WallSpot(zone, side, line, along);
 
         /// <summary>Which zone each wall gun is in, in wall-buy order. PriceTable.wallGuns follows this order.</summary>
-        public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 9, 3, 7, 8, 0, 12, 4 };
+        public static readonly int[] WallBuyZones = { 0, 1, 5, 2, 4, 9, 3, 7, 8, 0, 12, 4, 6 };
         public static readonly WallSpot[] WallBuySpots =
         {
             W(0, Side.South, -22, -8), W(1, Side.South, -12, -8), W(5, Side.West, -19, 0), W(2, Side.West, -17, -6),
             W(4, Side.West, -11, 14), W(9, Side.East, 16, 8), W(3, Side.South, -21, -14), W(7, Side.West, -13, 16),
             W(8, Side.North, 15, -8),
             W(0, Side.West, -16, -12), W(12, Side.West, -16, -3), W(4, Side.East, 11, -8),
+            W(6, Side.South, -10, -9),   // MP5, Loading Dock: between the west door and the Hair Trigger machine
         };
 
         /// <summary>Perk machines in PerkKind order.</summary>

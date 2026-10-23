@@ -79,6 +79,9 @@ MonoBehaviour:
   - gun: {fileID: 11400000, guid: 05115c5bbc244edb9f9bc1d3751664c5, type: 2}
     price: 1750
     ammoPrice: 875
+  - gun: {fileID: 11400000, guid: f5ee462198e34845b85b881238a7c8fa, type: 2}
+    price: 1250
+    ammoPrice: 625
   rareGuns:
   - {fileID: 11400000, guid: c740941ac31b46d18a037b3317b9ee84, type: 2}
   - {fileID: 11400000, guid: db5ddce85ae74f5f93b2abd820a36265, type: 2}

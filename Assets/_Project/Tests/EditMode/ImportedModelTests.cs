@@ -22,6 +22,14 @@ namespace ZombiesFPS.Tests
         [TestCase("prison-cell")]
         [TestCase("submachine-gun")]
         [TestCase("tommy-gun")]
+        [TestCase("a-slot-machine")]
+        [TestCase("animated-oak-trees")]
+        [TestCase("gambling-table")]
+        [TestCase("geometrynodes-scifi-sphere")]
+        [TestCase("mp5-gun")]
+        [TestCase("sci-fi-capsule")]
+        [TestCase("stylized-old-mage-animated-character")]
+        [TestCase("wizard-spell")]
         [TestCase("zombie-hazmat")]
         [TestCase("zombie-pickup-truck")]
         public void AllSuppliedPacksHaveUsableTexturedPrefabs(string id)
@@ -41,7 +49,7 @@ namespace ZombiesFPS.Tests
                     Assert.IsNotNull(material);
                     Assert.IsNotNull(material.shader);
                     Assert.AreNotEqual("Hidden/InternalErrorShader", material.shader.name);
-                    if (id != "prison-cell") Assert.IsNotNull(material.mainTexture, id + "/" + material.name);
+                    if (id != "prison-cell" && id != "geometrynodes-scifi-sphere") Assert.IsNotNull(material.mainTexture, id + "/" + material.name);
                 }
         }
 
@@ -49,7 +57,7 @@ namespace ZombiesFPS.Tests
         public void EveryImportedGunBuildsWithCamosAttachmentsAndForwardMuzzle()
         {
             var prices = AssetDatabase.LoadAssetAtPath<PriceTable>("Assets/_Project/Data/PriceTable.asset");
-            foreach (var name in new[] { "Rook-9 Carbine", "Hatchet .44", "Wren-7 SMG", "Talon LMG", "Service 9mm", "TEC-9", "Tommy Gun" })
+            foreach (var name in new[] { "Rook-9 Carbine", "Hatchet .44", "Wren-7 SMG", "Talon LMG", "Service 9mm", "TEC-9", "Tommy Gun", "MP5" })
             {
                 var gun = prices.wallGuns.First(x => x.gun.displayName == name).gun;
                 var parent = new GameObject(name);
@@ -81,7 +89,7 @@ namespace ZombiesFPS.Tests
                 var old = legacy.BuildCatalog(prices.wallGuns[0].gun, reward);
                 var current = prices.BuildCatalog(prices.wallGuns[0].gun, reward);
                 CollectionAssert.AreEqual(old, current.Take(old.Length).ToArray());
-                Assert.AreEqual(old.Length + 3, current.Length);
+                Assert.AreEqual(old.Length + 4, current.Length);
             }
             finally { Object.DestroyImmediate(legacy); Object.DestroyImmediate(reward); }
         }

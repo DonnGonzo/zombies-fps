@@ -153,9 +153,28 @@ namespace ZombiesFPS.World
         bool KenneyModel(string name, Vector3 p, float yaw, float scale, bool shadows = true)
         {
             var model = PropModels.GetPack(KenneyKit + name, PackMaterial);
+            if (name == "tree-large" && OakTree(p, yaw, model, scale)) return true;
             if (model == null) return false;
             AddModel(model, p, Quaternion.Euler(0f, yaw, 0f), shadows, scale);
             return true;
+        }
+
+        /// <summary>Oak spread against height (the supplied model is wider than it is tall).</summary>
+        const float OakSpread = 1.31f;
+
+        /// <summary>
+        /// The supplied animated oak in place of Kenney's large tree (the shrubs stay hedges): as tall as the Kenney
+        /// tree would have been, but no more than half as wide again, so it keeps inside its bed. False without the art.
+        /// </summary>
+        bool OakTree(Vector3 p, float yaw, PropModels.Model kenney, float scale)
+        {
+            float height = scale * 1.5f;
+            if (kenney != null)
+            {
+                var size = kenney.Bounds.size * scale;
+                height = Mathf.Min(size.y, Mathf.Max(size.x, size.z) * 1.5f / OakSpread);
+            }
+            return AuthoredVisual("animated-oak-trees", p, height, yaw) != null;
         }
 
         /// <summary>A solid Kenney prop on the floor at p, if there's room: the model, or a plain box without the art.</summary>
@@ -640,6 +659,9 @@ namespace ZombiesFPS.World
                 DecoPrim(PrimitiveType.Cylinder, foot + Vector3.up * (PalmPlanterTop / 2f), new Vector3(PalmPlanterRadius * 2f, PalmPlanterTop / 2f, PalmPlanterRadius * 2f), Quaternion.identity, PlanterStone, Surface.Ashlar);
                 DecoPrim(PrimitiveType.Cylinder, foot + Vector3.up * (PalmPlanterTop - 0.04f), new Vector3(PalmPlanterRadius * 2f + 0.16f, 0.06f, PalmPlanterRadius * 2f + 0.16f), Quaternion.identity, Shade(PlanterStone, 1.1f), Surface.Ashlar);
                 DecoPrim(PrimitiveType.Cylinder, foot + Vector3.up * PalmPlanterTop, new Vector3(PalmPlanterRadius * 2f - 0.2f, 0.01f, PalmPlanterRadius * 2f - 0.2f), Quaternion.identity, Soil, Surface.Dirt);
+
+                // The supplied oak where it's in the project; otherwise a palm built from parts.
+                if (AuthoredVisual("animated-oak-trees", foot + Vector3.up * PalmPlanterTop, 4.4f, Range(rng, 0f, 360f)) != null) continue;
 
                 // The trunk leaning a little, ringed where the old fronds fell.
                 float height = Range(rng, 5f, 5.8f);

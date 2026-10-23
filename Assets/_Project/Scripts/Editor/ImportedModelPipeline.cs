@@ -24,6 +24,8 @@ namespace ZombiesFPS.Editor
             {
                 if (job == "inspect") Inspect();
                 if (job == "build") Build();
+                if (job == "october") Build(true);
+                if (job == "clips") ReportClips();
                 if (job == "poses") InspectPoses();
                 if (job == "tests") ImportedModelValidation.RunTests();
                 if (job == "review") ImportedModelValidation.Review();
@@ -69,7 +71,7 @@ namespace ZombiesFPS.Editor
         {
             ["gun-m4a1"] = 0.78f, ["desert-eagle-gun"] = 0.27f, ["gun-rhino-smg"] = 0.6f,
             ["heavy-pulse-machine-gun"] = 0.88f, ["low-poly-9mm-hand-gun"] = 0.23f,
-            ["submachine-gun"] = 0.38f, ["tommy-gun"] = 0.8f,
+            ["submachine-gun"] = 0.38f, ["tommy-gun"] = 0.8f, ["mp5-gun"] = 0.68f,
         };
         static Quaternion Orientation(string slug)
         {
@@ -89,7 +91,7 @@ namespace ZombiesFPS.Editor
         }
 
         [MenuItem("Zombies FPS/Imported Models/Build prefabs and previews")]
-        public static void Build()
+        public static void Build(bool octoberOnly = false)
         {
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             var sets = JsonUtility.FromJson<TextureManifest>(File.ReadAllText(Source + "/materials.json")).materials;
@@ -100,6 +102,7 @@ namespace ZombiesFPS.Editor
             foreach (string path in AssetDatabase.FindAssets("t:Model", new[] { Source }).Select(AssetDatabase.GUIDToAssetPath))
             {
                 string slug = Path.GetFileName(Path.GetDirectoryName(path));
+                if (octoberOnly && !OctoberModels.Contains(slug)) continue;
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (asset == null) continue;
                 var root = new GameObject(slug);
@@ -119,6 +122,7 @@ namespace ZombiesFPS.Editor
                     if (clip != null) clip.SampleAnimation(model, clip.length);
                 }
                 model.transform.localRotation = Orientation(slug) * model.transform.localRotation;
+                bool nativeAnimation = OctoberModels.Contains(slug) && AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Any(c => !c.name.StartsWith("__preview__"));
                 bool animated = slug == "zombie-hazmat";
                 try
                 {
@@ -143,7 +147,8 @@ namespace ZombiesFPS.Editor
                         var offset = new Vector3(-b.center.x, -b.min.y, -b.center.z);
                         if (Guns.ContainsKey(slug)) offset = new Vector3(-b.center.x, Weapons.GunModels.SightY - b.max.y, (length > 0.5f ? -0.18f : -0.08f) - b.min.z);
                         model.transform.position += offset;
-                        MergeStatic(root, model, output, slug);
+                        if (nativeAnimation) NativeAnimation(model, path, output, slug);
+                        else MergeStatic(root, model, output, slug);
                     }
                     else
                     {
@@ -176,6 +181,47 @@ namespace ZombiesFPS.Editor
             File.WriteAllText("Temp/model-import/built.txt", report.ToString());
         }
 
+        static readonly HashSet<string> OctoberModels = new HashSet<string> { "a-slot-machine", "animated-oak-trees", "gambling-table", "geometrynodes-scifi-sphere", "mp5-gun", "sci-fi-capsule", "stylized-old-mage-animated-character", "wizard-spell" };
+        static void NativeAnimation(GameObject model, string source, string output, string slug)
+        {
+            var clip = AssetDatabase.LoadAllAssetsAtPath(source).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview__"));
+            string path = output + "/" + slug + ".controller";
+            var controller = AssetDatabase.LoadAssetAtPath<UnityEditor.Animations.AnimatorController>(path);
+            if (controller == null) controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
+            var machine = controller.layers[0].stateMachine;
+            foreach (var state in machine.states) machine.RemoveState(state.state);
+            var loop = machine.AddState("Authored animation"); loop.motion = clip;
+            machine.defaultState = loop;
+            var importer = (ModelImporter)AssetImporter.GetAtPath(source);
+            // Native generic clips keep all authored transforms, skin weights and blendshapes intact.
+            var clips = importer.defaultClipAnimations;
+            foreach (var c in clips) c.loopTime = true;
+            importer.clipAnimations = clips;
+            importer.SaveAndReimport();
+            var animator = model.GetComponent<Animator>();
+            if (animator == null) animator = model.AddComponent<Animator>();
+            animator.runtimeAnimatorController = controller; animator.applyRootMotion = false;
+            animator.cullingMode = AnimatorCullingMode.CullCompletely;
+        }
+
+        static void ReportClips()
+        {
+            var report = new StringBuilder();
+            foreach (string slug in OctoberModels)
+                foreach (string path in AssetDatabase.FindAssets("t:Model", new[] { Source + "/" + slug }).Select(AssetDatabase.GUIDToAssetPath))
+                    foreach (var clip in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview__")))
+                        report.AppendLine($"{slug} {clip.name} {clip.length:F2}s");
+            foreach (string slug in OctoberModels)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/ImportedModels/" + slug + ".prefab");
+                if (prefab == null) continue;
+                int verts = prefab.GetComponentsInChildren<MeshFilter>(true).Sum(f => f.sharedMesh != null ? f.sharedMesh.vertexCount : 0)
+                    + prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Sum(r => r.sharedMesh != null ? r.sharedMesh.vertexCount : 0);
+                report.AppendLine($"{slug} vertices {verts}");
+            }
+            File.WriteAllText("Temp/model-import/clips.txt", report.ToString());
+        }
+
         static Material MakeMaterial(string slug, Material original, TextureSet[] sets)
         {
             string key = original != null ? original.name : "default";
@@ -197,6 +243,23 @@ namespace ZombiesFPS.Editor
                 SetMap(mat, "_OcclusionMap", set.ao, null);
                 SetMap(mat, "_EmissionMap", set.emission, "_EMISSION");
                 if (!string.IsNullOrEmpty(set.emission)) mat.SetColor("_EmissionColor", Color.white * 1.5f);
+            }
+            if (slug == "geometrynodes-scifi-sphere")
+            {
+                mat.color = key == "emission" ? new Color(0.2f, 0.8f, 1f) : new Color(0.18f, 0.24f, 0.3f);
+                mat.SetFloat("_Metallic", 0.5f);
+                if (key == "emission") { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", new Color(0.1f, 1f, 2f)); }
+            }
+            if (key == "foliage" || slug == "wizard-spell" || key == "FX1" || key.StartsWith("Hologram") || key == "Halo")
+            {
+                mat.SetFloat("_Mode", 1); mat.SetInt("_SrcBlend", 1); mat.SetInt("_DstBlend", 0); mat.SetInt("_ZWrite", 1);
+                mat.EnableKeyword("_ALPHATEST_ON"); mat.SetFloat("_Cutoff", 0.25f); mat.renderQueue = 2450;
+            }
+            if (slug == "sci-fi-capsule" && key == "Glass")
+            {
+                mat.color = new Color(0.35f, 0.75f, 0.8f, 0.18f); mat.SetFloat("_Mode", 3);
+                mat.SetInt("_SrcBlend", 1); mat.SetInt("_DstBlend", 10); mat.SetInt("_ZWrite", 0);
+                mat.EnableKeyword("_ALPHAPREMULTIPLY_ON"); mat.renderQueue = 3000;
             }
             EditorUtility.SetDirty(mat);
             return mat;

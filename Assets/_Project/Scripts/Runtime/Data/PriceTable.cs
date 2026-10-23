@@ -98,6 +98,7 @@ namespace ZombiesFPS.Data
                 new WallGun { gun = MakeGun("Service 9mm", 65, 2.2f, false, 420f, 15, 90, 150, 1.5f, 1.9f, 0.3f, 0.7f, 0.25f, 0.45f, Color.gray), price = 500, ammoPrice = 250 },
                 new WallGun { gun = MakeGun("TEC-9", 28, 2f, true, 1000f, 32, 160, 256, 1.8f, 2.3f, 0.5f, 0.55f, 0.4f, 0.75f, Color.gray), price = 1000, ammoPrice = 500 },
                 new WallGun { gun = MakeGun("Tommy Gun", 46, 2.1f, true, 700f, 50, 200, 350, 2.8f, 3.3f, 0.3f, 0.65f, 0.3f, 0.9f, new Color(0.4f, 0.25f, 0.14f)), price = 1750, ammoPrice = 875 },
+                new WallGun { gun = MakeGun("MP5", 36, 2.2f, true, 800f, 30, 180, 300, 2f, 2.5f, 0.25f, 0.5f, 0.25f, 0.68f, Color.gray), price = 1250, ammoPrice = 625 },
             };
             var lance = MakeGun("Ion Lance", 260, 2f, true, 480f, 40, 200, 320, 2.4f, 2.8f, 0.15f, 0.5f, 0.2f, 1.25f, new Color(0.3f, 0.9f, 1f));
             lance.pierce = 3;

@@ -5,6 +5,7 @@ The committed source art and generated prefabs are ready for Unity. Rebuilding i
 1. Install Python with Pillow and WinRAR (the truck pack contains a nested RAR).
 2. Run `python tools/imported_models/prepare.py D:\GitHub\Models` from the repository root. Archives remain untouched; extraction goes into ignored `Temp/model-import/source`.
 3. Run Blender 4.2 with `--background --python tools/imported_models/convert_desert_eagle.py` to export the supplied Blender-only pistol.
+   For the October packs (slot machine, hazard table, oak, hex sphere, MP5, capsule, old mage, magic ring), run Blender 4.2 with `--background --python tools/imported_models/convert_october.py`, then `python tools/imported_models/october_materials.py`. In Unity, the `october` request rebuilds only those prefabs; their authored loops play through generated Animator controllers.
 4. Run `python tools/imported_models/materials.py` to prepare Standard shader textures, including metallic/smoothness masks and the truck's corrected normal map.
 5. In Unity, select **Zombies FPS > Imported Models > Build prefabs and previews**. This normalizes orientation and scale, merges static geometry, seats the prison door and pistol magazine, bakes magazine movement, and preserves the hazmat skeleton and clips.
 6. Run the `ZombiesFPS.Tests.EditMode` tests in Test Runner. ImportedModelTests covers all 14 prefabs, seven weapon builds, source animation assets and stable gun catalog IDs.

@@ -29,12 +29,7 @@ namespace ZombiesFPS.World
             RemodelCeiling(4, new Color(0.36f, 0.29f, 0.21f), Surface.Wood);
             RemodelRunner(4, 3f, -1f, 3f, 41f, new Color(0.27f, 0.32f, 0.24f));
             Deco(L(4, 0f, 0.012f, 2f), new Vector3(21f, 0.024f, 2.6f), new Color(0.4f, 0.36f, 0.28f), Surface.Wood);
-            foreach (float z in new[] { -10f, -5f, 6f, 11f, 18f })
-                foreach (float x in new[] { 0f, 6f })
-                {
-                    Deco(L(4, x, 0.82f, z), new Vector3(1.45f, 0.025f, 1.8f), new Color(0.27f, 0.34f, 0.23f), Surface.Fabric);
-                    Deco(L(4, x, 0.85f, z + 0.7f), new Vector3(1f, 0.08f, 0.35f), new Color(0.65f, 0.6f, 0.48f), Surface.Fabric);
-                }
+            // The authored bunks already include mattresses and bedding.
             foreach (float z in new[] { -14f, -1f, 12f })
             {
                 Deco(L(4, 0f, 6.45f, z), new Vector3(21.5f, 0.25f, 0.35f), Timber, Surface.Wood);
