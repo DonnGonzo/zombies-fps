@@ -19,6 +19,15 @@ namespace ZombiesFPS.Core
         static int s_Quality;
         static float s_Brightness;
         static bool s_Bloom, s_Grain, s_AnimatedZombies, s_MapArt;
+        static float s_StickSensitivity, s_PadAimSensitivity, s_StickDeadzone, s_AimAssistStrength;
+        static int s_StickCurve;
+        static bool s_LookAcceleration, s_PadInvertY, s_AimAssist, s_Vibration;
+        static PadGlyphs s_PadGlyphs;
+
+        public const float MinStickSensitivity = 0.3f, MaxStickSensitivity = 3f;
+        public const float MinPadAimSensitivity = 0.3f, MaxPadAimSensitivity = 1.5f;
+        public const float MinStickDeadzone = 0.03f, MaxStickDeadzone = 0.3f;
+        public const float DefaultStickDeadzone = 0.12f, DefaultAimAssistStrength = 0.6f;
 
         /// <summary>Raised when a graphics setting changes, so the camera and lights can be set up again.</summary>
         public static event System.Action GraphicsChanged;
@@ -45,6 +54,16 @@ namespace ZombiesFPS.Core
             s_Grain = PlayerPrefs.GetInt(Prefix + "FilmGrain", 1) != 0;
             s_AnimatedZombies = PlayerPrefs.GetInt(Prefix + "AnimatedZombies", 1) != 0;
             s_MapArt = PlayerPrefs.GetInt(Prefix + "MapArt", 1) != 0;
+            s_StickSensitivity = PlayerPrefs.GetFloat(Prefix + "StickSensitivity", 1f);
+            s_PadAimSensitivity = PlayerPrefs.GetFloat(Prefix + "PadAimSensitivity", 1f);
+            s_StickDeadzone = PlayerPrefs.GetFloat(Prefix + "StickDeadzone", DefaultStickDeadzone);
+            s_StickCurve = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "StickCurve", 0), 0, GameInput.CurveNames.Length - 1);
+            s_LookAcceleration = PlayerPrefs.GetInt(Prefix + "LookAcceleration", 1) != 0;
+            s_PadInvertY = PlayerPrefs.GetInt(Prefix + "PadInvertY", 0) != 0;
+            s_AimAssist = PlayerPrefs.GetInt(Prefix + "AimAssist", 1) != 0;
+            s_AimAssistStrength = PlayerPrefs.GetFloat(Prefix + "AimAssistStrength", DefaultAimAssistStrength);
+            s_Vibration = PlayerPrefs.GetInt(Prefix + "Vibration", 1) != 0;
+            s_PadGlyphs = (PadGlyphs)Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "PadGlyphs", 0), 0, 3);
             AudioListener.volume = s_Master;
         }
 
@@ -179,6 +198,89 @@ namespace ZombiesFPS.Core
             set { EnsureLoaded(); s_HudScale = Mathf.Clamp(value, MinHudScale, MaxHudScale); PlayerPrefs.SetFloat(Prefix + "HudScale", s_HudScale); }
         }
 
+        /// <summary>Right-stick look speed multiplier (1 = default).</summary>
+        public static float StickSensitivity
+        {
+            get { EnsureLoaded(); return s_StickSensitivity; }
+            set { EnsureLoaded(); s_StickSensitivity = Mathf.Clamp(value, MinStickSensitivity, MaxStickSensitivity); PlayerPrefs.SetFloat(Prefix + "StickSensitivity", s_StickSensitivity); }
+        }
+
+        /// <summary>Extra right-stick slow-down while aiming down sights (1 = the same slow-down as the mouse).</summary>
+        public static float PadAimSensitivity
+        {
+            get { EnsureLoaded(); return s_PadAimSensitivity; }
+            set { EnsureLoaded(); s_PadAimSensitivity = Mathf.Clamp(value, MinPadAimSensitivity, MaxPadAimSensitivity); PlayerPrefs.SetFloat(Prefix + "PadAimSensitivity", s_PadAimSensitivity); }
+        }
+
+        /// <summary>How far the right stick must move before the view turns (0-1 of its travel).</summary>
+        public static float StickDeadzone
+        {
+            get { EnsureLoaded(); return s_StickDeadzone; }
+            set { EnsureLoaded(); s_StickDeadzone = Mathf.Clamp(value, MinStickDeadzone, MaxStickDeadzone); PlayerPrefs.SetFloat(Prefix + "StickDeadzone", s_StickDeadzone); }
+        }
+
+        /// <summary>Right-stick response curve, an index into GameInput.CurveNames.</summary>
+        public static int StickCurve
+        {
+            get { EnsureLoaded(); return s_StickCurve; }
+            set { EnsureLoaded(); s_StickCurve = Mathf.Clamp(value, 0, GameInput.CurveNames.Length - 1); PlayerPrefs.SetInt(Prefix + "StickCurve", s_StickCurve); }
+        }
+
+        /// <summary>Holding the right stick all the way sideways turns faster after a moment.</summary>
+        public static bool LookAcceleration
+        {
+            get { EnsureLoaded(); return s_LookAcceleration; }
+            set { EnsureLoaded(); s_LookAcceleration = value; PlayerPrefs.SetInt(Prefix + "LookAcceleration", value ? 1 : 0); }
+        }
+
+        public static bool PadInvertY
+        {
+            get { EnsureLoaded(); return s_PadInvertY; }
+            set { EnsureLoaded(); s_PadInvertY = value; PlayerPrefs.SetInt(Prefix + "PadInvertY", value ? 1 : 0); }
+        }
+
+        /// <summary>Aim assist on a controller: slow-down over zombies, tracking them as they move, and a nudge when you aim.</summary>
+        public static bool AimAssist
+        {
+            get { EnsureLoaded(); return s_AimAssist; }
+            set { EnsureLoaded(); s_AimAssist = value; PlayerPrefs.SetInt(Prefix + "AimAssist", value ? 1 : 0); }
+        }
+
+        public static float AimAssistStrength
+        {
+            get { EnsureLoaded(); return s_AimAssistStrength; }
+            set { EnsureLoaded(); s_AimAssistStrength = Mathf.Clamp01(value); PlayerPrefs.SetFloat(Prefix + "AimAssistStrength", s_AimAssistStrength); }
+        }
+
+        /// <summary>Controller rumble on shots, hits and explosions.</summary>
+        public static bool Vibration
+        {
+            get { EnsureLoaded(); return s_Vibration; }
+            set { EnsureLoaded(); s_Vibration = value; PlayerPrefs.SetInt(Prefix + "Vibration", value ? 1 : 0); if (!value) GameInput.StopRumble(); }
+        }
+
+        /// <summary>Which button names prompts show on a controller (Auto = the kind of pad plugged in).</summary>
+        public static PadGlyphs PadGlyphs
+        {
+            get { EnsureLoaded(); return s_PadGlyphs; }
+            set { EnsureLoaded(); s_PadGlyphs = value; PlayerPrefs.SetInt(Prefix + "PadGlyphs", (int)value); }
+        }
+
+        /// <summary>Puts the Controller page back to how it shipped.</summary>
+        public static void ResetController()
+        {
+            StickSensitivity = 1f;
+            PadAimSensitivity = 1f;
+            StickDeadzone = DefaultStickDeadzone;
+            StickCurve = 0;
+            LookAcceleration = true;
+            PadInvertY = false;
+            AimAssist = true;
+            AimAssistStrength = DefaultAimAssistStrength;
+            Vibration = true;
+            PadGlyphs = PadGlyphs.Auto;
+        }
+
         public static bool InvertY
         {
             get { EnsureLoaded(); return s_InvertY; }
@@ -233,6 +335,7 @@ namespace ZombiesFPS.Core
             Brightness = 1f;
             Bloom = true;
             FilmGrain = true;
+            ResetController();
             Save();
         }
     }

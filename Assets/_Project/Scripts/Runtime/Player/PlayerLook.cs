@@ -4,8 +4,8 @@ using ZombiesFPS.Core;
 namespace ZombiesFPS.Player
 {
     /// <summary>
-    /// Mouse look (yaw on the body, pitch on the camera pivot), cursor lock, recoil and camera shake.
-    /// Recoil moves where you actually aim; shake is visual only.
+    /// Mouse and right-stick look (yaw on the body, pitch on the camera pivot), controller aim assist, cursor lock,
+    /// recoil and camera shake. Recoil moves where you actually aim; shake is visual only (and rumbles a pad).
     /// </summary>
     public class PlayerLook : MonoBehaviour
     {
@@ -21,6 +21,7 @@ namespace ZombiesFPS.Player
         float _pitch;
         Vector2 _pendingRecoil;
         float _shake;
+        bool _aimWasHeld;
         Quaternion _cameraBaseRotation = Quaternion.identity;
 
         /// <summary>A left click on the game view locks the cursor again. The pause menu turns this off while the mouse is over it.</summary>
@@ -59,10 +60,13 @@ namespace ZombiesFPS.Player
         public void AddRecoil(float pitchDegrees, float yawDegrees)
         {
             _pendingRecoil += new Vector2(yawDegrees, pitchDegrees);
+            GameInput.Rumble(0.05f + pitchDegrees * 0.04f, 0.25f + pitchDegrees * 0.08f, 0.07f);
         }
 
         public void AddShake(float amount)
         {
+            // Rumble isn't cut by Reduce camera shake; it has its own setting.
+            if (amount > 0.2f) GameInput.Rumble(amount * 0.7f, amount * 0.45f, 0.12f + amount * 0.25f);
             if (GameSettings.ReduceShake) amount *= 0.2f;
             _shake = Mathf.Min(_shake + amount, 1.5f);
         }
@@ -80,9 +84,16 @@ namespace ZombiesFPS.Player
 
             float dt = Time.deltaTime;
             Vector2 look = Vector2.zero;
+            bool aimHeld = CursorLocked && !InputLocked && GameInput.AimHeld;
+            if (aimHeld && !_aimWasHeld) AimAssist.StartAim();
+            _aimWasHeld = aimHeld;
             if (CursorLocked && !InputLocked)
             {
-                look = GameInput.Look * sensitivity * Mathf.Lerp(1f, aimSensitivityScale, AimAmount);
+                // The stick has its own extra aiming slow-down on top of the mouse's.
+                float mouseScale = Mathf.Lerp(1f, aimSensitivityScale, AimAmount);
+                float padScale = Mathf.Lerp(1f, aimSensitivityScale * GameSettings.PadAimSensitivity, AimAmount);
+                look = (GameInput.MouseLook * mouseScale + GameInput.PadLook * padScale) * sensitivity;
+                look = AimAssist.Apply(look, _pitchPivot, AimAmount, GameInput.Move.magnitude, dt);
             }
             LastLookDelta = look;
 

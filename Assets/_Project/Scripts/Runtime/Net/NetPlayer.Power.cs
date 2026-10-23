@@ -57,6 +57,7 @@ namespace ZombiesFPS.Net
                     ClearKeypad();
                 }
             }
+            if (KeypadOpen) GameInput.ClaimPadMenu();
             if (!KeypadOpen || picking || KeypadWaiting) return;
 
             int digit = GameInput.DigitPressed;

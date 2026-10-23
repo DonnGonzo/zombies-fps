@@ -44,6 +44,7 @@ namespace ZombiesFPS.UI
         bool _wasUnlocked;
         bool _consoleWasOpen;
         bool _wasGameOver;
+        float _gameOverAt;
         bool _mapOpen;
         /// <summary>The map screen shows the story tab instead of the map (only once the power is on).</summary>
         bool _mapStory;
@@ -105,11 +106,16 @@ namespace ZombiesFPS.UI
         }
 
         static string K(GameAction a) => Bindings.Name(a);
+        /// <summary>The power-up card keys: 1 2 3, or the d-pad.</summary>
+        static string PickNames => GameInput.UsingGamepad ? "D-pad ← ↑ →" : "1 2 3";
+        static string RerollName => GameInput.FixedName("4", PadButton.DpadDown);
+        static string CardKey(int card) => GameInput.UsingGamepad ? GameInput.PadName(card == 0 ? PadButton.DpadLeft : card == 1 ? PadButton.DpadUp : PadButton.DpadRight) : (card + 1).ToString();
         static string Keys(params GameAction[] actions)
         {
             var names = new string[actions.Length];
             for (int i = 0; i < actions.Length; i++) names[i] = Bindings.Name(actions[i]);
-            return string.Join(" ", names);
+            // On a controller the four move keys are all "Left stick".
+            return string.Join(" ", System.Linq.Enumerable.Distinct(names));
         }
 
         // ---------------------------------------------------------------- events
@@ -308,6 +314,7 @@ namespace ZombiesFPS.UI
                 // The first look once the power is on goes straight to the story missions.
                 if (_mapOpen && Powered && !_storySeen) _mapStory = true;
             }
+            if (_mapOpen) GameInput.ClaimDpad();
             if (_mapOpen && !DebugConsole.IsOpen && GameInput.MapTabPressed) _mapStory = !_mapStory && Powered;
             if (!Powered) _mapStory = false;
             if (_mapOpen && _mapStory) _storySeen = true;
@@ -315,6 +322,7 @@ namespace ZombiesFPS.UI
             bool gameOver = rounds != null && rounds.IsGameOver;
             if (gameOver) _mapOpen = false;
             if (_wasGameOver && !gameOver) PlayerLook.SetCursorLocked(true);
+            if (!_wasGameOver && gameOver) _gameOverAt = Time.unscaledTime;
             _wasGameOver = gameOver;
             UpdatePause(rounds);
             WatchRounds();
@@ -467,7 +475,7 @@ namespace ZombiesFPS.UI
                     case BuyableKind.Shop: Tips.Offer("shop", "The spawn shop sells attachments for the gun in hand. Your level unlocks them; points buy them, every game."); break;
                     case BuyableKind.Perk: Tips.Offer("perk", "Perk machines sell lasting upgrades. You keep them until you go down, then they're gone."); break;
                     case BuyableKind.Armor: Tips.Offer("armor", "Armour plates soak up hits before your health. You can carry three and they get pricier each round."); break;
-                    case BuyableKind.Reroll: Tips.Offer("reroll", "The shrine sells redraws for power-up cards. Press 4 while picking a power-up to redraw."); break;
+                    case BuyableKind.Reroll: Tips.Offer("reroll", $"The shrine sells redraws for power-up cards. Press {RerollName} while picking a power-up to redraw."); break;
                     case BuyableKind.Part: Tips.Offer("part", $"A build part! Press {interact} to pick it up. Find all the parts of the Scrap Cannon, Aegis Shield (four parts) or Buddy Bot, then build it at a build station. Parts are somewhere different every game."); break;
                     case BuyableKind.Workbench: Tips.Offer("bench", "A build station. Build the Scrap Cannon, Aegis Shield or Buddy Bot here once the squad has all of its parts; after that, take one whenever you need it."); break;
                     case BuyableKind.Egg: Tips.Offer("eggspot", "Part of the map's secret. The pause menu's story card says what the squad is carrying and what comes next."); break;
@@ -481,14 +489,14 @@ namespace ZombiesFPS.UI
             if (motor != null && motor.IsMantling) Tips.Offer("mantle", $"Jump at anything your head can reach and keep pushing {K(GameAction.MoveForward)} to climb up onto it. Zombies climb after you.");
             if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
             if (!Powered) Tips.Offer("power", "The doors have no power: their lamps are red. Three notes in the Gate Yard hold the generator's start-up code. Read them, then enter the code at the generator panel.");
-            else Tips.Offer("story", $"Power's on. Press {K(GameAction.Map)} for your story missions; Tab switches between the story and the map.");
+            else Tips.Offer("story", $"Power's on. Press {K(GameAction.Map)} for your story missions; {MapScreen.TabName} switches between the story and the map.");
             if (rounds.Round.Value >= 3) Tips.Offer("map", $"Press {K(GameAction.Map)} for the map: every zone, where your squad is, the high spots and the build stations.");
-            if (_player.HasPowerUpOffer) Tips.Offer("powerup", "Power-up! Press 1, 2 or 3 to pick a card. Power-ups stack and stay for the whole game, even if you go down.");
+            if (_player.HasPowerUpOffer) Tips.Offer("powerup", $"Power-up! Press {PickNames} to pick a card. Power-ups stack and stay for the whole game, even if you go down.");
             if (MissionBoard.Instance != null && MissionBoard.Instance.SetRound.Value > 0 && rounds.Round.Value >= 2)
                 Tips.Offer("mission", "Missions (top right) pay the whole squad. A new set of three arrives every 10 rounds.");
             if (rounds.Round.Value >= 2 && rounds.Phase.Value == GamePhase.RoundActive)
                 Tips.Offer("grenade", $"{K(GameAction.Grenade)} throws a grenade, {K(GameAction.ThrowingKnife)} a throwing knife, {K(GameAction.Concussion)} a concussion bang that stuns. {K(GameAction.Melee)} is melee. They top up every round.");
-            if (_gun.Magazine == 0 && _gun.Reserve > 0) Tips.Offer("reload", $"Press {K(GameAction.Reload)} to reload. {K(GameAction.SwitchWeapon)} or the mouse wheel switches guns.");
+            if (_gun.Magazine == 0 && _gun.Reserve > 0) Tips.Offer("reload", $"Press {K(GameAction.Reload)} to reload. {K(GameAction.SwitchWeapon)}{(GameInput.UsingGamepad ? "" : " or the mouse wheel")} switches guns.");
             if (_player.State.Value == LifeState.Downed) Tips.Offer("downed", "You're down. A teammate can hold their interact key on you to revive you before the timer runs out.");
             if (_player.FindReviveTarget(_player.transform.position) != null) Tips.Offer("revive", $"Hold {interact} to revive your teammate. Zombies can still hit you while you do.");
             if (NetZombie.Bosses.Count > 0) Tips.Offer("boss", "Boss! Its back has a glowing weak spot that takes extra damage. Spread out so it can't catch everyone.");
@@ -604,7 +612,7 @@ namespace ZombiesFPS.UI
             bool solo = NetPlayer.All.Count <= 1;
             Ui.Label(new Rect(r.x, r.y + 96 * u, pw, 30 * u), solo ? "The zombies don't wait, even solo." : "The game keeps going for your squad.", Ui.Tiny, Ui.Muted, TextAnchor.UpperCenter);
             float bx = r.x + 40 * u, bw = pw - 80 * u, by = r.y + 140 * u, bh = 52 * u, gap = 12 * u;
-            if (Ui.Button(new Rect(bx, by, bw, bh), "RESUME", accent: true)) Resume();
+            if (Ui.Button(new Rect(bx, by, bw, bh), "RESUME", accent: true, cancel: true, preferred: true)) Resume();
             by += bh + gap;
             if (Ui.Button(new Rect(bx, by, bw, bh), "SETTINGS")) _pause = PauseScreen.Settings;
             by += bh + gap;
@@ -732,10 +740,14 @@ namespace ZombiesFPS.UI
             }
             bool hosting = rounds.IsServer;
             float by = table.yMax + 30 * u;
-            if (hosting) Ui.Prompt(w / 2f, by, "Enter", "restart with the same squad", Ui.Body, Ui.Text, u);
+            if (hosting) Ui.Prompt(w / 2f, by, GameInput.FixedName("Enter", PadButton.Start), "restart with the same squad", Ui.Body, Ui.Text, u);
             else Ui.Label(new Rect(0, by, w, 40 * u), "Waiting for the host to restart", Ui.Body, Ui.Muted, TextAnchor.MiddleCenter);
             float bw = 340 * u;
-            if (Ui.Button(new Rect((w - bw) / 2f, by + 60 * u, bw, 50 * u), hosting ? "END GAME FOR EVERYONE" : "LEAVE GAME"))
+            // Not focusable on a controller, so A mashed while dying can't end the game; B does it once the screen has settled.
+            string leave = hosting ? "END GAME FOR EVERYONE" : "LEAVE GAME";
+            if (GameInput.UsingGamepad) leave = $"{GameInput.PadName(PadButton.East)}   {leave}";
+            bool settled = Time.unscaledTime - _gameOverAt > 2f;
+            if (Ui.Button(new Rect((w - bw) / 2f, by + 60 * u, bw, 50 * u), leave, focusable: false, cancel: settled))
                 PrototypeBootstrap.ReturnToMenu(hosting ? "You ended the game." : "You left the game.");
             if (Cursor.lockState != CursorLockMode.None) PlayerLook.SetCursorLocked(false);
         }
@@ -1007,11 +1019,11 @@ namespace ZombiesFPS.UI
                 $"{Keys(GameAction.MoveForward, GameAction.MoveLeft, GameAction.MoveBack, GameAction.MoveRight)} move  ·  {K(GameAction.Sprint)} sprint  ·  {K(GameAction.Jump)} jump (jump at a ledge to climb it)",
                 $"{K(GameAction.Fire)} fire  ·  {K(GameAction.Aim)} aim  ·  {K(GameAction.Reload)} reload  ·  {K(GameAction.SwitchWeapon)} switch gun",
                 $"{K(GameAction.Melee)} melee  ·  {K(GameAction.Grenade)} grenade  ·  {K(GameAction.ThrowingKnife)} knife  ·  {K(GameAction.Concussion)} bang",
-                $"{K(GameAction.Interact)} buy / hold to revive  ·  1 2 3 pick power-up  ·  4 redraw  ·  {K(GameAction.Map)} map",
+                $"{K(GameAction.Interact)} buy / hold to revive  ·  {PickNames} pick power-up  ·  {RerollName} redraw  ·  {K(GameAction.Map)} map",
             };
-            if (rounds != null && rounds.IsServer)
+            if (rounds != null && rounds.IsServer && !GameInput.UsingGamepad)
                 lines.Add("Test (host): = next round  ·  ] +10 rounds  ·  F1 god  ·  P +5,000  ·  O power-up  ·  B boss  ·  ` console");
-            lines.Add("Esc pause  ·  H hide this");
+            lines.Add(GameInput.UsingGamepad ? $"{GameInput.PadName(PadButton.Start)} pause  ·  pause menu hides this" : "Esc pause  ·  H hide this");
             float lh = 22 * u, pw = 700 * u;
             float y = h - 40 * u - lh * lines.Count - 260 * u;
             for (int i = 0; i < lines.Count; i++)
@@ -1141,7 +1153,8 @@ namespace ZombiesFPS.UI
                 string name = _player.GunName(other);
                 float nw = Ui.Width(name, Ui.Tiny);
                 Ui.Label(new Rect(right - nw, h - 176 * u, nw + 4, 26 * u), name, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
-                Ui.Key(new Vector2(right - nw - 40 * u, h - 176 * u), K(GameAction.SwitchWeapon), 26 * u);
+                string swap = K(GameAction.SwitchWeapon);
+                Ui.Key(new Vector2(right - nw - 14 * u - Ui.KeyWidth(swap, 26 * u), h - 176 * u), swap, 26 * u);
             }
 
             // Throwables.
@@ -1154,11 +1167,13 @@ namespace ZombiesFPS.UI
         /// <summary>One throwable counter, right-aligned at x. Returns the x for the next one.</summary>
         float DrawEquip(float x, float y, float u, string key, string label, int count, Color color)
         {
-            float bw = 96 * u, bh = 34 * u;
+            // Controller names like "D-pad →" are wider than a letter, so the box grows to fit.
+            float kw = Ui.KeyWidth(key, 22 * u);
+            float bw = Mathf.Max(96 * u, kw + 74 * u), bh = 34 * u;
             var r = new Rect(x - bw, y, bw, bh);
             Ui.RoundRect(r, new Color(0f, 0f, 0f, count > 0 ? 0.45f : 0.25f), small: true);
             Ui.Key(new Vector2(r.x + 6 * u, r.y + 6 * u), key, 22 * u);
-            Ui.Label(new Rect(r.x + 34 * u, r.y, 40 * u, bh), label, Ui.Tiny, count > 0 ? Ui.Muted : Ui.A(Ui.Muted, 0.5f), TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(r.x + 12 * u + kw, r.y, 40 * u, bh), label, Ui.Tiny, count > 0 ? Ui.Muted : Ui.A(Ui.Muted, 0.5f), TextAnchor.MiddleLeft);
             Ui.Label(new Rect(r.x, r.y, bw - 8 * u, bh), count.ToString(), Ui.Bold, count > 0 ? color : Ui.A(Ui.Muted, 0.5f), TextAnchor.MiddleRight);
             return x - bw - 8 * u;
         }
@@ -1199,7 +1214,9 @@ namespace ZombiesFPS.UI
             float ly = cy + ch + 18 * u;
             string known = $"Notes found: {map.NotesFound}/{ZoneMap.CodeDigits}   ·   code so far: {map.KnownCode}";
             Ui.Label(new Rect(r.x, ly, pw, 24 * u), known, Ui.Small, Ui.Text, TextAnchor.MiddleCenter);
-            string keys = _player.KeypadWaiting ? "Checking..." : $"0-9 type   ·   Backspace rub out   ·   d-pad turn and take   ·   {K(GameAction.Interact)} close";
+            string keys = _player.KeypadWaiting ? "Checking..."
+                : GameInput.UsingGamepad ? $"D-pad ↑ ↓ turn   ·   → take   ·   ← rub out   ·   {K(GameAction.Interact)} close"
+                : $"0-9 type   ·   Backspace rub out   ·   {K(GameAction.Interact)} close";
             Ui.Label(new Rect(r.x, ly + 30 * u, pw, 24 * u), keys, Ui.Tiny, Ui.Muted, TextAnchor.MiddleCenter);
         }
 
@@ -1221,7 +1238,8 @@ namespace ZombiesFPS.UI
                 Line(106, "DEALER   " + (current ? v.dealer : "Waiting for your bet"), Ui.Muted);
                 if (current) for (int i=0; i<v.hands.Length; i++) Line(156+i*42, v.hands[i], i==v.active && v.playing ? Ui.Amber : Ui.Text);
                 Line(350, current ? v.result : "Choose a wager to deal.", Ui.Text);
-                Line(396, current && v.playing ? "[1] HIT    [2] STAND" + (v.doubleAllowed ? "    [3] DOUBLE" : "") + (v.splitAllowed ? "    [4] SPLIT" : "") : "BET:  [1] 100    [2] 250    [3] 500    [4] 1,000", Ui.Amber);
+                if (current && v.playing) Line(396, CasinoOptions("", new[] { "HIT", "STAND", v.doubleAllowed ? "DOUBLE" : null, v.splitAllowed ? "SPLIT" : null }), Ui.Amber);
+                else Line(396, CasinoOptions("BET:  ", Bets), Ui.Amber);
                 Line(442, "6 decks • Dealer stands on all 17s • Blackjack pays 3:2", Ui.Muted);
                 Line(476, "Win 1:1 • Push returns bet • Double on any first two cards", Ui.Muted);
                 Line(510, "Up to 4 split hands • Split aces: one card • No insurance", Ui.Muted);
@@ -1236,14 +1254,33 @@ namespace ZombiesFPS.UI
                     Ui.RoundRect(r, Ui.PanelLight); Ui.Label(r, symbol, Ui.Bold, Ui.Amber, TextAnchor.MiddleCenter);
                 }
                 Line(272, Time.unscaledTime < _player.CasinoRevealAt ? "Spinning..." : current ? v.result : "Choose a wager to spin.", Ui.Text);
-                Line(328, "BET:  [1] 100    [2] 250    [3] 500    [4] 1,000", Ui.Amber);
+                Line(328, CasinoOptions("BET:  ", Bets), Ui.Amber);
                 Line(380, "3 alike: CHERRY 5x • LEMON 10x • BELL 20x • BAR 40x", Ui.Muted);
                 Line(414, "DIAMOND 100x • SEVEN 500x • Exactly 2 CHERRIES 1x", Ui.Muted);
                 Line(448, "Payouts include your bet. Every other result loses the bet.", Ui.Muted);
                 Line(482, "Symbol odds: 40% / 25% / 18% / 10% / 5% / 2% per reel", Ui.Muted);
                 Line(516, "Long-run return: 93.739% • Each reel spins independently", Ui.Muted);
             }
-            Line(558, $"[{K(GameAction.Interact)}] LEAVE • Leaving / 60s idle stands all hands. Stay alert.", Ui.Muted);
+            string pick = GameInput.UsingGamepad ? $"[D-pad] CHOOSE  [{GameInput.PadName(PadButton.South)}] PLAY  •  " : "";
+            Line(558, $"{pick}[{K(GameAction.Interact)}] LEAVE • Leaving / 60s idle stands all hands. Stay alert.", Ui.Muted);
+        }
+
+        static readonly string[] Bets = { "100", "250", "500", "1,000" };
+
+        /// <summary>The casino's four choices: "[1] HIT  [2] STAND" on a keyboard, the d-pad's pick highlighted on a controller. Null entries are left out.</summary>
+        string CasinoOptions(string prefix, string[] options)
+        {
+            var sb = new System.Text.StringBuilder(prefix);
+            bool pad = GameInput.UsingGamepad;
+            for (int i = 0; i < options.Length; i++)
+            {
+                if (options[i] == null) continue;
+                if (sb.Length > prefix.Length) sb.Append("    ");
+                if (!pad) sb.Append('[').Append(i + 1).Append("] ").Append(options[i]);
+                else if (i == _player.CasinoCursor) sb.Append("<color=#ffffff>› ").Append(options[i]).Append(" ‹</color>");
+                else sb.Append("<color=#8a8f99>").Append(options[i]).Append("</color>");
+            }
+            return sb.ToString();
         }
 
         /// <summary>The spawn shop menu: attachments for the gun in hand, unlocked by level, bought with points.</summary>
@@ -1255,7 +1292,9 @@ namespace ZombiesFPS.UI
             var r = new Rect((w - pw) / 2f, Mathf.Max(20 * u, h * 0.5f - ph / 2f + 20 * u), pw, ph);
             Ui.PanelBox(r, Ui.Amber, u);
             Ui.Label(new Rect(r.x + 24 * u, r.y + 16 * u, pw, 34 * u), $"SPAWN SHOP  ·  {_player.GunName(_player.ActiveSlot.Value)}", Ui.Bold, Ui.Amber, TextAnchor.MiddleLeft);
-            Ui.Label(new Rect(r.x + 24 * u, r.y + 50 * u, pw, 26 * u), $"Level {_player.Level}  ·  number key to buy  ·  {K(GameAction.SwitchWeapon)} switch gun  ·  {K(GameAction.Interact)} close", Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
+            bool pad = GameInput.UsingGamepad;
+            string buy = pad ? $"D-pad choose  ·  {GameInput.PadName(PadButton.South)} buy" : "number key to buy";
+            Ui.Label(new Rect(r.x + 24 * u, r.y + 50 * u, pw, 26 * u), $"Level {_player.Level}  ·  {buy}  ·  {K(GameAction.SwitchWeapon)} switch gun  ·  {K(GameAction.Interact)} close", Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
             float ry = r.y + 86 * u;
             for (int i = 0; i < shop.Count; i++)
             {
@@ -1265,7 +1304,12 @@ namespace ZombiesFPS.UI
                     : status == AttachmentStatus.Owned ? Ui.Good
                     : _player.Points.Value >= a.price ? Ui.Text : Ui.Bad;
                 if (i % 2 == 0) Ui.Fill(new Rect(r.x + 12 * u, ry, pw - 24 * u, rowH), new Color(1f, 1f, 1f, 0.025f));
-                if (status != AttachmentStatus.Locked) Ui.Key(new Vector2(r.x + 22 * u, ry + 5 * u), (i + 1).ToString(), 24 * u);
+                if (pad && i == _player.ShopCursor)
+                {
+                    Ui.RoundRect(new Rect(r.x + 12 * u, ry, pw - 24 * u, rowH), Ui.A(Ui.Amber, 0.16f), small: true);
+                    Ui.Label(new Rect(r.x + 22 * u, ry, 30 * u, rowH), "›", Ui.Bold, Ui.Amber, TextAnchor.MiddleCenter);
+                }
+                else if (!pad && status != AttachmentStatus.Locked) Ui.Key(new Vector2(r.x + 22 * u, ry + 5 * u), (i + 1).ToString(), 24 * u);
                 Ui.Label(new Rect(r.x + 60 * u, ry, pw - 280 * u, rowH), $"{a.name}  <color=#8a8f99>({a.slot})  {a.description}</color>", Ui.Small, c, TextAnchor.MiddleLeft);
                 string state = status == AttachmentStatus.Locked ? $"Level {a.unlockLevel}" : status == AttachmentStatus.Owned ? "Fitted" : $"{a.price:N0}";
                 Ui.Label(new Rect(r.x, ry, pw - 24 * u, rowH), state, Ui.Small, c, TextAnchor.MiddleRight);
@@ -1301,10 +1345,12 @@ namespace ZombiesFPS.UI
                 body.wordWrap = true;
                 Ui.Label(new Rect(r.x + 14 * u, r.y + 52 * u, cw - 28 * u, 56 * u), change, body, Ui.Muted, TextAnchor.UpperCenter);
                 body.wordWrap = wrap;
-                Ui.Key(new Vector2(r.center.x - 13 * u, r.yMax - 38 * u), (card + 1).ToString(), 26 * u);
+                string key = CardKey(card);
+                float kw = Mathf.Max(26 * u, Ui.Width(key, Ui.KeyCap) + Ui.KeyCap.padding.horizontal);
+                Ui.Key(new Vector2(r.center.x - kw / 2f, r.yMax - 38 * u), key, 26 * u);
             }
             if (_player.PowerRerolls.Value > 0)
-                Ui.Prompt(w / 2f, y + ch + 10 * u, "4", $"redraw the cards ({_player.PowerRerolls.Value} left)", Ui.Small, Ui.Text, u);
+                Ui.Prompt(w / 2f, y + ch + 10 * u, RerollName, $"redraw the cards ({_player.PowerRerolls.Value} left)", Ui.Small, Ui.Text, u);
         }
 
         // ---------------------------------------------------------------- tips and subtitles

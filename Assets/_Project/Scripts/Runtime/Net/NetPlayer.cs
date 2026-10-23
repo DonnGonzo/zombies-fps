@@ -612,6 +612,7 @@ namespace ZombiesFPS.Net
             bool picking = HasPowerUpOffer && _look.CursorLocked && !(rounds != null && rounds.IsGameOver);
             if (picking)
             {
+                GameInput.ClaimDpad();
                 int choice = GameInput.ChoicePressed;
                 if (choice >= 0) PickPowerUpRpc(choice);
                 else if (GameInput.RerollPressed && PowerRerolls.Value > 0) RerollPowerUpsRpc();

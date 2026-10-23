@@ -177,8 +177,29 @@ namespace ZombiesFPS.Net
             }
             if (GameInput.InteractPressed) ShopOpen = !ShopOpen;
             if (!ShopOpen || picking) return;
+            // On a controller the d-pad picks a row and A buys it.
+            GameInput.ClaimPadMenu();
+            int step = GameInput.DpadStep.y;
+            if (step != 0) ShopCursor = NextShopRow(ShopCursor, -step);
             int choice = GameInput.NumberPressed;
+            if (choice < 0 && GameInput.SubmitPressed) choice = ShopCursor;
             if (choice >= 0 && Shop != null && choice < Shop.Count) BuyAttachmentRpc(choice);
+        }
+
+        /// <summary>The highlighted shop row for controller players.</summary>
+        public int ShopCursor { get; private set; }
+
+        /// <summary>The next row up or down that isn't still locked, wrapping round; stays put if none is.</summary>
+        int NextShopRow(int from, int dir)
+        {
+            int n = Shop != null ? Shop.Count : 0;
+            if (n == 0) return 0;
+            for (int k = 1; k <= n; k++)
+            {
+                int i = ((from + dir * k) % n + n) % n;
+                if (StatusOf(i) != AttachmentStatus.Locked) return i;
+            }
+            return Mathf.Clamp(from, 0, n - 1);
         }
 
         // ---------------------------------------------------------------- server

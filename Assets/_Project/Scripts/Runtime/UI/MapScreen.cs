@@ -14,6 +14,9 @@ namespace ZombiesFPS.UI
     /// </summary>
     public static class MapScreen
     {
+        /// <summary>What flips between the map and the story: Tab, or the d-pad on a controller.</summary>
+        public static string TabName => GameInput.UsingGamepad ? "D-pad ← →" : "Tab";
+
         static readonly Color ZoneOpen = new Color(0.2f, 0.23f, 0.26f, 0.95f);
         static readonly Color ZoneClosed = new Color(0.09f, 0.1f, 0.11f, 0.95f);
         static readonly Color ZoneHere = new Color(0.27f, 0.3f, 0.34f, 0.98f);
@@ -139,7 +142,7 @@ namespace ZombiesFPS.UI
             float x = (w - tw * 2f - gap) / 2f;
             Tab(new Rect(x, y, tw, th), "MAP", !story, true, u);
             Tab(new Rect(x + tw + gap, y, tw, th), powered ? "STORY" : "STORY (no power)", story, powered, u);
-            string hint = powered ? $"Tab switches   ·   {Bindings.Name(GameAction.Map)} closes" : $"{Bindings.Name(GameAction.Map)} closes";
+            string hint = powered ? $"{TabName} switches   ·   {Bindings.Name(GameAction.Map)} closes" : $"{Bindings.Name(GameAction.Map)} closes";
             Ui.Label(new Rect(0, y + th + 4 * u, w, 22 * u), hint, Ui.Tiny, Ui.Muted, TextAnchor.MiddleCenter);
         }
 

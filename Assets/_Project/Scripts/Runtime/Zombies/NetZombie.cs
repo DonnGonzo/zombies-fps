@@ -116,6 +116,12 @@ namespace ZombiesFPS.Zombies
         static readonly List<NetZombie> s_Bosses = new List<NetZombie>();
         /// <summary>Bosses currently spawned, on every machine (for the HUD's health bars).</summary>
         public static IReadOnlyList<NetZombie> Bosses => s_Bosses;
+        static readonly List<NetZombie> s_Spawned = new List<NetZombie>();
+        /// <summary>Every zombie currently spawned (alive or not), on every machine, for controller aim assist.</summary>
+        public static IReadOnlyList<NetZombie> Spawned => s_Spawned;
+
+        /// <summary>Where aim assist aims: the middle of the chest.</summary>
+        public Vector3 AimPoint => _chest != null ? _chest.position : transform.position + Vector3.up * 1.2f;
 
         NetworkVariable<ZombieMode> _mode = new NetworkVariable<ZombieMode>(ZombieMode.Chasing);
         NetworkVariable<ZombieKind> _kind = new NetworkVariable<ZombieKind>(ZombieKind.Walker);
@@ -269,6 +275,7 @@ namespace ZombiesFPS.Zombies
             ApplySpecial();
             ResetVisuals();
             if (_data.IsBoss) s_Bosses.Add(this);
+            if (!s_Spawned.Contains(this)) s_Spawned.Add(this);
             _lastPosition = transform.position;
             _nextGroan = Time.time + UnityEngine.Random.Range(0.5f, 3f);
             _walkPhase = UnityEngine.Random.Range(0f, 10f);
@@ -331,6 +338,7 @@ namespace ZombiesFPS.Zombies
         public override void OnNetworkDespawn()
         {
             s_Bosses.Remove(this);
+            s_Spawned.Remove(this);
             _mode.OnValueChanged -= OnModeChanged;
             Died = null;
             Recycled = null;
