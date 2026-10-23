@@ -90,7 +90,10 @@ namespace ZombiesFPS.Editor
             return b;
         }
 
+        // Menu items can't take parameters, so the menu calls a plain wrapper.
         [MenuItem("Zombies FPS/Imported Models/Build prefabs and previews")]
+        public static void BuildFromMenu() => Build();
+
         public static void Build(bool octoberOnly = false)
         {
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
