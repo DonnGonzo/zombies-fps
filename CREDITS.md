@@ -18,3 +18,10 @@ Third-party art in this project that asks to be credited.
   - "Ghost Monster Voice Moaning & Growling" by qubodup
     (https://opengameart.org/content/ghost-monster-voice-moaning-growling), CC0, pitched down.
   - "Monster Sound Pack, Volume 1" by Ogrebane, made for Summoning Wars (https://opengameart.org/node/4017), CC0.
+
+- **Slot machine sounds** (`Assets/_Project/Resources/Audio/Casino`), mixed by `tools/casino/make_casino_audio.py`.
+  The lounge loop and the reel ratchet are synthesised by that script (no samples, original to this game). The win,
+  jackpot and lose stings layer CC0 (public domain) clips by Kenney (https://kenney.nl); no attribution is required;
+  credit is given anyway.
+  - "Music Jingles" by Kenney (https://kenney.nl/assets/music-jingles), CC0: sax and 8-bit jingles.
+  - "Casino Audio" by Kenney (https://kenney.nl/assets/casino-audio), CC0: chip clatter.
