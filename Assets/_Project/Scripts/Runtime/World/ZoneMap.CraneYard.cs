@@ -13,6 +13,12 @@ namespace ZombiesFPS.World
             AddLadder(8, 12f, 9f, Vector3.right, 3.6f);
             Block("West freight", 8, -17f, -11f, -11f, -7f, 1.1f, ContainerGreen, Surface.Metal);
             Block("East freight", 8, 16f, 6f, 20f, 9f, 1.1f, ContainerBlue, Surface.Metal);
+            // These low stacks are jumpable by players but higher than the agent's step.
+            // Give both sides a bidirectional climb so they cannot become safe camping spots.
+            Jump(8, -14f, 0f, -5.8f, -14f, 1.1f, -8.2f);
+            Jump(8, -9.8f, 0f, -9f, -12.2f, 1.1f, -9f);
+            Jump(8, 18f, 0f, 4.8f, 18f, 1.1f, 7.2f);
+            Jump(8, 14.8f, 0f, 7.5f, 17.2f, 1.1f, 7.5f);
             foreach (float x in new[] { -14f, 14f })
             {
                 Greybox.Box("Gantry leg", Root, L(8, x, 4.5f, -6f), new Vector3(0.8f, 9f, 1.2f), CraneYellow, surface: Surface.Metal);

@@ -27,6 +27,7 @@ namespace ZombiesFPS.Editor
                 if (job == "poses") InspectPoses();
                 if (job == "tests") ImportedModelValidation.RunTests();
                 if (job == "review") ImportedModelValidation.Review();
+                if (job == "player") ImportedModelValidation.BuildPlayer();
                 File.WriteAllText("Temp/model-import/result.txt", "OK " + job);
             }
             catch (Exception e) { File.WriteAllText("Temp/model-import/result.txt", e.ToString()); Debug.LogException(e); }
@@ -353,7 +354,26 @@ namespace ZombiesFPS.Editor
             combined.RecalculateTangents(); combined.RecalculateBounds();
             var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (existing == null) AssetDatabase.CreateAsset(combined, path);
-            else { existing.Clear(); EditorUtility.CopySerialized(combined, existing); UnityEngine.Object.DestroyImmediate(combined); combined = existing; }
+            else
+            {
+                // CopySerialized does not reliably transfer a generated skinned mesh's native
+                // vertex buffers. It produced an asset with triangles/bind poses but zero vertices.
+                existing.Clear();
+                existing.indexFormat = combined.indexFormat;
+                existing.vertices = combined.vertices;
+                existing.normals = combined.normals;
+                existing.uv = combined.uv;
+                existing.tangents = combined.tangents;
+                existing.bindposes = combined.bindposes;
+                existing.boneWeights = combined.boneWeights;
+                existing.subMeshCount = combined.subMeshCount;
+                for (int i = 0; i < combined.subMeshCount; i++) existing.SetTriangles(combined.GetTriangles(i), i);
+                existing.RecalculateBounds();
+                UnityEngine.Object.DestroyImmediate(combined);
+                combined = existing;
+            }
+            if (combined.vertexCount != vertices.Count || combined.boneWeights.Length != vertices.Count)
+                throw new InvalidOperationException("Hazmat mesh lost its vertices or skin weights during generation.");
             combined.UploadMeshData(false);
             EditorUtility.SetDirty(combined);
             foreach (var r in renderers) UnityEngine.Object.DestroyImmediate(r);

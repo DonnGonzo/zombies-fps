@@ -61,6 +61,11 @@ namespace ZombiesFPS.Tests
                 for (int h = 0; h < ZoneMap.HighSpotCount; h++)
                     if (ZoneMap.HighSpotZones[h] == zone) targets.Add(("mission " + h, ZoneMap.HighSpot(h)));
                 if (zone == 14) targets.Add(("reader's dais", ZoneMap.ZoneCenter(zone) + new Vector3(0f, 0.4f, 14.5f)));
+                if (zone == 8)
+                {
+                    targets.Add(("west freight top", ZoneMap.ZoneCenter(zone) + new Vector3(-14f, 1.1f, -9f)));
+                    targets.Add(("east freight top", ZoneMap.ZoneCenter(zone) + new Vector3(18f, 1.1f, 7.5f)));
+                }
 
                 var bounds = new Bounds(ZoneMap.ZoneCenter(zone), Vector3.zero);
                 foreach (var r in ZoneMap.ZoneRects(zone))
@@ -86,6 +91,7 @@ namespace ZombiesFPS.Tests
                 data = NavMeshBuilder.BuildNavMeshData(settings, sources, bounds, Vector3.zero, Quaternion.identity);
                 Assert.IsNotNull(data);
                 instance = NavMesh.AddNavMeshData(data);
+                typeof(ZoneMap).GetMethod("AddNavLinks", flags).Invoke(map, null);
                 Assert.IsTrue(NavMesh.SamplePosition(targets[0].point, out var start, 0.65f, NavMesh.AllAreas));
                 foreach (var target in targets)
                 {

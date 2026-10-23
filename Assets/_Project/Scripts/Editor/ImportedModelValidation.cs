@@ -14,6 +14,19 @@ namespace ZombiesFPS.Editor
     public static class ImportedModelValidation
     {
         static TestRunnerApi _tests;
+        public static void BuildPlayer()
+        {
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { "Assets/_Project/Scenes/Prototype.unity" },
+                locationPathName = "Builds/Windows-Test-02/ZombiesFPS.exe",
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.None,
+            });
+            File.WriteAllText("Temp/model-import/player-build.txt", report.summary.result + "\nErrors: " + report.summary.totalErrors);
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                throw new InvalidOperationException("Windows test build failed: " + report.summary.result);
+        }
         public static void RunTests()
         {
             _tests = ScriptableObject.CreateInstance<TestRunnerApi>();

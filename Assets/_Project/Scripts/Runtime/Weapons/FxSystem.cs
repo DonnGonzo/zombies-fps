@@ -132,12 +132,12 @@ namespace ZombiesFPS.Weapons
             }
 
             // Smoke and dust: soft camera-facing quads on a plain blended material, tinted per puff.
-            var sprites = Shader.Find("Sprites/Default");
-            if (sprites != null)
+            // Use the Resources-backed shader shared by the other effects. Shader.Find-only
+            // sprite variants can be stripped from standalone clients and leave opaque quads.
+            var puffMat = FxSprites.Make(FxSprites.Smoke, false, Color.white);
+            if (puffMat != null)
             {
-                // Kenney's soft smoke from the Brackeys bundle where it's in the project, else the drawn one.
-                var smoke = Resources.Load<Texture2D>("Fx/" + FxSprites.Smoke);
-                var puffMat = new Material(sprites) { name = "Puff", mainTexture = smoke != null ? smoke : FxTextures.Puff() };
+                puffMat.name = "Puff";
                 _puffBlock = new MaterialPropertyBlock();
                 for (int i = 0; i < PuffCount; i++)
                 {

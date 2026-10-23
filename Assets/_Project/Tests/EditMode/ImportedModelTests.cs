@@ -31,6 +31,10 @@ namespace ZombiesFPS.Tests
             Assert.IsEmpty(prefab.GetComponentsInChildren<Collider>(), "Map collision must remain independent of visual quality settings.");
             var renderers = prefab.GetComponentsInChildren<Renderer>();
             Assert.IsNotEmpty(renderers);
+            foreach (var filter in prefab.GetComponentsInChildren<MeshFilter>())
+                Assert.Greater(filter.sharedMesh.vertexCount, 0, id + " contains an empty mesh.");
+            foreach (var skin in prefab.GetComponentsInChildren<SkinnedMeshRenderer>())
+                Assert.Greater(skin.sharedMesh.vertexCount, 0, id + " contains an empty skinned mesh.");
             foreach (var renderer in renderers)
                 foreach (var material in renderer.sharedMaterials)
                 {
@@ -110,10 +114,65 @@ namespace ZombiesFPS.Tests
                 Assert.AreEqual(1, visible.Length);
                 Assert.AreEqual(2, visible[0].sharedMaterials.Length);
                 Assert.IsTrue(visible[0].sharedMaterials.All(m => m.mainTexture != null));
+                var baked = new Mesh();
+                try
+                {
+                    var source = visible[0].sharedMesh;
+                    Assert.Greater(source.vertexCount, 100);
+                    Assert.AreEqual(source.vertexCount, source.boneWeights.Length);
+                    Assert.IsTrue(source.boneWeights.All(w => w.weight0 + w.weight1 + w.weight2 + w.weight3 > 0.99f), "Unweighted vertices");
+                    Assert.IsTrue(source.bindposes.All(m => Mathf.Abs(m.determinant) > 1e-12f), "Singular bind poses");
+                    Assert.Greater(visible[0].transform.lossyScale.y, 0.0001f, "Skin scale");
+                    visible[0].BakeMesh(baked);
+                    baked.RecalculateBounds();
+                    var size = Vector3.Scale(baked.bounds.size, visible[0].transform.lossyScale);
+                    Assert.That(size.y, Is.InRange(1f, 2.5f), "Deformed skin must remain human-sized: " + size);
+                    var center = visible[0].transform.TransformPoint(baked.bounds.center);
+                    Assert.Less(Vector3.Distance(center, parent.transform.position + Vector3.up), 1f, "Skin must remain at its hitbox: " + center);
+                }
+                finally { Object.DestroyImmediate(baked); }
                 model.Die(0, false);
                 model.Animate(0.016f, 0f, false, 0f, 1f, 0, 0f, false);
             }
             finally { Object.DestroyImmediate(parent); }
+        }
+
+        [Test]
+        public void BloodPuffHasTransparentCornersAndFadesCompletely()
+        {
+            var material = FxSprites.Make(FxSprites.Smoke, false, new Color(0.32f, 0.02f, 0.02f, 0.6f));
+            Assert.IsNotNull(material);
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var cameraObject = new GameObject("Puff render test");
+            var target = new RenderTexture(64, 64, 16);
+            var pixels = new Texture2D(64, 64, TextureFormat.RGB24, false);
+            var previous = RenderTexture.active;
+            bool fog = RenderSettings.fog;
+            try
+            {
+                RenderSettings.fog = false;
+                quad.layer = 31;
+                quad.transform.position = new Vector3(0, 0, 2);
+                quad.GetComponent<Renderer>().sharedMaterial = material;
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.orthographic = true; camera.orthographicSize = 0.5f;
+                camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.white;
+                camera.cullingMask = 1 << 31; camera.targetTexture = target;
+                camera.Render(); RenderTexture.active = target;
+                pixels.ReadPixels(new Rect(0, 0, 64, 64), 0, 0); pixels.Apply();
+                Assert.Greater(pixels.GetPixel(2, 2).grayscale, 0.95f, "Smoke corners must not render a black square.");
+                Assert.Less(pixels.GetPixel(32, 32).grayscale, 0.95f, "The center must actually draw blood mist.");
+                material.color = new Color(0.32f, 0.02f, 0.02f, 0f);
+                camera.Render(); pixels.ReadPixels(new Rect(0, 0, 64, 64), 0, 0); pixels.Apply();
+                Assert.IsTrue(pixels.GetPixels().All(c => c.grayscale > 0.99f), "Zero alpha must leave no opaque quad.");
+            }
+            finally
+            {
+                RenderSettings.fog = fog; RenderTexture.active = previous;
+                Object.DestroyImmediate(cameraObject); Object.DestroyImmediate(quad);
+                Object.DestroyImmediate(target); Object.DestroyImmediate(pixels); Object.DestroyImmediate(material);
+            }
         }
 
         [Test]
