@@ -40,8 +40,8 @@ namespace ZombiesFPS.Net
     ///    (everyone is sent to the Hollow Keep, Ashgrave stands, talks and fights). Winning hands out the
     ///    ending's boon and gun or sword, and the ways back up take everyone home.
     ///
-    /// Extra zombies come straight from the pool and never count toward the round. While anyone is off the map
-    /// the round stops spawning (HoldsRound), since its zombies couldn't reach them.
+    /// Extra zombies come straight from the pool and never count toward the round. While a room is sealed or anyone
+    /// is off the map the round stops spawning (HoldsRound) and carries on where it was once the step is over.
     ///
     /// Every machine follows the network variables: the lines, the fields, the props and the music all come from
     /// them changing, so nothing else needs sending except the lightning and fire strikes.
@@ -202,11 +202,16 @@ namespace ZombiesFPS.Net
             return inside;
         }
 
-        /// <summary>Host: the round holds its spawns while anyone is down in the Sanctum or the Keep.</summary>
+        /// <summary>
+        /// Host: the round holds its spawns while a step (or the Temple's guardian) has a room sealed, so only the
+        /// step's own enemies come, and while anyone is down in the Sanctum or the Keep. The round picks up where it
+        /// left off once the step is won or lost.
+        /// </summary>
         public bool HoldsRound
         {
             get
             {
+                if (SealedZone >= 0) return true;
                 foreach (var p in NetPlayer.All)
                     if (p != null && p.State.Value != LifeState.Dead && ZoneMap.InArena(p.transform.position)) return true;
                 return false;

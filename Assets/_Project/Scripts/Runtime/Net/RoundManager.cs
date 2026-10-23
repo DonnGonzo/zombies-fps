@@ -28,6 +28,7 @@ namespace ZombiesFPS.Net
 
         const float MinSpawnDistance = 5f;
         const float RetrySpawnDelay = 0.25f;
+        const float ResumeDelay = 3f;
         /// <summary>Zombies come from one of this many open windows nearest the players, so they find them fast.</summary>
         const int NearestWindows = 4;
         const long DebugPoints = 5000;
@@ -111,8 +112,14 @@ namespace ZombiesFPS.Net
                     break;
 
                 case GamePhase.RoundActive:
-                    // Nothing spawns while the squad is down in the easter egg's rooms off the map: zombies couldn't reach them.
+                    // Nothing spawns while an easter egg step has its room sealed or the squad is off the map. The round
+                    // is paused, not skipped: what's left still comes, a moment after the step ends.
                     bool held = EasterEgg.Instance != null && EasterEgg.Instance.HoldsRound;
+                    if (held)
+                    {
+                        _nextSpawnTime = Mathf.Max(_nextSpawnTime, Time.time + ResumeDelay);
+                        _nextBossTime = Mathf.Max(_nextBossTime, Time.time + ResumeDelay);
+                    }
                     if (!held && _toSpawn > 0 && AliveZombies.Value < LiveCap && Time.time >= _nextSpawnTime)
                     {
                         bool spawned = TrySpawn(PickKind(Round.Value));
