@@ -323,7 +323,7 @@ namespace ZombiesFPS.Core
             y = right.y + pad;
             Ui.Label(new Rect(x, y, w, 30 * u), "PLAY", Ui.Small, Ui.Muted, TextAnchor.UpperLeft);
             y += 34 * u;
-            if (Ui.Button(new Rect(x, y, w, 64 * u), "HOST GAME", accent: true)) Host();
+            if (Ui.Button(new Rect(x, y, w, 64 * u), "HOST GAME", accent: true, preferred: true)) Host();
             y += 72 * u;
             var wrap = new GUIStyle(Ui.Small) { wordWrap = true };
             Ui.Label(new Rect(x, y, w, 52 * u), $"Play solo, or have friends join you at {LocalAddress()} port {_port} (same network, or forward the port).", wrap, Ui.Muted, TextAnchor.UpperLeft);
@@ -342,7 +342,7 @@ namespace ZombiesFPS.Core
             y += 70 * u;
             GUI.enabled = true;
 
-            if (_connecting && Ui.Button(new Rect(x, y, w, 48 * u), "Cancel")) ReturnToMenu("Cancelled.");
+            if (_connecting && Ui.Button(new Rect(x, y, w, 48 * u), "Cancel", cancel: true, preferred: true)) ReturnToMenu("Cancelled.");
             if (_connecting) y += 58 * u;
             if (!string.IsNullOrEmpty(_status))
                 Ui.Label(new Rect(x, y, w, 80 * u), _status, wrap, Ui.Amber, TextAnchor.UpperLeft);
@@ -407,7 +407,7 @@ namespace ZombiesFPS.Core
                 $"•  Your name shows the P{_prestige + 1} {shop.PrestigeName(_prestige + 1)} emblem to your squad." + camo +
                 $"\n\nThere are {shop.MaxPrestige} prestige ranks. This can't be undone.", wrap, Ui.Text, TextAnchor.UpperLeft);
             float bw = (w - 20 * u) / 2f;
-            if (Ui.Button(new Rect(x, box.yMax - pad - 56 * u, bw, 56 * u), "Cancel")) _screen = MenuScreen.Main;
+            if (Ui.Button(new Rect(x, box.yMax - pad - 56 * u, bw, 56 * u), "Cancel", cancel: true, preferred: true)) _screen = MenuScreen.Main;
             if (Ui.Button(new Rect(x + bw + 20 * u, box.yMax - pad - 56 * u, bw, 56 * u), "PRESTIGE", accent: true))
             {
                 ProfileSave.SaveBestLevel(_profileLevel);
@@ -522,7 +522,7 @@ namespace ZombiesFPS.Core
                 Ui.Label(new Rect(x, y, w, 60 * u), "Still locked: " + next, wrap, Ui.Muted, TextAnchor.UpperLeft);
             }
 
-            if (Ui.Button(new Rect(x, panel.yMax - pad - 52 * u, 240 * u, 52 * u), "Done", accent: true))
+            if (Ui.Button(new Rect(x, panel.yMax - pad - 52 * u, 240 * u, 52 * u), "Done", accent: true, cancel: true))
             {
                 SaveCosmetics();
                 _screen = MenuScreen.Main;

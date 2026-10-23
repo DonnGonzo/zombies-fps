@@ -283,14 +283,27 @@ namespace ZombiesFPS.UI
 
         public static float Width(string text, GUIStyle style) => style.CalcSize(new GUIContent(text)).x;
 
+        /// <summary>How wide Key draws a cap.</summary>
+        public static float KeyWidth(string key, float height) => Mathf.Max(height, Width(key, KeyCap) + KeyCap.padding.horizontal);
+
         /// <summary>A key cap like [E]. Returns its width.</summary>
         public static float Key(Vector2 at, string key, float height)
         {
-            float w = Mathf.Max(height, Width(key, KeyCap) + KeyCap.padding.horizontal);
+            float w = KeyWidth(key, height);
             if (Event.current.type == EventType.Repaint)
             {
+                var r = new Rect(at.x, at.y, w, height);
                 RoundRect(new Rect(at.x + 1, at.y + 2, w, height), new Color(0f, 0f, 0f, 0.5f), small: true);
-                GUI.Label(new Rect(at.x, at.y, w, height), key, KeyCap);
+                if (GameInput.FaceColor(key, out Color face))
+                {
+                    // A controller face button in its own colour, like the pad in the player's hands.
+                    RoundRect(r, face, small: true);
+                    var old = KeyCap.normal.textColor;
+                    KeyCap.normal.textColor = Color.white;
+                    GUI.Label(r, key, KeyCap);
+                    KeyCap.normal.textColor = old;
+                }
+                else GUI.Label(r, key, KeyCap);
             }
             return w;
         }
@@ -307,7 +320,28 @@ namespace ZombiesFPS.UI
             Label(new Rect(x + kw + gap, y, tw + 4, h), text, style, color, TextAnchor.MiddleLeft);
         }
 
-        public static bool Button(Rect r, string text, bool accent = false) => GUI.Button(r, text, accent ? ButtonAccent : ButtonStyle);
+        /// <summary>
+        /// A menu button. On a controller it can take the focus (preferred: where focus starts on this screen) and
+        /// A presses it; a cancel button is also pressed by B, so mark each screen's Back or Cancel button with it.
+        /// </summary>
+        public static bool Button(Rect r, string text, bool accent = false, bool cancel = false, bool preferred = false, bool focusable = true) =>
+            Button(r, text, accent ? ButtonAccent : ButtonStyle, cancel, preferred, focusable);
+
+        public static bool Button(Rect r, string text, GUIStyle style, bool cancel = false, bool preferred = false, bool focusable = true)
+        {
+            bool clicked = GUI.Button(r, text, style);
+            if (focusable && PadNav.Register(r, PadNav.Kind.Button, preferred) && PadNav.TakeSubmit()) clicked = true;
+            if (cancel && PadNav.TakeCancel()) clicked = true;
+            return clicked;
+        }
+
+        /// <summary>One of a row of choices drawn as buttons (tabs, quality levels). Returns true when picked.</summary>
+        public static bool Choice(Rect r, bool on, string text, bool focusable = true)
+        {
+            bool picked = GUI.Toggle(r, on, text, ButtonStyle) && !on;
+            if (focusable && PadNav.Register(r, PadNav.Kind.Button) && PadNav.TakeSubmit()) picked = true;
+            return picked;
+        }
 
         /// <summary>A labelled slider row. Returns the new value.</summary>
         public static float Slider(Rect r, string label, float value, float min, float max, string valueText, float u)
@@ -316,6 +350,8 @@ namespace ZombiesFPS.UI
             Label(new Rect(r.x, r.y, lw, r.height), label, Body, Text, TextAnchor.MiddleLeft);
             float v = GUI.HorizontalSlider(new Rect(r.x + lw, r.y + r.height / 2f - 12 * u, r.width - lw - vw - 12 * u, 24 * u), value, min, max, SliderBar, SliderThumb);
             Label(new Rect(r.xMax - vw, r.y, vw, r.height), valueText, Body, Muted, TextAnchor.MiddleRight);
+            // On a controller, left and right move a focused slider a twentieth of its range at a time.
+            if (PadNav.Register(r, PadNav.Kind.Slider) && PadNav.Adjust != 0) v = Mathf.Clamp(v + PadNav.Adjust * (max - min) / 20f, min, max);
             return v;
         }
 
@@ -327,6 +363,7 @@ namespace ZombiesFPS.UI
                 Label(new Rect(r.x + Width(label, Body) + 14 * u, r.y, r.width, r.height), hint, Tiny, Muted, TextAnchor.MiddleLeft);
             var b = new Rect(r.xMax - 96 * u, r.y + (r.height - 40 * u) / 2f, 96 * u, 40 * u);
             if (GUI.Button(b, value ? "ON" : "OFF", value ? ButtonAccent : ButtonStyle)) value = !value;
+            else if (PadNav.Register(r, PadNav.Kind.Toggle) && PadNav.TakeSubmit()) value = !value;
             return value;
         }
 

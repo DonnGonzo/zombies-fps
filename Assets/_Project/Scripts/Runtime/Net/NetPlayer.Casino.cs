@@ -18,6 +18,8 @@ namespace ZombiesFPS.Net
             public int[] reels = Array.Empty<int>();
         }
         public bool CasinoOpen { get; private set; }
+        /// <summary>The highlighted bet or move (0-3) for controller players.</summary>
+        public int CasinoCursor { get; private set; }
         public CasinoView Casino { get; private set; } = new CasinoView();
         BlackjackGame _blackjack;
         CasinoView _slotView;
@@ -51,7 +53,13 @@ namespace ZombiesFPS.Net
                 return;
             }
             if (!CasinoOpen) return;
+            // On a controller the d-pad moves along the four bets (or moves) and A takes one.
+            GameInput.ClaimPadMenu();
+            var step = GameInput.DpadStep;
+            int move = step.x != 0 ? step.x : -step.y;
+            if (move != 0) CasinoCursor = (CasinoCursor + move + 4) % 4;
             int key = GameInput.NumberPressed;
+            if (key < 0 && GameInput.SubmitPressed) key = CasinoCursor;
             if (key < 0 || key > 3 || _casinoPending || Time.unscaledTime < CasinoRevealAt) return;
             _casinoPending = true; _casinoSentAt = Time.unscaledTime;
             CasinoCommandRpc(FocusedBuyable.Index, key, Casino.version);

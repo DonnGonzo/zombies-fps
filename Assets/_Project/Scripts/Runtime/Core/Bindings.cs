@@ -175,7 +175,112 @@ namespace ZombiesFPS.Core
             }
         }
 
-        /// <summary>The key name of an action, for on-screen prompts.</summary>
-        public static string Name(GameAction action) => KeyName(Get(action));
+        /// <summary>
+        /// The key or button for an action, for on-screen prompts: the controller button while the player is on a
+        /// pad (movement is the left stick), else the key.
+        /// </summary>
+        public static string Name(GameAction action)
+        {
+            if (GameInput.UsingGamepad)
+            {
+                if (PadBindings.IsFixed(action)) return "Left stick";
+                var b = PadBindings.Get(action);
+                if (b != PadButton.None) return GameInput.PadName(b);
+            }
+            return KeyName(Get(action));
+        }
+    }
+
+    /// <summary>
+    /// Controller bindings, saved on the player's PC next to the key bindings. Movement is always the left stick and
+    /// look the right stick; Start is reserved for the menu. Any other action can go on any other button, or none.
+    /// </summary>
+    public static class PadBindings
+    {
+        static readonly PadButton[] Defaults =
+        {
+            PadButton.None, PadButton.None, PadButton.None, PadButton.None,
+            PadButton.South, PadButton.LeftStick,
+            PadButton.RightTrigger, PadButton.LeftTrigger, PadButton.West, PadButton.North,
+            PadButton.East, PadButton.None, PadButton.None,
+            PadButton.RightStick, PadButton.RightShoulder, PadButton.LeftShoulder, PadButton.DpadRight,
+            PadButton.Select,
+        };
+
+        /// <summary>Buttons the settings menu accepts when rebinding (Start cancels instead).</summary>
+        public static readonly PadButton[] Capturable =
+        {
+            PadButton.South, PadButton.East, PadButton.West, PadButton.North,
+            PadButton.LeftShoulder, PadButton.RightShoulder, PadButton.LeftTrigger, PadButton.RightTrigger,
+            PadButton.LeftStick, PadButton.RightStick, PadButton.Select,
+            PadButton.DpadUp, PadButton.DpadDown, PadButton.DpadLeft, PadButton.DpadRight,
+        };
+
+        static PadButton[] s_Buttons;
+
+        static PadButton[] Buttons
+        {
+            get
+            {
+                if (s_Buttons == null) Load();
+                return s_Buttons;
+            }
+        }
+
+        static string PrefKey(GameAction action) => "ZombiesFPS.PadBind." + action;
+
+        /// <summary>Movement is on the left stick and can't be moved to buttons.</summary>
+        public static bool IsFixed(GameAction action) => action <= GameAction.MoveRight;
+
+        public static PadButton Default(GameAction action) => Defaults[(int)action];
+        public static PadButton Get(GameAction action) => Buttons[(int)action];
+
+        /// <summary>Binds a button. If another action had it, that action takes this one's old button (or none).</summary>
+        public static void Set(GameAction action, PadButton button)
+        {
+            if (IsFixed(action) || (button != PadButton.None && !IsCapturable(button))) return;
+            Assign(Buttons, action, button);
+            Save();
+        }
+
+        /// <summary>The swap rule on its own: the action takes the button, and whoever had it takes the action's old one.</summary>
+        public static void Assign(PadButton[] buttons, GameAction action, PadButton button)
+        {
+            int i = (int)action;
+            PadButton old = buttons[i];
+            if (button != PadButton.None)
+                for (int other = 0; other < buttons.Length; other++)
+                    if (other != i && buttons[other] == button) buttons[other] = old;
+            buttons[i] = button;
+        }
+
+        /// <summary>A copy of the shipped layout.</summary>
+        public static PadButton[] DefaultLayout() => (PadButton[])Defaults.Clone();
+
+        public static void ResetAll()
+        {
+            s_Buttons = (PadButton[])Defaults.Clone();
+            Save();
+        }
+
+        public static bool IsCapturable(PadButton button) => Array.IndexOf(Capturable, button) >= 0;
+
+        static void Load()
+        {
+            s_Buttons = (PadButton[])Defaults.Clone();
+            for (int i = 0; i < s_Buttons.Length; i++)
+            {
+                if (IsFixed((GameAction)i)) continue;
+                int saved = PlayerPrefs.GetInt(PrefKey((GameAction)i), (int)Defaults[i]);
+                var b = (PadButton)saved;
+                if (b == PadButton.None || IsCapturable(b)) s_Buttons[i] = b;
+            }
+        }
+
+        static void Save()
+        {
+            for (int i = 0; i < s_Buttons.Length; i++) PlayerPrefs.SetInt(PrefKey((GameAction)i), (int)s_Buttons[i]);
+            PlayerPrefs.Save();
+        }
     }
 }
