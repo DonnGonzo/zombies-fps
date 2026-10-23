@@ -53,9 +53,8 @@ namespace ZombiesFPS.Data
     }
 
     /// <summary>
-    /// The story and every placeholder line in the game: the Dispatcher's radio calls, the Trader's lore,
-    /// each character's voice lines and the banter pairs. Written as text for placeholder "blip" voices and
-    /// subtitles; real recordings replace the blips later and can keep these as scripts.
+    /// The dialogue script: the Dispatcher's radio calls, the Trader's lore,
+    /// each character's voice lines and the banter pairs. Text supplies subtitles and stable recording IDs.
     ///
     /// The story runs from round 1 and finishes at round 50: Setup (1-10), Rising stakes (11-25), Twist
     /// (26-40) and Endgame (41-50). After that the game carries on as long as the squad lasts (a win at

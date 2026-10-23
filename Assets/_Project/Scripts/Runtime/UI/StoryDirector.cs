@@ -189,6 +189,7 @@ namespace ZombiesFPS.UI
             if (_queue.Count == 0 || Time.time < _nextLineAt) return;
             var (speaker, text, color, pitch, voice) = _queue.Dequeue();
             if (string.IsNullOrEmpty(text)) return;
+            voice = voice != null ? voice : VoiceLibrary.Get(speaker, text);
             // The Trader and the easter egg's people in the room talk to you directly; everyone else is on the radio.
             bool radio = speaker != StoryData.TraderName && speaker != EasterEggData.SpeakerName(EggSpeaker.Watchman)
                 && speaker != EasterEggData.SpeakerName(EggSpeaker.God) && speaker != EasterEggData.SpeakerName(EggSpeaker.General);

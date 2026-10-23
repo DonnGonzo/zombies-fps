@@ -1,0 +1,1674 @@
+{
+    "lines": [
+        {
+            "speaker": "Ashgrave",
+            "text": "Four hundred years, and my first guests are the devil's errand runners.",
+            "path": "Audio/Voice/Ashgrave/s5_gen_1"
+        },
+        {
+            "speaker": "Ashgrave",
+            "text": "I'm Ashgrave. I led the Watch, I made the bargain, and yes, I broke it.",
+            "path": "Audio/Voice/Ashgrave/s5_gen_2"
+        },
+        {
+            "speaker": "Ashgrave",
+            "text": "Azhrakel would have burned the world clean of everything that lives. I took enough of its fire to keep it asleep, and I have held its door shut from in here ever since.",
+            "path": "Audio/Voice/Ashgrave/s5_gen_3"
+        },
+        {
+            "speaker": "Ashgrave",
+            "text": "But you came to kill me, so let's not pretend. Draw, then. Let's see what the god bought.",
+            "path": "Audio/Voice/Ashgrave/s5_gen_4"
+        },
+        {
+            "speaker": "Ashgrave",
+            "text": "Well struck... Keep my blade. Oathbreaker. It never cared who held it.",
+            "path": "Audio/Voice/Ashgrave/s5_gendone_1"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "Brave. Foolish. Delicious. Come, then!",
+            "path": "Audio/Voice/Azhrakel/s5_fight_1"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "The Betrayer is dead. As I promised: my fire is yours, three times over. Now go, and remember who you serve.",
+            "path": "Audio/Voice/Azhrakel/s5_gendone_2"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "Good. Through the fire, then. He waits for you in his Hollow Keep.",
+            "path": "Audio/Voice/Azhrakel/s5_serve_1"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "A spark... and a heart. The little ones bring me gifts.",
+            "path": "Audio/Voice/Azhrakel/s5_start_1"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "I am Azhrakel. I was burning before your kind learned fire, and I have slept beneath your walls four hundred years.",
+            "path": "Audio/Voice/Azhrakel/s5_start_2"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "One of you was clever once. Corvin Ashgrave. He bowed, he swore, and then he stole from me and ran to a place even I cannot reach.",
+            "path": "Audio/Voice/Azhrakel/s5_start_3"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "So choose. Raise your weapons against me and win, and I will give you my brand and my blood. Or serve me: go where I cannot, and bring me the Betrayer's death.",
+            "path": "Audio/Voice/Azhrakel/s5_start_4"
+        },
+        {
+            "speaker": "Azhrakel",
+            "text": "Enough... enough! You have won. Take my brand, and take my blood. Let the world burn a little brighter in your hands.",
+            "path": "Audio/Voice/Azhrakel/s5_won_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Not bad. Not bad at all. Watch the containers, they come over the top!",
+            "path": "Audio/Voice/Brannock/s3_along_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Brutes! Go for the head, they've got plate on everything else.",
+            "path": "Audio/Voice/Brannock/s3_along_2"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Almost there! Clean up the rest, then the big one, and we're done!",
+            "path": "Audio/Voice/Brannock/s3_along_3"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Hah. You fight like the Watch did. Alright. I owe you a story.",
+            "path": "Audio/Voice/Brannock/s3_done_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Morrow told you he wants to burn death out of the world. He wasn't lying. He just never told you what does the burning.",
+            "path": "Audio/Voice/Brannock/s3_done_2"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Under this place sleeps Azhrakel, the Ember Below. A god of fire and blood. The Watch was founded to keep it sealed, and we kept it four hundred years.",
+            "path": "Audio/Voice/Brannock/s3_done_3"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Then our own Lord-General, Corvin Ashgrave, made a bargain with it. He stole a piece of its power, betrayed the god and the Watch both, and vanished.",
+            "path": "Audio/Voice/Brannock/s3_done_4"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "That spark is a key. Under the Greenhouse are the old binding stones. Set the spark in them and the circle wakes, and so does its keeper. Kill it, and the way down opens.",
+            "path": "Audio/Voice/Brannock/s3_done_5"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Agh! I'm down... no, I'm alright. Pathetic. Come and talk to me when you can actually hold a line.",
+            "path": "Audio/Voice/Brannock/s3_fail_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Stop right there. That glow in your hands. Where did you get a charged spark?",
+            "path": "Audio/Voice/Brannock/s3_start_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "Morrow. Of course it's Morrow. I'm Brannock, last sergeant of the Lantern Watch, and I don't talk to strangers carrying his toys.",
+            "path": "Audio/Voice/Brannock/s3_start_2"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "You want answers? Then prove you're not his puppets. Hear that? They always come when that thing glows. Keep them off me!",
+            "path": "Audio/Voice/Brannock/s3_start_3"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "It's down! Take its heart, and get the spark out of the stones.",
+            "path": "Audio/Voice/Brannock/s4_done_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "The stones are bleeding. That's the way down to the blood altar. Everyone goes together, or nobody goes.",
+            "path": "Audio/Voice/Brannock/s4_done_3"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "That's it, the spark's in the stones. Now get ready. The circle has a keeper.",
+            "path": "Audio/Voice/Brannock/s4_start_1"
+        },
+        {
+            "speaker": "Brannock",
+            "text": "The Rotbloom. Grown out of the god's own blood. Cut it down!",
+            "path": "Audio/Voice/Brannock/s4_start_3"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Rook, what were you even delivering down here?",
+            "path": "Audio/Voice/Dee/085e9bbe79dd7eea"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Glug glug. Better.",
+            "path": "Audio/Voice/Dee/0b6a42ac269b078b"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Easy money.",
+            "path": "Audio/Voice/Dee/0e34b0d6fc4f2070"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Showtime.",
+            "path": "Audio/Voice/Dee/172510dd84441f04"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Thanks. I'll fix your gun later.",
+            "path": "Audio/Voice/Dee/1880f12fc563225c"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Mag's almost empty!",
+            "path": "Audio/Voice/Dee/1aa3e9a22fb88517"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Oh, I'm keeping this one.",
+            "path": "Audio/Voice/Dee/2177e0bb07748108"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Two-fifty. These things are getting creative.",
+            "path": "Audio/Voice/Dee/26b8e2c459e12d67"
+        },
+        {
+            "speaker": "Dee",
+            "text": "My hero. Don't tell anyone.",
+            "path": "Audio/Voice/Dee/2bc3d210951c8830"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Five hundred. I'm putting this on my resume.",
+            "path": "Audio/Voice/Dee/2c9506e67abf9f66"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Why do you look like me?",
+            "path": "Audio/Voice/Dee/321cc8954831a5ba"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Down goes the big one!",
+            "path": "Audio/Voice/Dee/34585da00dddec24"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Dark rounds. Fantastic. My favourite.",
+            "path": "Audio/Voice/Dee/385b20014dcb9f4e"
+        },
+        {
+            "speaker": "Dee",
+            "text": "That all you got?",
+            "path": "Audio/Voice/Dee/39b3229a0a93b837"
+        },
+        {
+            "speaker": "Dee",
+            "text": "That's not the gun. That's me, judging your aim.",
+            "path": "Audio/Voice/Dee/421fc6420b34d3eb"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Listen to that purr.",
+            "path": "Audio/Voice/Dee/4633e869697202f7"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Job done. Pay me.",
+            "path": "Audio/Voice/Dee/4d5d862710389d4a"
+        },
+        {
+            "speaker": "Dee",
+            "text": "A hundred rounds and I still haven't broken a nail.",
+            "path": "Audio/Voice/Dee/52f5102e3da5548d"
+        },
+        {
+            "speaker": "Dee",
+            "text": "It helps me aim. Also it annoys you.",
+            "path": "Audio/Voice/Dee/53df938fb0608956"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Ooh, they brought friends.",
+            "path": "Audio/Voice/Dee/5d5f4192a6dfb965"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Tastes like motor oil. Love it.",
+            "path": "Audio/Voice/Dee/69ef19057c543d5d"
+        },
+        {
+            "speaker": "Dee",
+            "text": "There we go. Breaking and entering.",
+            "path": "Audio/Voice/Dee/6a077e8c0e509f6f"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Who turned off the lights?",
+            "path": "Audio/Voice/Dee/6aefa3edc728b9f5"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Door's open. Hinges could use oil.",
+            "path": "Audio/Voice/Dee/6baa8dddb30dd746"
+        },
+        {
+            "speaker": "Dee",
+            "text": "I need a hand. Literally.",
+            "path": "Audio/Voice/Dee/82785a6a64f87af1"
+        },
+        {
+            "speaker": "Dee",
+            "text": "The machine likes me. Everyone does.",
+            "path": "Audio/Voice/Dee/82f86fd6ca52f6e3"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Marlow, ever smile?",
+            "path": "Audio/Voice/Dee/9691ca5d7e765010"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Clear! Somebody give me a wrench.",
+            "path": "Audio/Voice/Dee/9b9a172cb38ccdfe"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Fifty! Somebody owes me a drink.",
+            "path": "Audio/Voice/Dee/a12d63e34104dc51"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Doc, who builds a zombie machine?",
+            "path": "Audio/Voice/Dee/a3d2a5684449515d"
+        },
+        {
+            "speaker": "Dee",
+            "text": "I can fix the gun. I can't fix the guy holding it.",
+            "path": "Audio/Voice/Dee/a50b6e155a17aeeb"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Upgrade installed.",
+            "path": "Audio/Voice/Dee/a866d0fe1e91c991"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Hello, gorgeous.",
+            "path": "Audio/Voice/Dee/b39f8ecabf484881"
+        },
+        {
+            "speaker": "Dee",
+            "text": "I'm going to need a bigger toolbox.",
+            "path": "Audio/Voice/Dee/b5fc39b6732fb364"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Get them up, I'll cover!",
+            "path": "Audio/Voice/Dee/b61b1f8e56bd6f2a"
+        },
+        {
+            "speaker": "Dee",
+            "text": "That's a big boy.",
+            "path": "Audio/Voice/Dee/b900248ff30c0438"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Ow. Ow! Down, I'm down!",
+            "path": "Audio/Voice/Dee/b9c9b140f3a4aa80"
+        },
+        {
+            "speaker": "Dee",
+            "text": "I was going to ask you that.",
+            "path": "Audio/Voice/Dee/ba99091dc897baa0"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Round's up. Let's make some noise.",
+            "path": "Audio/Voice/Dee/cab5be0a5c479e79"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Whoa. I felt that in my teeth.",
+            "path": "Audio/Voice/Dee/e8022d123b14f8a1"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Someone dropped! Move!",
+            "path": "Audio/Voice/Dee/ecdd0d71b3978503"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Running low!",
+            "path": "Audio/Voice/Dee/faaddfec0e1cc140"
+        },
+        {
+            "speaker": "Dee",
+            "text": "Scrap it.",
+            "path": "Audio/Voice/Dee/fcc836f0f4643826"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Oh no, oh no. Here they come.",
+            "path": "Audio/Voice/Hale/078297262f221804"
+        },
+        {
+            "speaker": "Hale",
+            "text": "That's a Mark Two subject. They were never supposed to wake.",
+            "path": "Audio/Voice/Hale/10e4f506547b7093"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Ammunition is a finite resource!",
+            "path": "Audio/Voice/Hale/12d80b5c942c6235"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Done. That's one variable controlled.",
+            "path": "Audio/Voice/Hale/1832dbdfc2e16b54"
+        },
+        {
+            "speaker": "Hale",
+            "text": "It's down. My notes were right.",
+            "path": "Audio/Voice/Hale/1ae1f650254d74b3"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I helped design this. It shouldn't taste this bad.",
+            "path": "Audio/Voice/Hale/1d59921c950e07bc"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Fascinating. Terrifying, but fascinating.",
+            "path": "Audio/Voice/Hale/2074864faecce11d"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Point the dangerous end at them. Right.",
+            "path": "Audio/Voice/Hale/25152c53b1df7ce4"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Why do you look like me?",
+            "path": "Audio/Voice/Hale/321cc8954831a5ba"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Detective, you're very calm about all this.",
+            "path": "Audio/Voice/Hale/35d7b55597716fc0"
+        },
+        {
+            "speaker": "Hale",
+            "text": "The field is rewriting us. That's... helpful, I suppose.",
+            "path": "Audio/Voice/Hale/37233afe0f2b4294"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Two-fifty. This is my fault, you know.",
+            "path": "Audio/Voice/Hale/3bfa1778ea8b6bc2"
+        },
+        {
+            "speaker": "Hale",
+            "text": "One hundred. I should tell you something. Later.",
+            "path": "Audio/Voice/Hale/402431c1ecb90c94"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Fifty rounds. The Lantern must be loving this.",
+            "path": "Audio/Voice/Hale/47d472da3c2865d2"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I feel stronger. Worrying.",
+            "path": "Audio/Voice/Hale/5612616ad9cedb41"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Shoot the core! The glowing part!",
+            "path": "Audio/Voice/Hale/5c0123aa49dfe263"
+        },
+        {
+            "speaker": "Hale",
+            "text": "The dark makes them faster. I wrote that paper.",
+            "path": "Audio/Voice/Hale/5fdcfdb5288fe74d"
+        },
+        {
+            "speaker": "Hale",
+            "text": "The Lantern is pulling power. Stay together.",
+            "path": "Audio/Voice/Hale/60367ef33ab3197f"
+        },
+        {
+            "speaker": "Hale",
+            "text": "It was a containment array! The zombies were a side effect!",
+            "path": "Audio/Voice/Hale/626ef72558a21250"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I remember this corridor. That's not a good thing.",
+            "path": "Audio/Voice/Hale/742b4999d10c4cde"
+        },
+        {
+            "speaker": "Hale",
+            "text": "We had a lab for this. It's better here.",
+            "path": "Audio/Voice/Hale/83f0d6d96a30bad1"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Vital signs dropping! Over here!",
+            "path": "Audio/Voice/Hale/88c6738173fa42db"
+        },
+        {
+            "speaker": "Hale",
+            "text": "That's not the approved dosage.",
+            "path": "Audio/Voice/Hale/9a493d15a242461d"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I'm hurt! Somebody, please!",
+            "path": "Audio/Voice/Hale/a3e08b3e77685cb9"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I'm nearly out of ammunition!",
+            "path": "Audio/Voice/Hale/a421524ee54c387c"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Your gun's making a noise.",
+            "path": "Audio/Voice/Hale/a6203a068e8bbacb"
+        },
+        {
+            "speaker": "Hale",
+            "text": "This is exactly what the trials predicted!",
+            "path": "Audio/Voice/Hale/b1984b4d18528857"
+        },
+        {
+            "speaker": "Hale",
+            "text": "We survived. Somehow.",
+            "path": "Audio/Voice/Hale/b54f0ceea2d92434"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I was going to ask you that.",
+            "path": "Audio/Voice/Hale/ba99091dc897baa0"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Back up. Remind me to write that down.",
+            "path": "Audio/Voice/Hale/c07791f2c40e60b3"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Job complete.",
+            "path": "Audio/Voice/Hale/c4423ac4facb8e15"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Another specimen down.",
+            "path": "Audio/Voice/Hale/c4b1b38763d0b256"
+        },
+        {
+            "speaker": "Hale",
+            "text": "About four hundred. Why do you... oh. Oh, right.",
+            "path": "Audio/Voice/Hale/c7f99b8312186d4b"
+        },
+        {
+            "speaker": "Hale",
+            "text": "They've gone down! Help them!",
+            "path": "Audio/Voice/Hale/d44cb5ed40c44cab"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Stay calm. I'm calm. I'm fine.",
+            "path": "Audio/Voice/Hale/d7688f6cfaad6c3e"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Opening it. Please let it be empty.",
+            "path": "Audio/Voice/Hale/dba436351d7e070f"
+        },
+        {
+            "speaker": "Hale",
+            "text": "That machine is not supposed to work like that.",
+            "path": "Audio/Voice/Hale/e035b11a8a993afe"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Rook, the box you opened. What colour was the light inside?",
+            "path": "Audio/Voice/Hale/e26b2e3f24da1ec8"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I've never fired one of these. How hard can it be?",
+            "path": "Audio/Voice/Hale/e4867959d9618678"
+        },
+        {
+            "speaker": "Hale",
+            "text": "I knew about the budget. That's different.",
+            "path": "Audio/Voice/Hale/ea4d3a259730ad89"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Thank you. Truly.",
+            "path": "Audio/Voice/Hale/eab0d79dbecbbed3"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Five hundred. I'm so sorry. And thank you.",
+            "path": "Audio/Voice/Hale/ec300221bfafc765"
+        },
+        {
+            "speaker": "Hale",
+            "text": "Statistically, we should be dead already.",
+            "path": "Audio/Voice/Hale/f142a7ea3b2fc363"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "I was a tired cop. Same thing, on a good day.",
+            "path": "Audio/Voice/Marlow/01f9dfbae323f833"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Job's done. Get paid.",
+            "path": "Audio/Voice/Marlow/05fd14dcd8d5fe23"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Owe you one.",
+            "path": "Audio/Voice/Marlow/0d7fd858cb04d3b7"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Hope this stuff isn't expired.",
+            "path": "Audio/Voice/Marlow/12cde6a1107b159e"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Clear. Reload while you can.",
+            "path": "Audio/Voice/Marlow/1fd9730eb55567c9"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Kid, stop showing off.",
+            "path": "Audio/Voice/Marlow/2a66948ec4cfe825"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Upgraded. Let's go to work.",
+            "path": "Audio/Voice/Marlow/3071c1f70045bc3e"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Why do you look like me?",
+            "path": "Audio/Voice/Marlow/321cc8954831a5ba"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Lights out. Stay close.",
+            "path": "Audio/Voice/Marlow/3e528bdc24598b66"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Something in my blood just changed. I'll take it.",
+            "path": "Audio/Voice/Marlow/44186b02ba2501f8"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Can't see a thing. Shoot anything that moans.",
+            "path": "Audio/Voice/Marlow/44dd1d98d617074e"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Another shift.",
+            "path": "Audio/Voice/Marlow/4662593ec1188952"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Tastes like evidence.",
+            "path": "Audio/Voice/Marlow/4988e0612ccfeb9d"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "I feel ten years younger.",
+            "path": "Audio/Voice/Marlow/507d7632147a6a86"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Once. Didn't care for it.",
+            "path": "Audio/Voice/Marlow/5218370b53f35910"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "We've got someone down!",
+            "path": "Audio/Voice/Marlow/559da157d29c3765"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Big one's down.",
+            "path": "Audio/Voice/Marlow/58e2c28830f6bf6b"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Low on ammo, cover me.",
+            "path": "Audio/Voice/Marlow/5e6288ecb87cfd40"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Back on my feet. Thanks.",
+            "path": "Audio/Voice/Marlow/5e7e2bbd9137d6c0"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Now that's a service weapon.",
+            "path": "Audio/Voice/Marlow/68f15abd7d012272"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "That's the round. Breathe.",
+            "path": "Audio/Voice/Marlow/68ffc4de74af4f44"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Officer down. That's me. That's the officer.",
+            "path": "Audio/Voice/Marlow/744dc714837a073d"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Two-fifty. Nobody's believing this report.",
+            "path": "Audio/Voice/Marlow/7bcbd965157e6dd4"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Five hundred. Put me on the pension.",
+            "path": "Audio/Voice/Marlow/7cc71707dcd98e67"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Dee, you're humming again.",
+            "path": "Audio/Voice/Marlow/7da875380f99bfd1"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Doc, you knew about this place.",
+            "path": "Audio/Voice/Marlow/7f6a59d2e806fbd2"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Opening it up. Stay tight.",
+            "path": "Audio/Voice/Marlow/8f9fb5aabd62af79"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "I'm running dry.",
+            "path": "Audio/Voice/Marlow/96613b2c4ababcc2"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Man down! Cover them!",
+            "path": "Audio/Voice/Marlow/a5ac0fa591a72125"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "I was going to ask you that.",
+            "path": "Audio/Voice/Marlow/ba99091dc897baa0"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Fifty rounds. I've had shorter stakeouts.",
+            "path": "Audio/Voice/Marlow/bda69487d14d72cd"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "That's a lot of suspect.",
+            "path": "Audio/Voice/Marlow/c9a4987facfb1a68"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Big one. Hit the glowing part.",
+            "path": "Audio/Voice/Marlow/ca8e1a0e399aa0db"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Ex-detective. And I've seen worse paperwork.",
+            "path": "Audio/Voice/Marlow/ccb3c40466bc3453"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Now we're armed.",
+            "path": "Audio/Voice/Marlow/cf15e37512ac8bb4"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Eyes up. Here they come.",
+            "path": "Audio/Voice/Marlow/de7ee9bb41cd9ef5"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "That'll do.",
+            "path": "Audio/Voice/Marlow/dfa346f974eb5ed9"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Case closed.",
+            "path": "Audio/Voice/Marlow/e474c5de64f5d8c8"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "One hundred. My back hurts.",
+            "path": "Audio/Voice/Marlow/e7182d09cf889953"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Here we go again.",
+            "path": "Audio/Voice/Marlow/e9dca2d1264222e2"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "Door's open. Watch the corners.",
+            "path": "Audio/Voice/Marlow/f7372ab1d38e37b8"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "I'm down! Somebody get over here!",
+            "path": "Audio/Voice/Marlow/f88be063790d7975"
+        },
+        {
+            "speaker": "Marlow",
+            "text": "That's one off the list.",
+            "path": "Audio/Voice/Marlow/fa47843f0fb6af3e"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Get up! Get up. The room has let you go. Catch your breath, then start it again.",
+            "path": "Audio/Voice/Morrow/s0_wipe_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Yes! Can you feel the floor humming? The core remembers what it was made for.",
+            "path": "Audio/Voice/Morrow/s1_along_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Halfway. Vale called this a battery. A battery! It is a heart, and it is starting to beat.",
+            "path": "Audio/Voice/Morrow/s1_along_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Almost there. Keep them coming. Don't let them near the glass!",
+            "path": "Audio/Voice/Morrow/s1_along_3"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Listen to it sing. The Lantern is awake, for the first time in eleven years.",
+            "path": "Audio/Voice/Morrow/s1_done_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Vale only ever wanted a battery. I wanted a door. And you have just knocked on it.",
+            "path": "Audio/Voice/Morrow/s1_done_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Take the spark from the core. Careful, it bites. It is alive, but empty. My old altar in the Archives can fill it, once its four relics are back where they belong. The monks hid them in the Chapel and the Sunken Temple.",
+            "path": "Audio/Voice/Morrow/s1_done_3"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Ahh... hands on my Lantern. Warm hands. Living hands. How long has it been?",
+            "path": "Audio/Voice/Morrow/s1_start_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Don't be frightened. I am Ignatius Morrow. I built this machine, long before Vale put his name on it.",
+            "path": "Audio/Voice/Morrow/s1_start_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "You want to know what it is for? My primal goal, my one true work: to burn death out of the world. Forever.",
+            "path": "Audio/Voice/Morrow/s1_start_3"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "But the Lantern is cold, and it is hungry. Feed it the dead. Fifty of them should wake it. I've sealed the doors, so nobody wanders off.",
+            "path": "Audio/Voice/Morrow/s1_start_4"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "A third of the way. The spark is drinking. Can you hear it humming?",
+            "path": "Audio/Voice/Morrow/s2_along_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Two minutes! It's brighter than I ever managed on my own.",
+            "path": "Audio/Voice/Morrow/s2_along_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Nearly full. Don't let them touch the stone!",
+            "path": "Audio/Voice/Morrow/s2_along_3"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Full. Full of mana! Take it, quickly, before it cools.",
+            "path": "Audio/Voice/Morrow/s2_done_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "There was a man who knew what a charged spark was really for. The Watch kept a post in the Crane Yard. If any of them still breathe, find him.",
+            "path": "Audio/Voice/Morrow/s2_done_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Wait. The water's moving. Something sleeps under that idol, and you've just taken its toys.",
+            "path": "Audio/Voice/Morrow/s2_guard_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "The doors have sealed! Kill it, or you're not leaving that temple.",
+            "path": "Audio/Voice/Morrow/s2_guard_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "It's dead? Good. The doors are open. Bring those relics to me before anything else crawls out of the water.",
+            "path": "Audio/Voice/Morrow/s2_guard_3"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "It dragged the relics back into the water. Pick them up again when you're ready, and this time, keep your feet.",
+            "path": "Audio/Voice/Morrow/s2_guard_4"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "All four are home. Now lay the spark on the altar, and whatever happens, don't leave the room.",
+            "path": "Audio/Voice/Morrow/s2_ready_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "A relic! The monks hid them well. Bring all four to my altar in the Archives.",
+            "path": "Audio/Voice/Morrow/s2_relic_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "The circle is whole. Put the spark on the stone. Gently now.",
+            "path": "Audio/Voice/Morrow/s2_start_1"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "The monks of the Scriptorium filled their lamps here with mana, the old word for what runs under everything. It takes time, and the dead can smell it.",
+            "path": "Audio/Voice/Morrow/s2_start_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "Three minutes. Stay in the Archives and keep them off the altar. If the room empties, the ritual stalls.",
+            "path": "Audio/Voice/Morrow/s2_start_3"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "You've opened it. Do you understand what you've done? ...No. Go on. I want to see it too.",
+            "path": "Audio/Voice/Morrow/s4_done_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "What are you doing? No, no, not the garden! That circle was sealed for a reason!",
+            "path": "Audio/Voice/Morrow/s4_start_2"
+        },
+        {
+            "speaker": "Morrow",
+            "text": "A god, beaten! My door is open, and the dead have a new reason to fear us. Thank you, my friends. Thank you.",
+            "path": "Audio/Voice/Morrow/s5_won_2"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Okay, okay, I'm dangerous now.",
+            "path": "Audio/Voice/Rook/00779bceb07d24ac"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Oh, this is nice.",
+            "path": "Audio/Voice/Rook/0713b92d0a6f0a3a"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Ammo! Ammo! Anyone?",
+            "path": "Audio/Voice/Rook/0b0fbc8a61630402"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Who's the best? Us!",
+            "path": "Audio/Voice/Rook/0fa5401312e4225e"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Power-up! Let's go!",
+            "path": "Audio/Voice/Rook/1e48fb7186cbd404"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Oh, I'm faster. I'm so much faster.",
+            "path": "Audio/Voice/Rook/224bb4c0b6b69554"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Upgraded. Watch this.",
+            "path": "Audio/Voice/Rook/27167bb07f2fd59b"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Double points in the dark? Deal.",
+            "path": "Audio/Voice/Rook/2940ebb3a9dae8f5"
+        },
+        {
+            "speaker": "Rook",
+            "text": "That fizzed. Was it supposed to fizz?",
+            "path": "Audio/Voice/Rook/2ea968fed8f58691"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Knew you couldn't live without me.",
+            "path": "Audio/Voice/Rook/319c1b48319520d1"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Why do you look like me?",
+            "path": "Audio/Voice/Rook/321cc8954831a5ba"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Big one down! Easy.",
+            "path": "Audio/Voice/Rook/33dd9c29b1a76e15"
+        },
+        {
+            "speaker": "Rook",
+            "text": "I'm down! This isn't in the job description!",
+            "path": "Audio/Voice/Rook/42e85d042216e28d"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Signature not required.",
+            "path": "Audio/Voice/Rook/4aa981756f84d99a"
+        },
+        {
+            "speaker": "Rook",
+            "text": "We've got a man down!",
+            "path": "Audio/Voice/Rook/52f34ec67d053dc4"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Round time! Let's get it!",
+            "path": "Audio/Voice/Rook/55b5e5e0b6f93518"
+        },
+        {
+            "speaker": "Rook",
+            "text": "I'm almost out!",
+            "path": "Audio/Voice/Rook/55feab62f7f7bf79"
+        },
+        {
+            "speaker": "Rook",
+            "text": "I'm not getting paid enough for that.",
+            "path": "Audio/Voice/Rook/5d99eb9d726a31c5"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Look at this thing! Look at it!",
+            "path": "Audio/Voice/Rook/5ffc89e3303b2eee"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Door's open. Delivery complete.",
+            "path": "Audio/Voice/Rook/625c0d146d76212d"
+        },
+        {
+            "speaker": "Rook",
+            "text": "A box marked Do Not Open. So, you know, I opened it.",
+            "path": "Audio/Voice/Rook/634a7db8561d3ff2"
+        },
+        {
+            "speaker": "Rook",
+            "text": "One hundred! A hundred! I'm a legend!",
+            "path": "Audio/Voice/Rook/6f5d2b3933445f9c"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Energy drink of the damned.",
+            "path": "Audio/Voice/Rook/824d52c1cd6ee2e4"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Clear! Did you see that?",
+            "path": "Audio/Voice/Rook/88fb9b8f7d786ef0"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Marlow, were you a good cop?",
+            "path": "Audio/Voice/Rook/907a0dfdc6166c81"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Blue? Why are you making that face?",
+            "path": "Audio/Voice/Rook/968cdc63cf7624eb"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Two-fifty. Okay, I'm actually tired now.",
+            "path": "Audio/Voice/Rook/a30a4d5c4829c350"
+        },
+        {
+            "speaker": "Rook",
+            "text": "It's so dark. Why is it dark?",
+            "path": "Audio/Voice/Rook/a4b7821d5d3e4b41"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Doc, how many people worked here?",
+            "path": "Audio/Voice/Rook/b156cc176a3cfce4"
+        },
+        {
+            "speaker": "Rook",
+            "text": "I was going to ask you that.",
+            "path": "Audio/Voice/Rook/ba99091dc897baa0"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Job done! Tip, please.",
+            "path": "Audio/Voice/Rook/cd50c8ff42398dc6"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Someone's on the floor! Go!",
+            "path": "Audio/Voice/Rook/d1813f7eef2d2e93"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Fifty! Somebody film this!",
+            "path": "Audio/Voice/Rook/d212cc04c7c348ee"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Five hundred. I'm never delivering a package again.",
+            "path": "Audio/Voice/Rook/d556dcfba36bd0c7"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Package delivery, coming right up.",
+            "path": "Audio/Voice/Rook/d62f2e59b2592f5a"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Back in business!",
+            "path": "Audio/Voice/Rook/d99483ee0ab45c63"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Nope. Nope. That's huge.",
+            "path": "Audio/Voice/Rook/db75ff6408512a6a"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Easy. Too easy.",
+            "path": "Audio/Voice/Rook/e36adf6a5adaf243"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Sorted.",
+            "path": "Audio/Voice/Rook/e520c8354e16d9cb"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Okay, not funny, not funny, help!",
+            "path": "Audio/Voice/Rook/e6eae0e675016542"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Oh they're fast this time.",
+            "path": "Audio/Voice/Rook/e8befbad0eb2caca"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Dee, can you fix my gun?",
+            "path": "Audio/Voice/Rook/f5f534424fdf9d21"
+        },
+        {
+            "speaker": "Rook",
+            "text": "Showing off is how I stay alive, old man.",
+            "path": "Audio/Voice/Rook/fec353118a1ca945"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Vale's headset fits me nicely. Don't tell her.",
+            "path": "Audio/Voice/Trader/0313d425a80c1c9f"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Four hundred. If anyone ever asks what happened down here, I'm telling them about you.",
+            "path": "Audio/Voice/Trader/0491103fe3a2d71c"
+        },
+        {
+            "speaker": "Trader",
+            "text": "That voice on the radio? Never trusted a voice without a face.",
+            "path": "Audio/Voice/Trader/04e6ed24de8fc36d"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Bounties are honest work. Well. Work.",
+            "path": "Audio/Voice/Trader/085124f9e93e1607"
+        },
+        {
+            "speaker": "Trader",
+            "text": "The Lantern. Ha. They named a bomb after a night-light.",
+            "path": "Audio/Voice/Trader/10abab825fc388b5"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Fresh bounties on the board. Cash on completion.",
+            "path": "Audio/Voice/Trader/10de4c7c17aba7eb"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Sublevel 9 hums at night. Always has. Louder now, though.",
+            "path": "Audio/Voice/Trader/10fb788a9cef815f"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Seventy-five. The lift's still up top. The rest of the world can wait a little longer.",
+            "path": "Audio/Voice/Trader/1a169d52958c0548"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Whatever's coming for you now, it isn't Vale. Not anymore.",
+            "path": "Audio/Voice/Trader/1e7f0978b84c9292"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Blackout. Every kill is worth double while it lasts. Survive it.",
+            "path": "Audio/Voice/Trader/2553d61d75ed86c6"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Lantern's dead but the dead didn't notice. I'm putting bounties on the board. Work them and I'll make it worth your while.",
+            "path": "Audio/Voice/Trader/2e48e95e839b7ae4"
+        },
+        {
+            "speaker": "Trader",
+            "text": "That's a bounty. Don't spend it all at once. Actually, do. At my shop.",
+            "path": "Audio/Voice/Trader/30a280a5f1555be2"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Something big is on the move toward you. Aim for the glowing core on its back.",
+            "path": "Audio/Voice/Trader/49c4cae4fdee0de0"
+        },
+        {
+            "speaker": "Trader",
+            "text": "The survivor's gone. Add them to the list.",
+            "path": "Audio/Voice/Trader/4b0afb4ee5fa7e2e"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Sixty. You're the longest-lived customers I've ever had.",
+            "path": "Audio/Voice/Trader/54eeae409f19aebc"
+        },
+        {
+            "speaker": "Trader",
+            "text": "I've been down here since before the lights went out. The dead don't bother me. Bad for business.",
+            "path": "Audio/Voice/Trader/68e954423c4fad2b"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Nearly there and you're still buying grips. I respect that.",
+            "path": "Audio/Voice/Trader/78548bf4432e6299"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Trader here. Found Vale's headset on the floor. Radio's mine now.",
+            "path": "Audio/Voice/Trader/7a500ff1490c3d70"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Bounty paid. Pleasure doing business.",
+            "path": "Audio/Voice/Trader/7e46dfd7180ae932"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Upgrades unlock as you learn your trade. Your level, your rules. Your points, my profit.",
+            "path": "Audio/Voice/Trader/8b0f1d99032c416d"
+        },
+        {
+            "speaker": "Trader",
+            "text": "A hundred rounds. I'm naming a sandwich after you.",
+            "path": "Audio/Voice/Trader/8e15d6c9a3ce5048"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Go home. Drinks are on the house. Well, on the shop.",
+            "path": "Audio/Voice/Trader/90b6049cfd4c281d"
+        },
+        {
+            "speaker": "Trader",
+            "text": "One-fifty. They're coming up from floors I didn't know we had.",
+            "path": "Audio/Voice/Trader/98ccb9664763ef2c"
+        },
+        {
+            "speaker": "Trader",
+            "text": "You could have gone up that lift. You stayed. Good for business.",
+            "path": "Audio/Voice/Trader/9ff794cc712330de"
+        },
+        {
+            "speaker": "Trader",
+            "text": "I'm losing the grid! Emergency lights only. They hunt better in the dark.",
+            "path": "Audio/Voice/Trader/9ffc993bd008434e"
+        },
+        {
+            "speaker": "Trader",
+            "text": "The lift shaft? I've seen it. Long way up. Bring a better scope.",
+            "path": "Audio/Voice/Trader/a076c9d7a8dd5516"
+        },
+        {
+            "speaker": "Trader",
+            "text": "And that's closing time. Best customers I ever had.",
+            "path": "Audio/Voice/Trader/ab920cb9befbbb99"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Doctor Hale? I sold him coffee for six years. Never once paid on time.",
+            "path": "Audio/Voice/Trader/ad93c10e6585fd3e"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Three hundred. I've stopped writing your names in the ledger. I need the ink.",
+            "path": "Audio/Voice/Trader/b6382b6382f52fab"
+        },
+        {
+            "speaker": "Trader",
+            "text": "If you make it out, tell them the Trader stayed. Somebody has to mind the shop.",
+            "path": "Audio/Voice/Trader/b92b383f3856f082"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Heavy signature incoming. Don't let it corner you.",
+            "path": "Audio/Voice/Trader/bb9b99120d45bb0f"
+        },
+        {
+            "speaker": "Trader",
+            "text": "New bounties. The big ones pay big.",
+            "path": "Audio/Voice/Trader/c00d3063c7455e58"
+        },
+        {
+            "speaker": "Trader",
+            "text": "I left those sabotage jobs on your board. Don't tell anyone.",
+            "path": "Audio/Voice/Trader/c5f51d8f00fb26ab"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Every time the grid comes back, I hear more of them below. Funny that.",
+            "path": "Audio/Voice/Trader/c75cafac0e1254b3"
+        },
+        {
+            "speaker": "Trader",
+            "text": "One more. Hold this and nobody will ever top it.",
+            "path": "Audio/Voice/Trader/c88adba1e5a885dd"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Fresh faces. Lovely. Spend your credits here, they're no good to you dead.",
+            "path": "Audio/Voice/Trader/de74c72e412568db"
+        },
+        {
+            "speaker": "Trader",
+            "text": "So now you know who's on the radio. I've known for years. Nobody asked.",
+            "path": "Audio/Voice/Trader/e685a77852272ef0"
+        },
+        {
+            "speaker": "Trader",
+            "text": "The Lantern took my brother. Break it and I'll give you a discount. Small one.",
+            "path": "Audio/Voice/Trader/e985a7f104063988"
+        },
+        {
+            "speaker": "Trader",
+            "text": "The record down here is round five hundred. Nobody's ever set it. No pressure.",
+            "path": "Audio/Voice/Trader/ec65a8bb0fcdb443"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Two hundred. Whatever's down there is learning. Shoot faster.",
+            "path": "Audio/Voice/Trader/f03d22fefb89834e"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Pull enough cables and even Vale has to listen.",
+            "path": "Audio/Voice/Trader/f74e9b8f7ccc3b00"
+        },
+        {
+            "speaker": "Trader",
+            "text": "Five hundred. That's it. There's nothing left down here to come up those stairs.",
+            "path": "Audio/Voice/Trader/f8b74723497f32a5"
+        },
+        {
+            "speaker": "Vale",
+            "text": "There's a reconditioning unit by the Lantern Core, the one that hums. Feed a gun into it and it comes out meaner.",
+            "path": "Audio/Voice/Vale/003a06c34cb9353e"
+        },
+        {
+            "speaker": "Vale",
+            "text": "More jobs on the board. The way out pays its way.",
+            "path": "Audio/Voice/Vale/0156dbc8dee197c8"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I built the Lantern to end death. Do you know what it did instead? It ended everything else.",
+            "path": "Audio/Voice/Vale/182558bbd70469af"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Job complete. Keep it up.",
+            "path": "Audio/Voice/Vale/195a83324f6f3dc9"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Generator two is on. I'm seeing lights on Sublevel 4. Keep going.",
+            "path": "Audio/Voice/Vale/1bec4c039a3f0071"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Sabotaging the relays won't save you. It will just make the next wave angrier.",
+            "path": "Audio/Voice/Vale/23034c33220fd1c4"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Blackout. Every kill is worth double while it lasts. Survive it.",
+            "path": "Audio/Voice/Vale/2553d61d75ed86c6"
+        },
+        {
+            "speaker": "Vale",
+            "text": "And that's the end of the sabotage. I'll have the cables reconnected by morning.",
+            "path": "Audio/Voice/Vale/2843158ce59362b5"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The core is screaming. Even I can hear it now. Whatever's left of it is coming for you.",
+            "path": "Audio/Voice/Vale/2ec92c945074611c"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Your vitals just spiked. The facility's field is reacting to you. Lean into it. It might keep you alive.",
+            "path": "Audio/Voice/Vale/2f235cbde28230d5"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Every door down there runs on the gate generator, and it's dead. The night shift left its start-up code on notes somewhere in your yard.",
+            "path": "Audio/Voice/Vale/34e1a0c28b332a8a"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Someone's been sending signals from the lower labs. Ignore them. The system is old and full of echoes.",
+            "path": "Audio/Voice/Vale/39b4400303e8a380"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Another job done. You really want to see the sky.",
+            "path": "Audio/Voice/Vale/3e61e949ba5d1070"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The lift is listing jobs automatically now. I can't stop that either.",
+            "path": "Audio/Voice/Vale/3e7ad395e25b0931"
+        },
+        {
+            "speaker": "Vale",
+            "text": "...Fine. You found the logs. Yes, my name is Vale. I ran this facility. I still do.",
+            "path": "Audio/Voice/Vale/41b8d7d6aaa49665"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Something big is on the move toward you. Aim for the glowing core on its back.",
+            "path": "Audio/Voice/Vale/49c4cae4fdee0de0"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The survivor's gone. Add them to the list.",
+            "path": "Audio/Voice/Vale/4b0afb4ee5fa7e2e"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The grid is fully restored.",
+            "path": "Audio/Voice/Vale/5a24bef97a41e863"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Can anyone hear me? This is Dispatch, facility security. Good, you're awake.",
+            "path": "Audio/Voice/Vale/5bca01d58d4eea84"
+        },
+        {
+            "speaker": "Vale",
+            "text": "This is the last of it. Hold this round and the lift reaches the surface. Hold it.",
+            "path": "Audio/Voice/Vale/5d8f0b573bd1a65d"
+        },
+        {
+            "speaker": "Vale",
+            "text": "You're doing better than the last team. Much better.",
+            "path": "Audio/Voice/Vale/5da0737471a71821"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I'm putting your orders on your suit display. Check it whenever you're lost.",
+            "path": "Audio/Voice/Vale/6144ddcf097176a3"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Ignore the warning labels. Nobody who wrote them is coming back.",
+            "path": "Audio/Voice/Vale/63dc622096376395"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Kills buy you everything down there. The doors, the wall guns, all of it still runs on facility credit.",
+            "path": "Audio/Voice/Vale/654166cd4a9a21f1"
+        },
+        {
+            "speaker": "Vale",
+            "text": "That's the generator! I've got lights on the board. Every door in the facility is live now.",
+            "path": "Audio/Voice/Vale/688038a8506cd5ef"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The Lantern doesn't stop the dead. It makes them. And every round you survive feeds it.",
+            "path": "Audio/Voice/Vale/6d6657f25f852a52"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I'm making you an offer, one last time. Stay. Keep the Lantern burning and I'll keep you alive forever.",
+            "path": "Audio/Voice/Vale/753722663751da2a"
+        },
+        {
+            "speaker": "Vale",
+            "text": "There's a containment core down there. The staff called it the Lantern. It's nothing you need to worry about.",
+            "path": "Audio/Voice/Vale/759303acd1056627"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Fine. Take your reward.",
+            "path": "Audio/Voice/Vale/77188a86f9d70336"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Someone's put sabotage jobs on your board. They didn't come from me.",
+            "path": "Audio/Voice/Vale/789fbdfb6937244b"
+        },
+        {
+            "speaker": "Vale",
+            "text": "That relay was expensive.",
+            "path": "Audio/Voice/Vale/7c845354662a32bb"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The yards and the depot should still have weapons lockers. Open the doors if you can afford it.",
+            "path": "Audio/Voice/Vale/8afdd9930910acab"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Every job you finish costs me something. You know that?",
+            "path": "Audio/Voice/Vale/8bab2489dfae82aa"
+        },
+        {
+            "speaker": "Vale",
+            "text": "...You've cracked the core. It's leaking everywhere now.",
+            "path": "Audio/Voice/Vale/8e7fe1922208b398"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Good work. Credits are on their way.",
+            "path": "Audio/Voice/Vale/939aa1a61351e15c"
+        },
+        {
+            "speaker": "Vale",
+            "text": "New jobs on your board. Credits for anyone who finishes them.",
+            "path": "Audio/Voice/Vale/9711f9daee1af05e"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I'm losing the grid! Emergency lights only. They hunt better in the dark.",
+            "path": "Audio/Voice/Vale/9ffc993bd008434e"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The Lantern is drawing almost everything you restore. That's expected. Keep the power coming.",
+            "path": "Audio/Voice/Vale/a116e1993f540b9d"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Find all three numbers and punch them into the panel by the generator. Then I can open the exits.",
+            "path": "Audio/Voice/Vale/a60a0ddb337a1464"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Lantern at full charge. Thank you. Truly. You have no idea how long I've waited for a team like you.",
+            "path": "Audio/Voice/Vale/aeb03e671f1410ca"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Job done. That's the kind of team I need.",
+            "path": "Audio/Voice/Vale/afa8b362dc244b6d"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Fine. The surface lift is real, and it's at the bottom of the old shaft. I'm sealing every other door. Let's see how far you get.",
+            "path": "Audio/Voice/Vale/b14b5b5c6d4822cc"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Nicely done. The Lantern... the grid appreciates it.",
+            "path": "Audio/Voice/Vale/b4ff283ce39e0aab"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Three new jobs. Don't wander off the list.",
+            "path": "Audio/Voice/Vale/b59819a9512e9919"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I won't stop you. I don't think I can. Go, before I change my mind about the door.",
+            "path": "Audio/Voice/Vale/b92fbfc2d18a6ecc"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Heavy signature incoming. Don't let it corner you.",
+            "path": "Audio/Voice/Vale/bb9b99120d45bb0f"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I see what's on your board now. Stop it.",
+            "path": "Audio/Voice/Vale/c09802fb2b3e9a51"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Somebody left parts for the old field kits lying around. Get them to a workbench and you can build something useful.",
+            "path": "Audio/Voice/Vale/c1244d25dab6c8a1"
+        },
+        {
+            "speaker": "Vale",
+            "text": "More jobs. The facility pays well when you do as you're told.",
+            "path": "Audio/Voice/Vale/c50fc3d41cef8b60"
+        },
+        {
+            "speaker": "Vale",
+            "text": "...The lift is through. Daylight. You actually did it. The Lantern's gone dark.",
+            "path": "Audio/Voice/Vale/d2afa11b93d145e0"
+        },
+        {
+            "speaker": "Vale",
+            "text": "You were never meant to leave. You were meant to keep it charged.",
+            "path": "Audio/Voice/Vale/d460f3c5a4c00408"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Why haven't the exits opened? Patience. There's one more thing I need from you.",
+            "path": "Audio/Voice/Vale/d8df3572e0147aa3"
+        },
+        {
+            "speaker": "Vale",
+            "text": "You're making this harder than it needs to be. I could open a door for you. Just one. Stop pulling cables and it's yours.",
+            "path": "Audio/Voice/Vale/d94b23742b8f980d"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I can hear the cracks in the core from here. Please stop.",
+            "path": "Audio/Voice/Vale/da4042e05a5aa4a8"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Readings from Sublevel 9 are going up every time you clear a wave. It's probably interference.",
+            "path": "Audio/Voice/Vale/df8246ec8fd7d446"
+        },
+        {
+            "speaker": "Vale",
+            "text": "This is Vale. Facility-wide lockdown is in effect. Nobody leaves. Including the dead.",
+            "path": "Audio/Voice/Vale/e69de017690ff5b2"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Signal lost. I'll wake the next team.",
+            "path": "Audio/Voice/Vale/eb3920ee4c8816a4"
+        },
+        {
+            "speaker": "Vale",
+            "text": "Another team gone. The Lantern thanks you for your contribution.",
+            "path": "Audio/Voice/Vale/ecd514a78f9c43d3"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The lift needs power to climb, and the only power left is what you make down there. Every round you clear lifts it a floor.",
+            "path": "Audio/Voice/Vale/ed99a0bccf9ae2d6"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The Lantern is unstable. Do you understand what happens to the people standing next to it when it breaks?",
+            "path": "Audio/Voice/Vale/edcc13765ee7a98f"
+        },
+        {
+            "speaker": "Vale",
+            "text": "The power's out on every level and the containment doors failed. Those things out there used to be staff.",
+            "path": "Audio/Voice/Vale/ee140d392491bb76"
+        },
+        {
+            "speaker": "Vale",
+            "text": "So close. The shaft keeps whoever falls in it.",
+            "path": "Audio/Voice/Vale/ef39ca4e9277fbee"
+        },
+        {
+            "speaker": "Vale",
+            "text": "I've marked three jobs for you. Do them and I'll make it worth your while.",
+            "path": "Audio/Voice/Vale/f03db03213181435"
+        }
+    ]
+}

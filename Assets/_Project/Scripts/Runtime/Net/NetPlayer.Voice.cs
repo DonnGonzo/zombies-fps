@@ -10,7 +10,7 @@ namespace ZombiesFPS.Net
     /// <summary>
     /// Player voice lines: each character reacts to rounds, downs, buys, bosses and milestones, and two players
     /// standing together between rounds trade banter. The owner (or the host, for purchases) picks a line and
-    /// tells everyone; each machine plays placeholder speech blips from the speaker and shows a subtitle.
+    /// tells everyone; each machine plays the character's offline recording and shows a subtitle.
     /// </summary>
     public partial class NetPlayer
     {
@@ -115,13 +115,13 @@ namespace ZombiesFPS.Net
             if (mirror)
             {
                 Speak(StoryData.MirrorBanter[0]);
-                other.SpeakLater(StoryData.MirrorBanter[1], 2.6f);
+                other.SpeakLater(StoryData.MirrorBanter[1], VoiceLibrary.Duration(Character.name, StoryData.MirrorBanter[0]) + 0.3f);
                 return;
             }
             if (pair >= StoryData.BanterPairs.Length) return;
             var b = StoryData.BanterPairs[pair];
             Speak(b.lineA);
-            other.SpeakLater(b.lineB, Mathf.Clamp(1.4f + b.lineA.Length * 0.05f, 2f, 4.5f));
+            other.SpeakLater(b.lineB, VoiceLibrary.Duration(Character.name, b.lineA) + 0.3f);
         }
 
         /// <summary>Every machine: plays a line from this player and shows it as a subtitle.</summary>
@@ -131,7 +131,8 @@ namespace ZombiesFPS.Net
             _lastVoiceTime = Time.time;
             var c = Character;
             string speaker = IsOwner ? c.name : $"{c.name} ({DisplayName})";
-            Subtitles.Show(speaker, line, c.color);
+            var recording = VoiceLibrary.Get(c.name, line);
+            Subtitles.Show(speaker, line, c.color, duration: recording != null ? recording.length + 0.6f : -1f);
             if (_voice == null)
             {
                 _voice = GameSettings.Voice(gameObject.AddComponent<AudioSource>());
@@ -139,6 +140,16 @@ namespace ZombiesFPS.Net
                 _voice.spatialBlend = IsOwner ? 0f : 1f;
                 _voice.minDistance = 3f;
                 _voice.maxDistance = 40f;
+            }
+            _voice.Stop();
+            _voice.pitch = 1f;
+            if (recording != null)
+            {
+                _voice.clip = recording;
+                _voice.Play();
+                _voiceBusyUntil = Time.time + recording.length;
+                _nextBlip = float.PositiveInfinity;
+                return;
             }
             _voiceBusyUntil = Time.time + Mathf.Clamp(line.Length * 0.045f, 0.5f, 2.4f);
             _nextBlip = 0f;

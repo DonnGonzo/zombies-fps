@@ -13,7 +13,7 @@ namespace ZombiesFPS.Weapons
     /// </summary>
     public class WeaponView : MonoBehaviour
     {
-        static readonly Vector3 HipPosition = new Vector3(0.17f, -0.17f, 0.32f);
+        public static readonly Vector3 HipPosition = new Vector3(0.15f, -0.14f, 0.34f);
         // Puts the sights (model y = GunModels.SightY) on the camera's centre line.
         static readonly Vector3 AimPosition = new Vector3(0f, -0.071f, 0.2f);
         static readonly Color FlashHot = new Color(1f, 0.93f, 0.72f);
@@ -39,6 +39,7 @@ namespace ZombiesFPS.Weapons
         // One model per gun, built the first time it's held.
         readonly Dictionary<GunData, GunModels.Model> _models = new Dictionary<GunData, GunModels.Model>();
         GunModels.Model _current;
+        FirstPersonArms _arms;
         // Upgraded guns glow in their machine tier's colour: strips down the sides and a ring at the muzzle.
         GameObject _glow;
         Renderer[] _glowParts;
@@ -90,6 +91,7 @@ namespace ZombiesFPS.Weapons
                 _glowParts = m.GlowParts;
                 _glowLight = m.GlowLight;
                 _glowTier = -1;
+                _arms.Equip(data, m);
             }
 
             // Camos paint the whole gun as metal: the furniture in the camo colour, the receiver a shade darker.
@@ -132,6 +134,10 @@ namespace ZombiesFPS.Weapons
         void BuildModel()
         {
             _model = Greybox.Empty("GunModel", transform, HipPosition);
+            var arms = new GameObject("First person arms");
+            arms.transform.SetParent(transform, false);
+            _arms = arms.AddComponent<FirstPersonArms>();
+            _arms.Init(transform);
             // Until a gun is equipped the muzzle sits where a rifle's would.
             Muzzle = Greybox.Empty("Muzzle", _model, new Vector3(0f, 0.015f, 0.47f));
             BuildFlash();
@@ -359,6 +365,7 @@ namespace ZombiesFPS.Weapons
 
             _model.localPosition = pos;
             _model.localRotation = Quaternion.Euler(euler);
+            _arms.Pose(_gun.IsReloading ? _gun.ReloadProgress : -1f, Mathf.Max(meleeWeight, throwWeight), _current == null || (_current.Scoped && aimEased > 0.95f));
         }
     }
 }

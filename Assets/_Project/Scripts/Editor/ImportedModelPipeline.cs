@@ -28,6 +28,8 @@ namespace ZombiesFPS.Editor
                 if (job == "tests") ImportedModelValidation.RunTests();
                 if (job == "review") ImportedModelValidation.Review();
                 if (job == "player") ImportedModelValidation.BuildPlayer();
+                if (job == "voices") VoiceExport.Export();
+                if (job == "weapons") VoiceExport.WeaponPreviews();
                 File.WriteAllText("Temp/model-import/result.txt", "OK " + job);
             }
             catch (Exception e) { File.WriteAllText("Temp/model-import/result.txt", e.ToString()); Debug.LogException(e); }

@@ -1,0 +1,16 @@
+{
+  "model_id": "eleven_multilingual_v2",
+  "max_credits": 121000,
+  "cast": {
+    "Marlow": {"voice_id":"CwhRBWXzGAHq8TQ4Fs17","voice_name":"Roger","direction":"Dry, weary ex-cop","stability":0.48,"style":0.32},
+    "Dee": {"voice_id":"FGY2WhTYpPnrIDTdsKH5","voice_name":"Laura","direction":"Fearless, sarcastic mechanic","stability":0.42,"style":0.4},
+    "Hale": {"voice_id":"JBFqnCBsd6RMkjVDRZzb","voice_name":"George","direction":"Intelligent, uneasy British scientist","stability":0.48,"style":0.3},
+    "Rook": {"voice_id":"TX3LPaxmHKxFdv7VOQHJ","voice_name":"Liam","direction":"Young, cocky courier","stability":0.42,"style":0.4},
+    "Vale": {"voice_id":"EXAVITQu4vr4xnSDxMaL","voice_name":"Sarah","direction":"Controlled, authoritative female director; same voice before and after reveal","stability":0.58,"style":0.25},
+    "Trader": {"voice_id":"N2lVS1w4EtoT3dr4eOWO","voice_name":"Callum","direction":"Husky, sly merchant","stability":0.45,"style":0.4},
+    "Morrow": {"voice_id":"onwK4e9ZLuTAKqWW03F9","voice_name":"Daniel","direction":"Measured British doctor over an intercom","stability":0.55,"style":0.3},
+    "Brannock": {"voice_id":"pqHfZKP75CvOlQylNhV4","voice_name":"Bill","direction":"Older battle-worn sergeant","stability":0.47,"style":0.4},
+    "Azhrakel": {"voice_id":"pNInz6obpgDQGcFmaJgB","voice_name":"Adam","direction":"Deep, commanding ancient antagonist","stability":0.58,"style":0.45},
+    "Ashgrave": {"voice_id":"nPczCjzI2devNBz1zQrb","voice_name":"Brian","direction":"Cold, resonant lord-general","stability":0.55,"style":0.35}
+  }
+}

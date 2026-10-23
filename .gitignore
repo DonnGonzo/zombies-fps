@@ -10,6 +10,8 @@
 /[Rr]ecordings/
 
 # IDE
+.env
+.env.*
 .vs/
 .vscode/
 .idea/

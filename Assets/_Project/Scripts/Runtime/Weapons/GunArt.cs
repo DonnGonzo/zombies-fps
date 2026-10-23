@@ -227,7 +227,7 @@ namespace ZombiesFPS.Weapons
 
         static (Mesh mesh, string[] keys) MeshOf(string name)
         {
-            if (s_Meshes.TryGetValue(name, out var cached)) return cached;
+            if (s_Meshes.TryGetValue(name, out var cached) && cached.mesh != null) return cached;
             (Mesh, string[]) loaded = (null, null);
             try { loaded = PropModels.LoadRaw("Guns/" + name); }
             catch (System.Exception e) { Debug.LogWarning($"Gun model {name} couldn't be loaded: {e.Message}"); }
