@@ -193,6 +193,7 @@ namespace ZombiesFPS.Zombies
         float _deadSeenAt = -1f;
         Vector3 _fallAxis;
         float _nextGroan;
+        float _voicePitch = 1f;
         float _walkPhase;
         Vector3 _lastPosition;
         float _speedEstimate;
@@ -277,7 +278,8 @@ namespace ZombiesFPS.Zombies
             if (_data.IsBoss) s_Bosses.Add(this);
             if (!s_Spawned.Contains(this)) s_Spawned.Add(this);
             _lastPosition = transform.position;
-            _nextGroan = Time.time + UnityEngine.Random.Range(0.5f, 3f);
+            _nextGroan = Time.time + UnityEngine.Random.Range(1f, 6f);
+            _voicePitch = ZombieVoice.BasePitch(_kind.Value, (uint)NetworkObjectId);
             _walkPhase = UnityEngine.Random.Range(0f, 10f);
             // A fresh life starts from its new pose, not eased from the last one.
             _jointsWarm = false;
@@ -383,11 +385,7 @@ namespace ZombiesFPS.Zombies
             rb.useGravity = false;
 
             _audio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
-            _audio.spatialBlend = 1f;
-            _audio.minDistance = 2f;
-            _audio.maxDistance = 30f;
-            _audio.rolloffMode = AudioRolloffMode.Linear;
-            _audio.playOnAwake = false;
+            ZombieVoice.Configure(_audio, gameObject);
 
             // Placeholder colours: ApplyKind gives every part its real material for each life.
             var skinList = new List<Renderer>();
@@ -941,6 +939,9 @@ namespace ZombiesFPS.Zombies
             _swingRight = !_swingRight;
             _swingCount++;
             _audio.PlayOneShot(ProceduralAudio.ZombieSwipe, 0.6f);
+            // A snarl on some swings, not all: a zombie that roars every swipe turns into a drum loop.
+            if (UnityEngine.Random.value < 0.45f)
+                ZombieVoice.TryPlay(_audio, ZombieVoice.Call.Attack, _voicePitch, 0.75f, ZombieVoice.ListenerDistance(transform.position));
         }
 
         [Rpc(SendTo.ClientsAndHost)]
@@ -981,6 +982,7 @@ namespace ZombiesFPS.Zombies
             if (_isSerpent) _serpent.Die(headshot);
             else if (_model != null) _model.Die((int)(NetworkObjectId + (ulong)_swingCount), headshot);
             _audio.Stop();
+            ZombieVoice.TryPlay(_audio, ZombieVoice.Call.Death, _voicePitch, 0.85f, ZombieVoice.ListenerDistance(transform.position));
             SetFlash(false);
         }
 
@@ -1495,9 +1497,13 @@ namespace ZombiesFPS.Zombies
 
             if (Time.time >= _nextGroan)
             {
-                _audio.pitch = UnityEngine.Random.Range(0.85f, 1.15f);
-                _audio.PlayOneShot(ProceduralAudio.RandomGroan(), 0.8f);
-                _nextGroan = Time.time + UnityEngine.Random.Range(3f, 7f);
+                // Out of earshot or over the horde's voice budget: try again shortly rather than queueing up.
+                float distance = ZombieVoice.ListenerDistance(transform.position);
+                bool fast = _data.kind == ZombieKind.Runner || _data.kind == ZombieKind.Stalker;
+                if (ZombieVoice.TryPlay(_audio, ZombieVoice.Call.Groan, _voicePitch, UnityEngine.Random.Range(0.65f, 0.9f), distance))
+                    _nextGroan = Time.time + ZombieVoice.NextGroanDelay(distance, fast);
+                else
+                    _nextGroan = Time.time + UnityEngine.Random.Range(1f, 3f);
             }
 
             float swingT = Time.time - _swingStart;
