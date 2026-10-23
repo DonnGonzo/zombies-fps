@@ -1,0 +1,14 @@
+newmtl BluedSteel
+Kd 0.1843 0.2157 0.2667
+Ks 0.810 0.810 0.810
+Ns 9.18
+d 1.0000
+illum 2
+
+newmtl Brass
+Kd 0.7804 0.6431 0.3137
+Ks 0.910 0.910 0.910
+Ns 9.77
+d 1.0000
+illum 2
+

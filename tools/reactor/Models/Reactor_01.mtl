@@ -1,0 +1,72 @@
+newmtl CharcoalMetal
+Kd 0.1490 0.1765 0.1961
+d 1.0000
+illum 2
+Ns 70
+
+newmtl Gunmetal
+Kd 0.2784 0.3059 0.3216
+d 1.0000
+illum 2
+Ns 70
+
+newmtl DarkSteel
+Kd 0.0941 0.1137 0.1333
+d 1.0000
+illum 2
+Ns 70
+
+newmtl ScratchedSteel
+Kd 0.4314 0.4549 0.4588
+d 1.0000
+illum 2
+Ns 70
+
+newmtl Copper
+Kd 0.4431 0.2588 0.1569
+d 1.0000
+illum 2
+Ns 70
+
+newmtl Rust
+Kd 0.3922 0.1922 0.1255
+d 1.0000
+illum 2
+Ns 70
+
+newmtl Glass
+Kd 0.2667 0.5686 0.5961
+d 0.2549
+illum 2
+Ns 70
+
+newmtl PlasmaOrange
+Kd 1.0000 0.3333 0.0510
+d 1.0000
+illum 2
+Ns 70
+
+newmtl PlasmaGold
+Kd 1.0000 0.6706 0.1216
+d 1.0000
+illum 2
+Ns 70
+
+newmtl WarningYellow
+Kd 0.8078 0.6157 0.1608
+d 1.0000
+illum 2
+Ns 70
+
+newmtl IndicatorCyan
+Kd 0.1882 0.8039 0.8824
+d 1.0000
+illum 2
+Ns 70
+
+newmtl Rubber
+Kd 0.0667 0.0745 0.0902
+d 1.0000
+illum 2
+Ns 70
+
