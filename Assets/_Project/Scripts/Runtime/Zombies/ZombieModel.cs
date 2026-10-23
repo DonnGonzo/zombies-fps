@@ -16,8 +16,8 @@ namespace ZombiesFPS.Zombies
     /// Swapping the character: drop another Mixamo character FBX (exported "FBX for Unity", with skin) into the
     /// Character folder. Any file there other than "X Bot" is used in preference to it.
     ///
-    /// Monsters: <see cref="UseSkin"/> dresses a life as one of Ivan's Quaternius characters (Imp, Puglin) instead.
-    /// The Mixamo rig still plays the clips, hidden, and its pose is copied onto the monster every frame
+    /// Skins: <see cref="UseSkin"/> dresses a life in a compatible imported character such as the hazmat zombie.
+    /// The Mixamo rig still plays the clips, hidden, and its pose is copied onto the skin every frame
     /// (<see cref="CharacterSkin.Retarget"/>); the hitboxes follow the monster's own spine and head.
     ///
     /// Bosses: other <see cref="Kit"/>s pair another character with its own clips (the Mutant from Ivan's creature
@@ -83,6 +83,10 @@ namespace ZombiesFPS.Zombies
 
         /// <summary>The Mutant from Ivan's creature pack, with its own clips: the Warden, and (in red) Azhrakel.</summary>
         public static readonly Kit Mutant = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false);
+
+        /// <summary>The supplied hazmat suit retargeted onto the complete combat animation set, including death.</summary>
+        public static readonly Kit Hazmat = new Kit("Zombies/Character", "Zombies/Animations/", Zombie.Files,
+            undead: false, skinFolder: "ImportedModels/zombie-hazmat");
 
         /// <summary>Warrok, worn over the Mutant playing its clips: General Ashgrave.</summary>
         public static readonly Kit Warrok = new Kit("Creatures/Mutant", "Creatures/Animations/", MutantFiles, undead: false, skinFolder: "Creatures/Warrok");

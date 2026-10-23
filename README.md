@@ -2,6 +2,16 @@
 
 Co-op (1–4 players) round-based zombie survival shooter in Unity 6. Design plan: `zombies01.pdf` (Unity 6, Netcode for GameObjects host-authoritative, Relay + Lobby, ScriptableObject balance data).
 
+## Imported weapons and environment art
+
+All 14 supplied model packs are integrated. Textured pews and gothic windows dress the chapel, hospital beds furnish the ward, prison cells replace the gaol cages, and imported vehicles dress the garage and loading dock. Existing traversal and collision layouts are preserved. Decor joins the map's mesh batches.
+
+Seven weapon models are playable: M4A1, Desert Eagle, Rhino SMG and pulse machine gun replace existing weapon art; Service 9mm, TEC-9 and Tommy Gun add wall buys in the hub, gaol and mess hall. Attachments, camo, recoil and reload presentation remain supported. The 9mm uses its supplied magazine animation with the source presentation turntable removed.
+
+Hazmat zombies join the horror roster, and a captive hazmat uses its native idle/alert clips in the gaol. Cartoon Imp and Puglin enemy skins are removed from selection; brutes and runners keep their gameplay using the realistic zombie models. Horror bosses remain.
+
+Source provenance and rebuild instructions are in `tools/imported_models/`. Generated Unity assets are committed and require no conversion tools to play.
+
 ## Current state: every gameplay system from the design doc, with procedural graphics
 
 All of the design doc's gameplay phases (0-6) are in: co-op, rounds to 500, the map, power-ups, the upgrade machine, six zombie types and bosses, missions, XP and the spawn shop, perks, the story and voice lines. Graphics are built in code (procedural textures, primitive-based models, custom shaders) and the voices are placeholder "blips" with subtitles. A plain-language feature list is in the project files as `feature-breakdown.pdf`.

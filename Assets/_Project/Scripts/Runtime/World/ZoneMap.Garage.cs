@@ -25,7 +25,7 @@ namespace ZombiesFPS.World
 
             // Two distinct service islands west of the central travel lane.
             GarageBox("Hydraulic lift bed", -8f, 0.55f, -6f, 2.7f, 0.2f, 5.2f, GarageSteel);
-            GarageBox("Vehicle on lift", -8f, 1.4f, -6f, 2f, 1.5f, 4.2f, GarageTeal);
+            ImportedGarageVehicle();
             foreach (float x in new[] { -10f, -6f })
             {
                 GarageBox("Lift column", x, 1.7f, -6f, 0.38f, 3.4f, 0.48f, GarageOrange);
@@ -84,7 +84,8 @@ namespace ZombiesFPS.World
 
         void GarageServiceBay()
         {
-            CarDetails(GR(-8f, 0.65f, -6f), new Vector3(2f, 1.5f, 4.2f), true, new System.Random(2702));
+            if (!SurfaceTextures.PhotosEnabled || ImportedModels.Get("zombie-pickup-truck") == null)
+                CarDetails(GR(-8f, 0.65f, -6f), new Vector3(2f, 1.9f, 4.2f), true, new System.Random(2702));
             foreach (float x in new[] { -10f, -6f })
             {
                 Rod(GR(x, 0.2f, -5.72f), GR(x, 3.2f, -5.72f), 0.09f, new Color(0.55f, 0.58f, 0.58f), Surface.Metal);

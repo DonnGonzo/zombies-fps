@@ -35,6 +35,22 @@ namespace ZombiesFPS.Weapons
             { "Ion Lance", ("helix", 1f, false) },
             { "Scrap Cannon", ("pulse", 1f, false) },
             { "Brand of Azhrakel", ("helix", 1f, false) },
+            { "Service 9mm", ("harker9", 1f, false) },
+            { "TEC-9", ("sable9", 1f, false) },
+            { "Tommy Gun", ("sable9", 1f, false) },
+        };
+
+        static readonly Dictionary<string, string> ImportedGuns = new Dictionary<string, string>
+        {
+            ["Rook-9 Carbine"] = "gun-m4a1", ["Hatchet .44"] = "desert-eagle-gun",
+            ["Wren-7 SMG"] = "gun-rhino-smg", ["Talon LMG"] = "heavy-pulse-machine-gun",
+            ["Service 9mm"] = "low-poly-9mm-hand-gun", ["TEC-9"] = "submachine-gun", ["Tommy Gun"] = "tommy-gun",
+        };
+        static GameObject ImportedGun(GunData data) => data != null && ImportedGuns.TryGetValue(data.displayName, out string id) ? ImportedModels.Get(id) : null;
+        static float BoreBelowSight(string name) => name switch
+        {
+            "Rook-9 Carbine" => 0.075f, "Hatchet .44" => 0.024f, "Wren-7 SMG" => 0.035f,
+            "Talon LMG" => 0.11f, "Service 9mm" => 0.02f, _ => 0.03f,
         };
 
         public const string Shield = "shield";
@@ -291,6 +307,11 @@ namespace ZombiesFPS.Weapons
             public Transform Muzzle;
             public GameObject ScopeShowing;
             public bool Scoped;
+            public Vector3 AttachmentOffset;
+            public Transform NativeMagazine;
+            public ImportedMagazineMotion MagazineMotion;
+            public readonly List<Renderer> NativeRenderers = new List<Renderer>();
+            MaterialPropertyBlock _tint;
 
             /// <summary>
             /// Shows the parts for an attachment mask: an optic replaces the iron sights (or a sniper's own scope),
@@ -311,7 +332,8 @@ namespace ZombiesFPS.Weapons
                 ScopeShowing = on.Contains("scope") && Parts.TryGetValue("scope", out var sc) ? sc.gameObject
                     : on.Contains("builtin") && Parts.TryGetValue("builtin", out var b) ? b.gameObject : null;
                 bool heavy = on.Contains("heavy"), supp = on.Contains("supp");
-                if (Parts.TryGetValue("supp", out var s)) s.transform.localPosition = new Vector3(0f, 0f, heavy ? Info.HeavyLength : 0f);
+                if (Parts.TryGetValue("supp", out var s)) s.transform.localPosition = AttachmentOffset + new Vector3(0f, 0f, heavy ? Info.HeavyLength : 0f);
+                if (NativeMagazine != null) NativeMagazine.localScale = new Vector3(1f, on.Contains("extmag") ? 1.3f : 1f, 1f);
                 if (Muzzle != null)
                     Muzzle.localPosition = Info.Muzzle + new Vector3(0f, 0f, 0.005f + (heavy ? Info.HeavyLength : 0f) + (supp ? Info.SuppressorLength : 0f));
             }
@@ -319,6 +341,16 @@ namespace ZombiesFPS.Weapons
             public void Paint(Color? camo)
             {
                 foreach (var (r, k) in Renderers) GunArt.Paint(r, k, camo, Furniture);
+                if (_tint == null) _tint = new MaterialPropertyBlock();
+                _tint.SetColor("_Color", camo.HasValue ? Color.Lerp(Color.white, camo.Value, 0.72f) : Color.white);
+                foreach (var r in NativeRenderers) r.SetPropertyBlock(_tint);
+            }
+
+            public void Reload(float progress)
+            {
+                if (NativeMagazine == null) return;
+                NativeMagazine.localPosition = MagazineMotion != null ? MagazineMotion.Evaluate(progress)
+                    : progress < 0f ? Vector3.zero : Vector3.down * (Mathf.Sin(progress * Mathf.PI) * 0.18f);
             }
         }
 
@@ -330,16 +362,36 @@ namespace ZombiesFPS.Weapons
             // Scaled about the back of the sight, so a shortened gun still lines up when aiming.
             b.Model = Greybox.Empty("Model", b.Root, new Vector3(0f, GunModels.SightY, PackRearZ) * (1f - scale));
             b.Model.localScale = Vector3.one * scale;
-            var (mesh, keys) = MeshOf(slug);
-            b.Renderers.Add((AddMesh(b.Model, "Body", mesh, keys, camo, b.Furniture), keys));
+            var native = ImportedGun(data);
+            if (native != null)
+            {
+                var go = Object.Instantiate(native, b.Model, false);
+                var bounds = ImportedModels.Bounds(native);
+                var old = b.Info;
+                b.Info = new Info { Min = bounds.min, Max = bounds.max, Groups = old.Groups,
+                    Muzzle = new Vector3(0f, bounds.max.y - BoreBelowSight(data.displayName), bounds.max.z),
+                    SuppressorLength = old.SuppressorLength, HeavyLength = old.HeavyLength };
+                b.AttachmentOffset = b.Info.Muzzle - old.Muzzle;
+                b.NativeRenderers.AddRange(go.GetComponentsInChildren<Renderer>());
+                b.NativeMagazine = go.transform.Find("Magazine");
+                if (data.displayName == "Service 9mm") b.MagazineMotion = Resources.Load<ImportedMagazineMotion>("ImportedModels/9mmReload");
+            }
+            else
+            {
+                var (mesh, keys) = MeshOf(slug);
+                b.Renderers.Add((AddMesh(b.Model, "Body", mesh, keys, camo, b.Furniture), keys));
+            }
             foreach (var g in b.Info.Groups)
             {
+                if (native != null && (g == "mag" || g == "extmag" || g == "fastmag" || g == "irons" || g == "builtin")) continue;
                 var (gm, gk) = MeshOf(slug + "_" + g);
                 if (gm == null) continue;
                 var r = AddMesh(b.Model, g, gm, gk, camo, b.Furniture);
                 b.Parts[g] = r;
                 b.Renderers.Add((r, gk));
+                if (native != null && (g == "supp" || g == "heavy")) r.transform.localPosition = b.AttachmentOffset;
             }
+            if (native != null) b.Paint(camo);
             return b;
         }
 
@@ -356,6 +408,7 @@ namespace ZombiesFPS.Weapons
             var shape = GunModels.ShapeOf(data);
             var m = new GunModels.Model { Shape = shape, Root = b.Root.gameObject };
             m.Repaint = b.Paint;
+            m.ReloadPose = b.Reload;
             m.Muzzle = b.Muzzle = Greybox.Empty("Muzzle", model, info.Muzzle + new Vector3(0f, 0f, 0.005f));
             m.Fit = mask =>
             {
@@ -415,6 +468,15 @@ namespace ZombiesFPS.Weapons
             middle = Vector3.zero;
             halfWidth = 0.05f;
             if (!Has(data)) return false;
+            var native = ImportedGun(data);
+            if (native != null)
+            {
+                var bounds = ImportedModels.Bounds(native);
+                length = bounds.size.z;
+                middle = bounds.center;
+                halfWidth = bounds.extents.x;
+                return true;
+            }
             var (slug, scale, _) = s_ByGun[data.displayName];
             var info = Infos()[slug];
             var pivot = new Vector3(0f, GunModels.SightY, PackRearZ);

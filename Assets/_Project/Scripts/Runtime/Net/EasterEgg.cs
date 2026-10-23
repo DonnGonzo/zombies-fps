@@ -878,7 +878,8 @@ namespace ZombiesFPS.Net
             if (step.kind != EggStepKind.Summon) return;
             // The ending: everyone in the game gets its boon, and the god's brand or Ashgrave's sword.
             bool serve = Phase.Value == EggPhase.FightGeneral;
-            int godGun = GameConfig.Guns != null ? GameConfig.Guns.Length - 1 : -1;
+            int godGun = GameConfig.Guns != null
+                ? System.Array.FindIndex(GameConfig.Guns, gun => gun != null && gun.displayName == EasterEggData.GodGunName) : -1;
             foreach (var p in NetPlayer.All)
                 if (p != null) p.ServerGrantEggReward(serve ? EggBoon.EmberOath : EggBoon.Godblood, serve, serve ? -1 : godGun);
             Ending.Value = serve ? EggBoon.EmberOath : EggBoon.Godblood;

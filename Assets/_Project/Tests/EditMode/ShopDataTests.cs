@@ -74,9 +74,13 @@ namespace ZombiesFPS.Tests
             Assert.IsNull(_shop.CamoColor(0));
             Assert.IsNotNull(_shop.CamoColor(1));
             Assert.IsFalse(_shop.IsCamoUnlocked(_shop.CamoCount - 1, 1));
-            Assert.IsTrue(_shop.IsCamoUnlocked(_shop.CamoCount - 1, _shop.maxLevel));
+            var finalCamo = _shop.CamoAt(_shop.CamoCount - 1);
+            Assert.IsTrue(_shop.IsCamoUnlocked(_shop.CamoCount - 1, _shop.maxLevel, finalCamo.unlockPrestige));
+            if (finalCamo.unlockPrestige > 0) Assert.IsFalse(_shop.IsCamoUnlocked(_shop.CamoCount - 1, _shop.maxLevel, finalCamo.unlockPrestige - 1));
             Assert.IsTrue(_shop.IsTitleUnlocked(0, 1));
-            for (int i = 1; i < _shop.CamoCount; i++) Assert.GreaterOrEqual(_shop.CamoAt(i).unlockLevel, _shop.CamoAt(i - 1).unlockLevel);
+            for (int i = 1; i < _shop.CamoCount; i++)
+                if (_shop.CamoAt(i).unlockPrestige == _shop.CamoAt(i - 1).unlockPrestige)
+                    Assert.GreaterOrEqual(_shop.CamoAt(i).unlockLevel, _shop.CamoAt(i - 1).unlockLevel);
             for (int i = 1; i < _shop.TitleCount; i++) Assert.GreaterOrEqual(_shop.TitleAt(i).unlockLevel, _shop.TitleAt(i - 1).unlockLevel);
         }
 

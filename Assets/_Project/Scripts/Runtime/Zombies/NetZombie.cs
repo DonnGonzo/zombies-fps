@@ -755,12 +755,13 @@ namespace ZombiesFPS.Zombies
             {
                 // The Warden is the Biomechanical Mutant, worn over the creature pack's Mutant (the easter egg's bosses
                 // re-dress it in ApplySpecial). Until its textures are in, the plain Mutant stands in.
-                UseModel(d.IsBoss ? (ZombieModel.BioMutant.Dressed ? ZombieModel.BioMutant : ZombieModel.Mutant) : null);
+                bool hazmat = d.kind == ZombieKind.Spitter || (d.kind == ZombieKind.Walker && (_seed % 4u) == 0u);
+                UseModel(d.IsBoss ? (ZombieModel.BioMutant.Dressed ? ZombieModel.BioMutant : ZombieModel.Mutant)
+                    : hazmat && ImportedModels.Get("zombie-hazmat") != null ? ZombieModel.Hazmat : null);
                 _model.UseVariant(null);
-                // Ivan's monsters: every brute is an Imp and half the runners are Puglins, each in one of its colours.
-                string monster = d.kind == ZombieKind.Brute ? CharacterSkin.Imp
-                    : d.kind == ZombieKind.Runner && Rand() < 0.5f ? CharacterSkin.Puglin : null;
-                _model.UseSkin(monster, monster != null ? RandIndex(Mathf.Max(1, CharacterSkin.Variants(monster))) : 0);
+                // Keep the horde grounded in horror: human zombies, hazmat infected and realistic mutant bosses.
+                // Brutes and runners retain their gameplay and proportions without the cartoon Imp/Puglin skins.
+                _model.UseSkin(null, 0);
 
                 // Each type leans toward its own colour; walkers only faintly, so they keep the model's own look.
                 var cloth = d.clothColor;

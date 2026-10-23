@@ -53,7 +53,7 @@ namespace ZombiesFPS.World
         // Ivan's Ten Worlds pack (see ZoneMap.Worlds.cs). Declared here, ahead of the tables that use them, since
         // static fields in different files of a partial class have no set order.
         const string Worlds = "TenWorlds/";
-        static readonly PackItem Pew = new PackItem(Worlds + "ChurchPew", new Vector3(-1.55f, 0f, -0.3f), new Vector3(1.55f, 1.6f, 0.3f), Mount.Floor);
+        static readonly PackItem Pew = new PackItem(Worlds + "ChurchPew", new Vector3(-1.55f, 0f, -0.425f), new Vector3(1.55f, 1.35f, 0.425f), Mount.Floor);
         static readonly PackItem Chandelier = new PackItem(Worlds + "LanternSuspension", new Vector3(-1.43f, 0f, -1.43f), new Vector3(1.43f, 2.47f, 1.43f), Mount.Open);
         static readonly PackItem Bookcase = new PackItem(Worlds + "Bookcase", new Vector3(-0.89f, 0f, -0.27f), new Vector3(0.89f, 5.9f, 0.27f), Mount.Floor);
         static readonly PackItem ReadingTable = new PackItem(Worlds + "ReadingTable", new Vector3(-1.12f, 0f, -0.47f), new Vector3(1.12f, 0.82f, 0.47f), Mount.Floor);
@@ -69,8 +69,8 @@ namespace ZombiesFPS.World
         static readonly PackItem Stool = new PackItem(Worlds + "Stool", new Vector3(-0.42f, 0f, -0.29f), new Vector3(0.42f, 0.83f, 0.29f), Mount.Floor);
         static readonly PackItem LecternStage = new PackItem(Worlds + "LecternStage", new Vector3(-5f, 0f, -1.09f), new Vector3(5f, 1.99f, 1.09f), Mount.Floor);
         static readonly PackItem FurnaceCore = new PackItem(Worlds + "FurnaceCore", new Vector3(-2.38f, 0f, -2.38f), new Vector3(2.38f, 6.2f, 2.38f), Mount.Open);
-        static readonly PackItem GaolCell = new PackItem(Worlds + "GaolCell", new Vector3(-1.26f, 0f, -1.35f), new Vector3(1.26f, 4.1f, 1.35f), Mount.Floor);
-        static readonly PackItem SickBed = new PackItem(Worlds + "SickBed", new Vector3(-1.22f, 0f, -1.59f), new Vector3(1.22f, 2.9f, 1.59f), Mount.Floor);
+        static readonly PackItem GaolCell = new PackItem(Worlds + "GaolCell", new Vector3(-1.26f, 0f, -1.35f), new Vector3(1.26f, 2.8f, 1.35f), Mount.Floor);
+        static readonly PackItem SickBed = new PackItem(Worlds + "SickBed", new Vector3(-0.625f, 0f, -1.05f), new Vector3(0.625f, 1.42f, 1.05f), Mount.Floor);
         static readonly PackItem ApothecaryCabinet = new PackItem(Worlds + "ApothecaryCabinet", new Vector3(-0.57f, 0f, -0.27f), new Vector3(0.57f, 2.9f, 0.27f), Mount.Floor);
 
         /// <summary>Rooms whose ceiling lamps are chandeliers, and which.</summary>
@@ -204,6 +204,7 @@ namespace ZombiesFPS.World
                 go.isStatic = true;
                 go.AddComponent<BoxCollider>().size = size;
             }
+            if (ImportedDecor(ImportedReplacement(item), p, rot, size)) return;
             var model = PropModels.GetPack(item.Path, PackMaterial);
             if (model != null)
             {

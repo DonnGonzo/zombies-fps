@@ -284,6 +284,7 @@ namespace ZombiesFPS.Weapons
         void LateUpdate()
         {
             if (_model == null || _gun == null) return;
+            _current?.ReloadPose?.Invoke(_gun.IsReloading ? _gun.ReloadProgress : -1f);
             float dt = Time.deltaTime;
             float aim = _gun.AimAmount;
             float aimEased = aim * aim * (3f - 2f * aim);

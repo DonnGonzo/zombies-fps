@@ -58,15 +58,25 @@ namespace ZombiesFPS.Data
         /// Every distinct gun in the game, starter first. A gun's index here is its network id, and every
         /// machine builds the same list from the same assets.
         /// </summary>
-        public GunData[] BuildCatalog(GunData starter)
+        public GunData[] BuildCatalog(GunData starter, GunData reward = null)
         {
             var list = new List<GunData> { starter };
+            // The original nine wall entries, rare weapons and story reward keep their saved camo/network ids.
+            // New wall entries append after that stable prefix.
+            const int originalWallEntries = 9;
             if (wallGuns != null)
-                foreach (var entry in wallGuns)
+                foreach (var entry in wallGuns.GetRange(0, Mathf.Min(originalWallEntries, wallGuns.Count)))
                     if (entry != null && entry.gun != null && !list.Contains(entry.gun)) list.Add(entry.gun);
             if (rareGuns != null)
                 foreach (var gun in rareGuns)
                     if (gun != null && !list.Contains(gun)) list.Add(gun);
+            if (reward != null && !list.Contains(reward)) list.Add(reward);
+            if (wallGuns != null)
+                for (int i = originalWallEntries; i < wallGuns.Count; i++)
+                {
+                    var gun = wallGuns[i]?.gun;
+                    if (gun != null && !list.Contains(gun)) list.Add(gun);
+                }
             return list.ToArray();
         }
 
@@ -85,6 +95,9 @@ namespace ZombiesFPS.Data
                 new WallGun { gun = Shotgun(MakeGun("Mauler 12 Shotgun", 55, 1.6f, false, 80f, 6, 36, 54, 3.0f, 3.4f, 0.8f, 3.4f, 0.9f, 1.05f, new Color(0.45f, 0.3f, 0.18f))), price = 1250, ammoPrice = 600 },
                 new WallGun { gun = MakeGun("Kestrel AR", 70, 2.3f, true, 720f, 30, 210, 300, 2.1f, 2.6f, 0.1f, 0.75f, 0.3f, 1.1f, new Color(0.55f, 0.5f, 0.35f)), price = 2000, ammoPrice = 1000 },
                 new WallGun { gun = Sniper(MakeGun("Vanta .50 Sniper", 650, 4f, false, 45f, 5, 30, 45, 3.2f, 3.8f, 0f, 4f, 0.6f, 1.5f, new Color(0.15f, 0.2f, 0.18f))), price = 2250, ammoPrice = 1100 },
+                new WallGun { gun = MakeGun("Service 9mm", 65, 2.2f, false, 420f, 15, 90, 150, 1.5f, 1.9f, 0.3f, 0.7f, 0.25f, 0.45f, Color.gray), price = 500, ammoPrice = 250 },
+                new WallGun { gun = MakeGun("TEC-9", 28, 2f, true, 1000f, 32, 160, 256, 1.8f, 2.3f, 0.5f, 0.55f, 0.4f, 0.75f, Color.gray), price = 1000, ammoPrice = 500 },
+                new WallGun { gun = MakeGun("Tommy Gun", 46, 2.1f, true, 700f, 50, 200, 350, 2.8f, 3.3f, 0.3f, 0.65f, 0.3f, 0.9f, new Color(0.4f, 0.25f, 0.14f)), price = 1750, ammoPrice = 875 },
             };
             var lance = MakeGun("Ion Lance", 260, 2f, true, 480f, 40, 200, 320, 2.4f, 2.8f, 0.15f, 0.5f, 0.2f, 1.25f, new Color(0.3f, 0.9f, 1f));
             lance.pierce = 3;

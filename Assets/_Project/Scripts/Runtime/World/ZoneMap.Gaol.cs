@@ -21,6 +21,18 @@ namespace ZombiesFPS.World
             PlacePackItem(WoodChest, L(Gaol, -6f, 0f, 9.5f), Quaternion.identity, true);
             PlacePackItem(KitBarrel, L(Gaol, 15.5f, 0f, -5.5f), Quaternion.identity, true);
             PlacePackItem(LongBench, L(Gaol, -12f, 0f, 1f), Quaternion.identity, true);
+            if (SurfaceTextures.PhotosEnabled)
+            {
+                var hazmat = ImportedModels.Get("zombie-hazmat");
+                if (hazmat != null)
+                {
+                    var captive = Object.Instantiate(hazmat, Root, false);
+                    captive.name = "Quarantined hazmat / sealed cell 01";
+                    captive.transform.localPosition = L(Gaol, -5.35f, 0f, -6.1f);
+                    captive.transform.localScale = Vector3.one * 0.92f;
+                    captive.AddComponent<QuarantinedHazmat>();
+                }
+            }
         }
 
         void GaolMakeover()

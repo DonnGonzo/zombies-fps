@@ -72,6 +72,8 @@ namespace ZombiesFPS.Weapons
             public System.Action<Color?> Repaint;
             /// <summary>Shows the attachments in a mask on a pack model (see <see cref="GunArt"/>). Null for primitive guns.</summary>
             public System.Action<int> Fit;
+            /// <summary>Normalized reload progress, or -1 when idle. Optional model-specific moving parts.</summary>
+            public System.Action<float> ReloadPose;
             /// <summary>True when the fitted sight is a scope: the HUD draws the scope view while aiming.</summary>
             public bool Scoped;
 

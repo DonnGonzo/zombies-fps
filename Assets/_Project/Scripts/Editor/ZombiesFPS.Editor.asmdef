@@ -2,7 +2,9 @@
     "name": "ZombiesFPS.Editor",
     "rootNamespace": "ZombiesFPS.Editor",
     "references": [
-        "ZombiesFPS.Runtime"
+        "ZombiesFPS.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
     ],
     "includePlatforms": [
         "Editor"

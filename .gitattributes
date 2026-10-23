@@ -29,3 +29,8 @@
 *.ttf  filter=lfs diff=lfs merge=lfs -text
 *.otf  filter=lfs diff=lfs merge=lfs -text
 *.bank filter=lfs diff=lfs merge=lfs -text
+
+# Generated imported geometry (keep prefab/material YAML reviewable).
+Assets/_Project/Resources/ImportedModels/*_Body.asset filter=lfs diff=lfs merge=lfs -text
+Assets/_Project/Resources/ImportedModels/*_Magazine.asset filter=lfs diff=lfs merge=lfs -text
+Assets/_Project/Resources/ImportedModels/*_Skin.asset filter=lfs diff=lfs merge=lfs -text

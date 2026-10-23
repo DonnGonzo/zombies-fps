@@ -87,7 +87,7 @@ namespace ZombiesFPS.World
             // Pews either side of the nave's middle aisle, facing the altar.
             foreach (float z in PewRows)
                 foreach (float x in new[] { -4f, 4f })
-                    Reskin(Greybox.Box("Pew", Root, L(ChapelZone, x, 0.45f, z), new Vector3(3.1f, 0.9f, 0.6f), new Color(0.3f, 0.19f, 0.11f), surface: Surface.Wood), Pew, false, Pew.Size.y);
+                    Reskin(Greybox.Box("Pew", Root, L(ChapelZone, x, 0.675f, z), new Vector3(3.1f, 1.35f, 0.85f), new Color(0.3f, 0.19f, 0.11f), surface: Surface.Wood), Pew, false, Pew.Size.y);
 
             // The pulpit and the font (drawn round), the knights' tomb chests and the shrine's altar.
             Greybox.Box("Pulpit", Root, L(ChapelZone, PulpitSpot.x, 1f, PulpitSpot.y), new Vector3(1.4f, 2f, 1.4f), DarkWood, surface: Surface.Wood).GetComponent<Renderer>().enabled = false;
@@ -711,6 +711,8 @@ namespace ZombiesFPS.World
         /// <summary>A lancet: glass three times as tall as wide with a pointed head, in a stone surround with a sill.</summary>
         void Lancet(Vector3 face, Vector3 inward, float width, float bottom, int kind)
         {
+            if (ImportedDecor("gothic-window", face + inward * 0.15f + Vector3.up * bottom,
+                Quaternion.LookRotation(inward), new Vector3(width * 1.4f, width * 3f, 0.16f))) return;
             float height = width * 3f, spring = bottom + height - LancetRise * width;
             var along = Vector3.Cross(Vector3.up, inward);
             var glass = GlassMaterial(kind);

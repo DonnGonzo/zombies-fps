@@ -23,8 +23,7 @@ namespace ZombiesFPS.World
             Stairs(LoadingDockZone, 11.8f, 26f, Vector3.forward, LoadingApron, 2.6f);
 
             // The existing truck-roof part stays at (-6.5,3,-3). Its roof and ladder remain real geometry.
-            Block("Freight truck", LoadingDockZone, -8f, -6f, -5f, 1f, 3f, new Color(0.46f, 0.47f, 0.47f), Surface.Metal);
-            Greybox.Box("Truck cab", Root, LD(-6.5f, 1.2f, 2.2f), new Vector3(2.8f, 2.4f, 2.2f), new Color(0.48f, 0.12f, 0.09f), surface: Surface.Metal);
+            ImportedFreightTruck();
             AddLadder(LoadingDockZone, -6.5f, -6f, Vector3.back, 3f);
             Jump(LoadingDockZone, -6.5f, 3f, 0.3f, -6.5f, 2.4f, 2.2f);
 
@@ -55,7 +54,7 @@ namespace ZombiesFPS.World
 
         void LoadingDockMakeover()
         {
-            TruckDetails();
+            if (!_importedFreightTruck) TruckDetails();
             ContainerDetails(LoadingDockZone, -8f, 6f, -2f, 8.6f, 2.6f, DockSteel);
             ContainerDetails(LoadingDockZone, 1.6f, -6f, 6.4f, -3.4f, 2.6f, DockRust);
             LoadingCanopies();

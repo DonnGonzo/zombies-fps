@@ -68,6 +68,18 @@ namespace ZombiesFPS.World
         /// </summary>
         void Reskin(GameObject box, PackItem item, bool backToBack, float height = 0f)
         {
+            if (item.Path == Pew.Path)
+            {
+                var footprint = box.transform.localScale;
+                var at = box.transform.localPosition - Vector3.up * footprint.y / 2f;
+                var pewFacing = footprint.x >= footprint.z ? Quaternion.identity : Quaternion.Euler(0f, 90f, 0f);
+                var target = new Vector3(Mathf.Max(footprint.x, footprint.z), footprint.y, Mathf.Min(footprint.x, footprint.z));
+                if (ImportedDecor("church-bench-2", at, pewFacing, target))
+                {
+                    box.GetComponent<Renderer>().enabled = false;
+                    return;
+                }
+            }
             var model = PropModels.GetPack(item.Path, PackMaterial);
             if (model == null) return;
             box.GetComponent<Renderer>().enabled = false;
