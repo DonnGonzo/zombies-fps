@@ -53,6 +53,8 @@ namespace ZombiesFPS.Net
                 return;
             }
             if (!CasinoOpen) return;
+            // The slot music starts as soon as a player steps up; spins (SlotSpunRpc) keep it going for everyone nearby.
+            CasinoAudio.Keep(FocusedBuyable.Index, 1f);
             // On a controller the d-pad moves along the four bets (or moves) and A takes one.
             GameInput.ClaimPadMenu();
             var step = GameInput.DpadStep;
@@ -91,8 +93,12 @@ namespace ZombiesFPS.Net
                 long payout = bet * (long)CasinoRules.SlotMultiplier(a,b,c); Points.Value += payout;
                 _slotView = new CasinoView { version = _casinoVersion, station = station, wager = bet, reels = new[] { a,b,c }, result = $"Bet {bet:N0}  |  Returned {payout:N0}  |  Net {payout-bet:+#,0;-#,0;0}" };
                 CasinoViewRpc(JsonUtility.ToJson(_slotView));
+                SlotSpunRpc(station, CasinoRules.SlotMultiplier(a,b,c));
             }
         }
+        /// <summary>Every machine hears the reels and, when they stop, the win or loss (a 1x return is a loss).</summary>
+        [Rpc(SendTo.Everyone)]
+        void SlotSpunRpc(int station, int multiplier) => CasinoAudio.Spun(station, multiplier);
         void PayBlackjack()
         {
             if (_blackjack == null || !_blackjack.Done || _casinoPaid) return;
