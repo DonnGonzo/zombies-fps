@@ -233,6 +233,8 @@ namespace ZombiesFPS.Zombies
         float _lastYaw, _lastSpeed, _turnLean, _accelLean;
         float _aboveSince = -1f;
         readonly RaycastHit[] _sightHits = new RaycastHit[8];
+        // Seconds of animation not yet played on the imported model (see ModelAnimationDue).
+        float _animOwed;
 
         public bool IsAlive => _mode.Value != ZombieMode.Dead;
         /// <summary>How much of a bullet's pierce this body uses up: a brute's bulk counts double and a boss stops it dead.</summary>
@@ -279,6 +281,8 @@ namespace ZombiesFPS.Zombies
             if (!s_Spawned.Contains(this)) s_Spawned.Add(this);
             _lastPosition = transform.position;
             _nextGroan = Time.time + UnityEngine.Random.Range(1f, 6f);
+            // Posed on its first frame, wherever it is (a pooled body still holds its last life's pose).
+            _animOwed = 1f;
             _voicePitch = ZombieVoice.BasePitch(_kind.Value, (uint)NetworkObjectId);
             _walkPhase = UnityEngine.Random.Range(0f, 10f);
             // A fresh life starts from its new pose, not eased from the last one.
@@ -1547,7 +1551,8 @@ namespace ZombiesFPS.Zombies
             }
             if (_modelOn)
             {
-                _model.Animate(dt, speed, d.crawls, swing, d.attackWindup + d.attackRecovery, _swingCount, now - _spitStart, stunned);
+                if (ModelAnimationDue(dt, out float step))
+                    _model.Animate(step, speed, d.crawls, swing, d.attackWindup + d.attackRecovery, _swingCount, now - _spitStart, stunned);
                 LeanBody(dt, now, speed, stunned);
                 FollowModel();
                 return;
@@ -1635,6 +1640,32 @@ namespace ZombiesFPS.Zombies
             if (forward.sqrMagnitude < 1e-6f) forward = transform.forward;
             _spine.SetPositionAndRotation(spine.position, Quaternion.LookRotation(forward, up));
             _head.position = _model.HeadCenter;
+        }
+
+        /// <summary>
+        /// Animation level of detail for the imported model: every frame up close, at 60 or 30 a second further
+        /// away, and 10 a second off screen. Skipped frames add up, so the clips keep their pace. Evaluating the
+        /// animation graph and copying it onto a monster skin is most of what a zombie costs.
+        /// </summary>
+        bool ModelAnimationDue(float dt, out float step)
+        {
+            _animOwed += dt;
+            float interval;
+            if (!_model.IsVisible) interval = 0.1f;
+            else
+            {
+                float d = ZombieVoice.ListenerDistance(transform.position);
+                interval = d > 45f ? 1f / 30f : d > 22f ? 1f / 60f : 0f;
+            }
+            if (_animOwed < interval)
+            {
+                step = 0f;
+                return false;
+            }
+            // Long gaps (a hitch, or a zombie just coming into view) are capped so the blends don't jump.
+            step = Mathf.Min(_animOwed, 0.25f);
+            _animOwed = 0f;
+            return true;
         }
 
         /// <summary>The hidden rig's spine and head hitbox on the serpent's chest and skull.</summary>

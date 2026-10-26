@@ -66,31 +66,37 @@ namespace ZombiesFPS.Core
             }
         }
 
-        /// <summary>Shadows, anti-aliasing and reflections for the chosen quality level.</summary>
+        /// <summary>Shadows, light detail, anti-aliasing, reflections and frame pacing from the graphics settings.</summary>
         public static void ApplyQuality()
         {
-            int q = GameSettings.Quality;
-            QualitySettings.shadows = ShadowQuality.All;
+            int shadows = GameSettings.Shadows;
+            QualitySettings.shadows = shadows == 0 ? ShadowQuality.Disable : ShadowQuality.All;
             QualitySettings.shadowProjection = ShadowProjection.StableFit;
-            QualitySettings.shadowDistance = q == 0 ? 28f : q == 1 ? 50f : 80f;
-            QualitySettings.shadowCascades = q == 0 ? 1 : q == 1 ? 2 : 4;
-            QualitySettings.shadowResolution = q == 0 ? ShadowResolution.Low : q == 1 ? ShadowResolution.Medium : ShadowResolution.High;
-            QualitySettings.antiAliasing = q == 0 ? 0 : q == 1 ? 2 : 4;
+            QualitySettings.shadowDistance = shadows <= 1 ? 28f : shadows == 2 ? 50f : 80f;
+            QualitySettings.shadowCascades = shadows <= 1 ? 1 : shadows == 2 ? 2 : 4;
+            QualitySettings.shadowResolution = shadows <= 1 ? ShadowResolution.Low : shadows == 2 ? ShadowResolution.Medium : ShadowResolution.High;
+            QualitySettings.antiAliasing = AntiAliasingSamples;
             // Every extra per-pixel light is another draw for each lit part, and zombies have dozens of parts; the
             // map is cut into small pieces so a few each are enough.
-            QualitySettings.pixelLightCount = q == 0 ? 3 : q == 1 ? 4 : 6;
-            QualitySettings.anisotropicFiltering = q == 0 ? AnisotropicFiltering.Enable : AnisotropicFiltering.ForceEnable;
+            int lights = GameSettings.LightDetail;
+            QualitySettings.pixelLightCount = lights == 0 ? 3 : lights == 1 ? 4 : 6;
+            QualitySettings.anisotropicFiltering = GameSettings.Quality == 0 ? AnisotropicFiltering.Enable : AnisotropicFiltering.ForceEnable;
             QualitySettings.softParticles = false;
-            if (s_Moon != null) s_Moon.shadows = q == 0 ? LightShadows.Hard : LightShadows.Soft;
+            // VSync paces frames to the monitor; without it the frame rate cap (if any) does.
+            QualitySettings.vSyncCount = GameSettings.VSync ? 1 : 0;
+            Application.targetFrameRate = GameSettings.VSync ? -1 : GameSettings.TargetFrameRate;
+            if (s_Moon != null) s_Moon.shadows = shadows == 0 ? LightShadows.None : shadows == 1 ? LightShadows.Hard : LightShadows.Soft;
             if (s_Probe != null)
             {
                 bool wasOn = s_Probe.enabled;
-                s_Probe.enabled = q >= 2;
-                // Starting below High never rendered it; render now or metal reflects black.
+                s_Probe.enabled = GameSettings.Reflections;
+                // Starting with reflections off never rendered it; render now or metal reflects black.
                 if (s_Probe.enabled && (!wasOn || !s_ProbeRendered)) RenderProbe();
             }
             foreach (var cam in Camera.allCameras) ConfigureCamera(cam);
         }
+
+        static int AntiAliasingSamples => GameSettings.AntiAliasing == 0 ? 0 : GameSettings.AntiAliasing == 1 ? 2 : 4;
 
         /// <summary>Sky, HDR, anti-aliasing and post effects on a camera. Safe to call again.</summary>
         public static void ConfigureCamera(Camera cam)
@@ -100,13 +106,13 @@ namespace ZombiesFPS.Core
             cam.clearFlags = s_Sky != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             cam.backgroundColor = FogColor;
             cam.allowHDR = q >= 1;
-            cam.allowMSAA = q >= 1;
+            cam.allowMSAA = AntiAliasingSamples > 0;
             if (cam.GetComponent<PostFx>() == null) cam.gameObject.AddComponent<PostFx>();
         }
 
         /// <summary>
         /// One reflection probe over the whole map, rendered once after it's built, so metal and wet floors reflect
-        /// the sky and the lamps (High quality only).
+        /// the sky and the lamps (when Reflections is on).
         /// </summary>
         public static void BakeReflections(Bounds bounds)
         {
@@ -125,7 +131,7 @@ namespace ZombiesFPS.Core
             }
             s_Probe.transform.position = bounds.center + Vector3.up * 3f;
             s_Probe.size = bounds.size + Vector3.up * 20f;
-            s_Probe.enabled = GameSettings.Quality >= 2;
+            s_Probe.enabled = GameSettings.Reflections;
             if (s_Probe.enabled) RenderProbe();
         }
 

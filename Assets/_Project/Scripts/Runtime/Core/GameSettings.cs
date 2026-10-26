@@ -12,11 +12,18 @@ namespace ZombiesFPS.Core
         public const float MinHudScale = 0.75f, MaxHudScale = 1.3f;
         public const float MinBrightness = 0.6f, MaxBrightness = 1.6f;
         public static readonly string[] QualityNames = { "Low", "Medium", "High" };
+        public static readonly string[] ShadowNames = { "Off", "Low", "Medium", "High" };
+        public static readonly string[] LightDetailNames = { "Low", "Medium", "High" };
+        public static readonly string[] AntiAliasingNames = { "Off", "2x", "4x" };
+        public static readonly string[] FpsLimitNames = { "Off", "60", "120", "144", "240" };
+        static readonly int[] FpsLimits = { -1, 60, 120, 144, 240 };
+        public static readonly string[] PerfOverlayNames = { "Off", "FPS", "Details" };
 
         static bool s_Loaded;
         static float s_Sensitivity, s_Fov, s_Master, s_Effects, s_Voice, s_Music, s_HudScale;
         static bool s_InvertY, s_Subtitles, s_ReduceShake, s_Tips, s_Colorblind;
-        static int s_Quality;
+        static int s_Quality, s_Shadows, s_LightDetail, s_AntiAliasing, s_FpsLimit, s_PerfOverlay;
+        static bool s_Reflections, s_VSync;
         static float s_Brightness;
         static bool s_Bloom, s_Grain, s_AnimatedZombies, s_MapArt;
         static float s_StickSensitivity, s_PadAimSensitivity, s_StickDeadzone, s_AimAssistStrength;
@@ -49,6 +56,14 @@ namespace ZombiesFPS.Core
             s_Tips = PlayerPrefs.GetInt(Prefix + "Tips", 1) != 0;
             s_Colorblind = PlayerPrefs.GetInt(Prefix + "Colorblind", 0) != 0;
             s_Quality = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "Quality", 2), 0, QualityNames.Length - 1);
+            // The detail settings start from the quality preset for players who saved one before they existed.
+            s_Shadows = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "Shadows", s_Quality + 1), 0, ShadowNames.Length - 1);
+            s_LightDetail = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "LightDetail", s_Quality), 0, LightDetailNames.Length - 1);
+            s_AntiAliasing = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "AntiAliasing", s_Quality), 0, AntiAliasingNames.Length - 1);
+            s_Reflections = PlayerPrefs.GetInt(Prefix + "Reflections", s_Quality >= 2 ? 1 : 0) != 0;
+            s_VSync = PlayerPrefs.GetInt(Prefix + "VSync", 1) != 0;
+            s_FpsLimit = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "FpsLimit", 0), 0, FpsLimitNames.Length - 1);
+            s_PerfOverlay = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "PerfOverlay", 0), 0, PerfOverlayNames.Length - 1);
             s_Brightness = PlayerPrefs.GetFloat(Prefix + "Brightness", 1f);
             s_Bloom = PlayerPrefs.GetInt(Prefix + "Bloom", 1) != 0;
             s_Grain = PlayerPrefs.GetInt(Prefix + "FilmGrain", 1) != 0;
@@ -67,7 +82,10 @@ namespace ZombiesFPS.Core
             AudioListener.volume = s_Master;
         }
 
-        /// <summary>Graphics quality: 0 Low, 1 Medium, 2 High. Shadows, anti-aliasing and post effects.</summary>
+        /// <summary>
+        /// Graphics quality preset: 0 Low, 1 Medium, 2 High. Picking one sets shadows, light detail, anti-aliasing and
+        /// reflections to match (each can then be changed on its own); the preset itself still decides HDR and bloom.
+        /// </summary>
         public static int Quality
         {
             get { EnsureLoaded(); return s_Quality; }
@@ -75,11 +93,104 @@ namespace ZombiesFPS.Core
             {
                 EnsureLoaded();
                 int v = Mathf.Clamp(value, 0, QualityNames.Length - 1);
-                if (v == s_Quality) return;
+                if (v == s_Quality && MatchesPreset(v)) return;
                 s_Quality = v;
                 PlayerPrefs.SetInt(Prefix + "Quality", v);
+                SetInt(ref s_Shadows, v + 1, "Shadows");
+                SetInt(ref s_LightDetail, v, "LightDetail");
+                SetInt(ref s_AntiAliasing, v, "AntiAliasing");
+                s_Reflections = v >= 2;
+                PlayerPrefs.SetInt(Prefix + "Reflections", s_Reflections ? 1 : 0);
                 GraphicsChanged?.Invoke();
             }
+        }
+
+        /// <summary>True when the detail settings are exactly what preset <paramref name="q"/> sets.</summary>
+        public static bool MatchesPreset(int q)
+        {
+            EnsureLoaded();
+            return s_Shadows == q + 1 && s_LightDetail == q && s_AntiAliasing == q && s_Reflections == (q >= 2);
+        }
+
+        static void SetInt(ref int field, int value, string key)
+        {
+            field = value;
+            PlayerPrefs.SetInt(Prefix + key, value);
+        }
+
+        static void SetGraphics(ref int field, int value, int count, string key)
+        {
+            EnsureLoaded();
+            int v = Mathf.Clamp(value, 0, count - 1);
+            if (v == field) return;
+            SetInt(ref field, v, key);
+            GraphicsChanged?.Invoke();
+        }
+
+        /// <summary>Moonlight shadows: 0 off, 1 short and hard, 2 medium and soft, 3 long and sharp.</summary>
+        public static int Shadows
+        {
+            get { EnsureLoaded(); return s_Shadows; }
+            set => SetGraphics(ref s_Shadows, value, ShadowNames.Length, "Shadows");
+        }
+
+        /// <summary>How many lamps light each surface per pixel (the rest are blended in more cheaply): 0 Low, 1 Medium, 2 High.</summary>
+        public static int LightDetail
+        {
+            get { EnsureLoaded(); return s_LightDetail; }
+            set => SetGraphics(ref s_LightDetail, value, LightDetailNames.Length, "LightDetail");
+        }
+
+        /// <summary>Multisample anti-aliasing: 0 off, 1 2x, 2 4x.</summary>
+        public static int AntiAliasing
+        {
+            get { EnsureLoaded(); return s_AntiAliasing; }
+            set => SetGraphics(ref s_AntiAliasing, value, AntiAliasingNames.Length, "AntiAliasing");
+        }
+
+        /// <summary>Metal and wet floors reflect the sky and lamps.</summary>
+        public static bool Reflections
+        {
+            get { EnsureLoaded(); return s_Reflections; }
+            set
+            {
+                EnsureLoaded();
+                if (value == s_Reflections) return;
+                s_Reflections = value;
+                PlayerPrefs.SetInt(Prefix + "Reflections", value ? 1 : 0);
+                GraphicsChanged?.Invoke();
+            }
+        }
+
+        /// <summary>Waits for the monitor's refresh each frame: no tearing, and the frame rate never passes the refresh rate.</summary>
+        public static bool VSync
+        {
+            get { EnsureLoaded(); return s_VSync; }
+            set
+            {
+                EnsureLoaded();
+                if (value == s_VSync) return;
+                s_VSync = value;
+                PlayerPrefs.SetInt(Prefix + "VSync", value ? 1 : 0);
+                GraphicsChanged?.Invoke();
+            }
+        }
+
+        /// <summary>Frame rate cap with VSync off, an index into <see cref="FpsLimitNames"/> (0 = no cap).</summary>
+        public static int FpsLimit
+        {
+            get { EnsureLoaded(); return s_FpsLimit; }
+            set => SetGraphics(ref s_FpsLimit, value, FpsLimitNames.Length, "FpsLimit");
+        }
+
+        /// <summary>The frame rate cap in frames per second, or -1 for none.</summary>
+        public static int TargetFrameRate => FpsLimits[FpsLimit];
+
+        /// <summary>Corner read-out: 0 off, 1 frame rate, 2 frame rate plus frame times, draw calls and what's on screen.</summary>
+        public static int PerfOverlay
+        {
+            get { EnsureLoaded(); return s_PerfOverlay; }
+            set { EnsureLoaded(); s_PerfOverlay = Mathf.Clamp(value, 0, PerfOverlayNames.Length - 1); PlayerPrefs.SetInt(Prefix + "PerfOverlay", s_PerfOverlay); }
         }
 
         /// <summary>Overall brightness (1 = as designed). The game is dark on purpose; this helps on dim screens.</summary>
@@ -332,6 +443,9 @@ namespace ZombiesFPS.Core
             Tips = true;
             Colorblind = false;
             Quality = 2;
+            VSync = true;
+            FpsLimit = 0;
+            PerfOverlay = 0;
             Brightness = 1f;
             Bloom = true;
             FilmGrain = true;

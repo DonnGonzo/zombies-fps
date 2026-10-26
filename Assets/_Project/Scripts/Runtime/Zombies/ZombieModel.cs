@@ -602,6 +602,24 @@ namespace ZombiesFPS.Zombies
 
         // ---------------------------------------------------------------- per frame
 
+        /// <summary>
+        /// Whether any camera on this machine draws the body this frame (shadows count). Off-screen zombies are
+        /// animated less often; their hitboxes still follow, a pose or two behind.
+        /// </summary>
+        public bool IsVisible
+        {
+            get
+            {
+                if (_skin != null && _skin.Renderer != null && _skin.Renderer.enabled && _skin.Renderer.isVisible) return true;
+                for (int i = 0; i < _renderers.Length; i++)
+                {
+                    var r = _renderers[i];
+                    if (r != null && r.enabled && r.isVisible) return true;
+                }
+                return false;
+            }
+        }
+
         /// <summary>The ground speed (m/s) clip <paramref name="clip"/> walks at, at this zombie's size.</summary>
         float Stride(int clip) => Mathf.Max(_kit.Stride[clip] * transform.lossyScale.z, 0.1f);
 
