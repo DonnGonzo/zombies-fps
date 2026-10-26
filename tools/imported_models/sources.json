@@ -221,5 +221,33 @@
     "converter": "tools/casino/pack_blackjack_table.py",
     "output": "Assets/_Project/Resources/CC0/Casino",
     "textureLimit": 2048
+  },
+  {
+    "id": "perk-machines",
+    "archive": null,
+    "generatedBy": "Ivan, AI-generated (single textured mesh per file, 40k faces, like his Hunyuan3D-2 output)",
+    "sourceModels": [
+      "dc8e53a5-a4a4-49c1-90e7-f3eb7349f421.glb",
+      "6fd96b50-79b8-4106-867c-165c0219bad9.glb",
+      "280d5cf0-3783-4502-85ab-e89f5b97c2df.glb",
+      "24b84935-668f-4a16-87f2-6477acd43a1f.glb",
+      "5f78d32a-7e0d-4580-bdb2-89ba01cb2dcb.glb",
+      "d13d2cc8-62bf-4007-aa58-ec5e6735632b.glb",
+      "636a099f-1868-43b4-8b0a-2e08deb9d016.glb",
+      "ca3338ab-4622-4548-8b7c-2fad9b808768.glb"
+    ],
+    "sha256": {
+      "dc8e53a5-a4a4-49c1-90e7-f3eb7349f421.glb": "bcb7743be74940f26289f9d601c6ced1785fe5c6c746b4081570c5fa41e57ab4",
+      "6fd96b50-79b8-4106-867c-165c0219bad9.glb": "6684234f5533b496c5b26583695e92495e9fa4f16f4f87b21e43f7d6827cb656",
+      "280d5cf0-3783-4502-85ab-e89f5b97c2df.glb": "0e06c46f5f426fddf09dc282e51f2579cb83ae083784600f07b4666e63ccd07d",
+      "24b84935-668f-4a16-87f2-6477acd43a1f.glb": "a047d73037518b56edff977967f34db2d2f64a36b42f095203bab58724c59fb6",
+      "5f78d32a-7e0d-4580-bdb2-89ba01cb2dcb.glb": "06bb639b24ddee0d4901e5eddecd92590cc5737d283cf49411d35a65720465f4",
+      "d13d2cc8-62bf-4007-aa58-ec5e6735632b.glb": "70190c90394158e271d4bb2557f27ec529fc14529503c7beabfe4e501ad33d4b",
+      "636a099f-1868-43b4-8b0a-2e08deb9d016.glb": "c770e66c501dc79ede86a0d6df64ff87f6f7d7fdfeaa976d638cf4bd8549db4e",
+      "ca3338ab-4622-4548-8b7c-2fad9b808768.glb": "34e139ef97a9f79c29479810a9a4837f44d3b98e2f09b9e18a5898507ffa2222"
+    },
+    "converter": "tools/perks/pack_perk_machines.py",
+    "output": "Assets/_Project/Resources/CC0/Perks",
+    "textureLimit": 2048
   }
 ]
