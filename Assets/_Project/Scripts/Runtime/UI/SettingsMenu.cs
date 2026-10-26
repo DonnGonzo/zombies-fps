@@ -104,6 +104,17 @@ namespace ZombiesFPS.UI
                     GameSettings.InvertY = false;
                     GameSettings.Fov = 75f;
                     break;
+                case Tab.Graphics:
+                    GameSettings.Quality = 2;
+                    GameSettings.Brightness = 1f;
+                    GameSettings.Bloom = true;
+                    GameSettings.FilmGrain = true;
+                    GameSettings.AnimatedZombies = true;
+                    GameSettings.MapArt = true;
+                    GameSettings.VSync = true;
+                    GameSettings.FpsLimit = 0;
+                    GameSettings.PerfOverlay = 0;
+                    break;
                 case Tab.Sound:
                     GameSettings.MasterVolume = 1f;
                     GameSettings.EffectsVolume = 1f;
@@ -276,27 +287,61 @@ namespace ZombiesFPS.UI
 
         static void DrawGraphics(Rect body, float u)
         {
-            float rowH = 54 * u, y = body.y;
-            Ui.Label(new Rect(body.x, y, 260 * u, rowH), "Quality", Ui.Body, Ui.Text, TextAnchor.MiddleLeft);
-            float bw = 150 * u;
+            // Two columns: how it looks on the left, what it costs on the right.
+            float rowH = 54 * u, gap = 30 * u, cw = (body.width - gap) / 2f;
+            float x = body.x, y = body.y;
+            Ui.Label(new Rect(x, y, cw * 0.36f, rowH), "Quality", Ui.Body, Ui.Text, TextAnchor.MiddleLeft);
+            float qx = x + cw * 0.36f, qgap = 8 * u, bw = (cw * 0.64f - qgap * (GameSettings.QualityNames.Length - 1)) / GameSettings.QualityNames.Length;
             for (int i = 0; i < GameSettings.QualityNames.Length; i++)
             {
-                var r = new Rect(body.x + 280 * u + i * (bw + 8 * u), y + 8 * u, bw, rowH - 16 * u);
-                if (Ui.Choice(r, GameSettings.Quality == i, GameSettings.QualityNames[i])) GameSettings.Quality = i;
+                var r = new Rect(qx + i * (bw + qgap), y + 8 * u, bw, rowH - 16 * u);
+                bool on = GameSettings.Quality == i && GameSettings.MatchesPreset(i);
+                if (Ui.Choice(r, on, GameSettings.QualityNames[i])) GameSettings.Quality = i;
             }
             y += rowH;
-            GameSettings.Brightness = Ui.Slider(new Rect(body.x, y, body.width, rowH), "Brightness", GameSettings.Brightness,
+            GameSettings.Brightness = Ui.Slider(new Rect(x, y, cw, rowH), "Brightness", GameSettings.Brightness,
                 GameSettings.MinBrightness, GameSettings.MaxBrightness, $"{GameSettings.Brightness * 100f:0}%", u);
             y += rowH;
-            GameSettings.Bloom = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Bloom", GameSettings.Bloom, u, "glow around lamps, muzzle flashes and eyes");
+            GameSettings.Bloom = Ui.Toggle(new Rect(x, y, cw, rowH), "Bloom", GameSettings.Bloom, u, "glow round lamps and eyes");
             y += rowH;
-            GameSettings.FilmGrain = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Film grain", GameSettings.FilmGrain, u);
+            GameSettings.FilmGrain = Ui.Toggle(new Rect(x, y, cw, rowH), "Film grain", GameSettings.FilmGrain, u);
             y += rowH;
-            GameSettings.AnimatedZombies = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Animated zombie models", GameSettings.AnimatedZombies, u, "off = the old blocky zombies");
+            GameSettings.AnimatedZombies = Ui.Toggle(new Rect(x, y, cw, rowH), "Animated zombies", GameSettings.AnimatedZombies, u, "off = blocky");
             y += rowH;
-            GameSettings.MapArt = Ui.Toggle(new Rect(body.x, y, body.width, rowH), "Medieval map textures and props", GameSettings.MapArt, u, "off = the old procedural look; next match");
-            y += rowH + 10 * u;
-            Ui.Label(new Rect(body.x, y, body.width, 80 * u), "Low turns off bloom and shortens shadows for older PCs. Medium adds bloom, soft shadows and smoother edges. High adds sharper, longer shadows, reflections on metal and the smoothest edges.", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+            GameSettings.MapArt = Ui.Toggle(new Rect(x, y, cw, rowH), "Medieval map art", GameSettings.MapArt, u, "next match");
+            y += rowH;
+            GameSettings.Reflections = Ui.Toggle(new Rect(x, y, cw, rowH), "Reflections", GameSettings.Reflections, u, "on metal and wet floors");
+            float leftEnd = y + rowH;
+
+            x = body.x + cw + gap;
+            y = body.y;
+            NarrowChoiceRow(new Rect(x, y, cw, rowH), "Shadows", GameSettings.ShadowNames, GameSettings.Shadows, i => GameSettings.Shadows = i, u);
+            y += rowH;
+            NarrowChoiceRow(new Rect(x, y, cw, rowH), "Light detail", GameSettings.LightDetailNames, GameSettings.LightDetail, i => GameSettings.LightDetail = i, u);
+            y += rowH;
+            NarrowChoiceRow(new Rect(x, y, cw, rowH), "Anti-aliasing", GameSettings.AntiAliasingNames, GameSettings.AntiAliasing, i => GameSettings.AntiAliasing = i, u);
+            y += rowH;
+            GameSettings.VSync = Ui.Toggle(new Rect(x, y, cw, rowH), "VSync", GameSettings.VSync, u, "no tearing");
+            y += rowH;
+            GUI.enabled = !GameSettings.VSync && !IsCapturing;
+            NarrowChoiceRow(new Rect(x, y, cw, rowH), "FPS limit", GameSettings.FpsLimitNames, GameSettings.FpsLimit, i => GameSettings.FpsLimit = i, u);
+            GUI.enabled = !IsCapturing;
+            y += rowH;
+            NarrowChoiceRow(new Rect(x, y, cw, rowH), "Show FPS", GameSettings.PerfOverlayNames, GameSettings.PerfOverlay, i => GameSettings.PerfOverlay = i, u);
+            y = Mathf.Max(leftEnd, y + rowH) + 10 * u;
+            Ui.Label(new Rect(body.x, y, body.width, 80 * u), "Quality sets the detail options on the right in one go. For more frames per second, lower Shadows and Light detail first. With VSync off, FPS limit caps the frame rate (Off = no cap). Show FPS puts a frame rate read-out in the top right corner.", Ui.Tiny, Ui.Muted, TextAnchor.UpperLeft);
+        }
+
+        /// <summary>A label and a row of buttons, one of them picked, with a shorter label for a half-width column.</summary>
+        static void NarrowChoiceRow(Rect r, string label, string[] names, int current, System.Action<int> pick, float u)
+        {
+            Ui.Label(new Rect(r.x, r.y, r.width * 0.36f, r.height), label, Ui.Body, Ui.Text, TextAnchor.MiddleLeft);
+            float x = r.x + r.width * 0.36f, gap = 6 * u, bw = (r.width * 0.64f - gap * (names.Length - 1)) / names.Length;
+            for (int i = 0; i < names.Length; i++)
+            {
+                var b = new Rect(x + i * (bw + gap), r.y + 6 * u, bw, r.height - 12 * u);
+                if (Ui.Choice(b, current == i, names[i])) pick(i);
+            }
         }
 
         static void DrawSound(Rect body, float u)

@@ -321,6 +321,8 @@ namespace ZombiesFPS.World
             Buyables = buyables.ToArray();
 
             PlayerStart = StartPosition;
+            // Last, with every piece in place: nothing built after this (the easter egg's props) is batched.
+            BatchStatic();
         }
 
         /// <summary>Every wall and door lintel from the floor plan.</summary>
