@@ -22,3 +22,7 @@ Third-party art in this project that asks to be credited.
 - **Blackjack table** (`Assets/_Project/Resources/CC0/Casino`): a round table with three chairs that the project
   owner (Ivan) generated with Hunyuan3D-2 and supplied for the casino. Packed by
   `tools/casino/pack_blackjack_table.py`; hashes of the source OBJ and texture are in `tools/imported_models/sources.json`.
+
+- **Perk machines** (`Assets/_Project/Resources/CC0/Perks`): eight textured machine models that the project owner
+  (Ivan) generated with an AI 3D tool and supplied for the perk machines, one per perk. Packed by
+  `tools/perks/pack_perk_machines.py`; hashes of the source GLBs are in `tools/imported_models/sources.json`.

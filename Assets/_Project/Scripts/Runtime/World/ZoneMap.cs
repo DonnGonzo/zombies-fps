@@ -718,11 +718,54 @@ namespace ZombiesFPS.World
             for (int i = 0; i < PerkSpots.Length; i++)
             {
                 var def = perks != null ? perks.At(i) : null;
-                BuildVendingMachine(PerkSpots[i].Resolve(), def != null ? def.name : "Perk",
-                    def != null ? def.color : Color.white, def != null ? def.price.ToString("N0") : "");
+                string title = def != null ? def.name : "Perk", price = def != null ? def.price.ToString("N0") : "";
+                var color = def != null ? def.color : Color.white;
+                if (!PerkMachine(PerkSpots[i].Resolve(), i, title, color, price))
+                    BuildVendingMachine(PerkSpots[i].Resolve(), title, color, price);
             }
             BuildVendingMachine(ArmorSpot.Resolve(), "Armour Plates", new Color(0.6f, 0.65f, 0.72f), "");
             BuildShrine(RerollSpot.Resolve());
+        }
+
+        /// <summary>Ivan's perk machines (tools/perks/pack_perk_machines.py), in PerkKind order.</summary>
+        static readonly string[] PerkMachineArt =
+            { "ironhide", "slick_fingers", "second_wind", "hair_trigger", "fleet_foot", "steady_hand", "hazard_ward", "bloodline" };
+
+        /// <summary>
+        /// A perk's own machine model backed against the wall, with an invisible box round it for collision; false when
+        /// the map art is off or the model isn't in the project (the greybox vending machine stands in).
+        /// </summary>
+        bool PerkMachine((Vector3 face, Vector3 inward) spot, int perk, string title, Color color, string price)
+        {
+            if (perk >= PerkMachineArt.Length) return false;
+            string art = PerkMachineArt[perk];
+            var model = PropModels.GetPack("Perks/" + art, _ => PropModels.Textured("Perk machine " + art,
+                Resources.Load<Texture2D>("CC0/Perks/" + art + "_albedo"), null, 0.1f, 0.35f));
+            if (model == null) return false;
+            // The mesh's origin is the middle of its base's back edge, so it sits just off the wall.
+            var rot = Quaternion.LookRotation(spot.inward, Vector3.up);
+            var root = Greybox.Empty("Machine " + title, Root, spot.face + spot.inward * 0.04f);
+            root.localRotation = rot;
+            var m = Matrix4x4.TRS(root.position, rot, Vector3.one);
+            for (int s = 0; s < model.Materials.Length; s++) _decor.Add(model.Mesh, s, m, model.Materials[s], true);
+
+            var b = model.Bounds;
+            float depth = Mathf.Max(b.max.z, 0.5f), top = b.max.y;
+            var solid = Greybox.Box("Body", root, new Vector3(b.center.x, top / 2f, depth / 2f), new Vector3(b.size.x * 0.92f, top, depth),
+                new Color(0.12f, 0.12f, 0.14f), surface: Surface.Metal);
+            solid.GetComponent<Renderer>().enabled = false;
+            var labelColor = Color.Lerp(color, Color.white, 0.6f);
+            Greybox.Label("Name", root, new Vector3(0f, top + 0.42f, depth * 0.55f), title.ToUpperInvariant(), labelColor, 0.2f);
+            if (!string.IsNullOrEmpty(price)) Greybox.Label("Price", root, new Vector3(0f, top + 0.2f, depth * 0.55f), price, Color.Lerp(color, Color.white, 0.85f), 0.15f);
+            var light = new GameObject("Glow").AddComponent<Light>();
+            light.transform.SetParent(root, false);
+            light.transform.localPosition = new Vector3(0f, 1.4f, depth + 0.7f);
+            light.type = LightType.Point;
+            light.color = color;
+            light.range = 4.5f;
+            light.intensity = 1.6f;
+            light.shadows = LightShadows.None;
+            return true;
         }
 
         void BuildVendingMachine((Vector3 face, Vector3 inward) spot, string title, Color color, string price)
