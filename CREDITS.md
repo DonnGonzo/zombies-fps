@@ -18,3 +18,7 @@ Third-party art in this project that asks to be credited.
   - "Ghost Monster Voice Moaning & Growling" by qubodup
     (https://opengameart.org/content/ghost-monster-voice-moaning-growling), CC0, pitched down.
   - "Monster Sound Pack, Volume 1" by Ogrebane, made for Summoning Wars (https://opengameart.org/node/4017), CC0.
+
+- **Blackjack table** (`Assets/_Project/Resources/CC0/Casino`): a round table with three chairs that the project
+  owner (Ivan) generated with Hunyuan3D-2 and supplied for the casino. Packed by
+  `tools/casino/pack_blackjack_table.py`; hashes of the source OBJ and texture are in `tools/imported_models/sources.json`.
