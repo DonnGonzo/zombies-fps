@@ -51,7 +51,10 @@ def main():
                              sourceModels=[str(p.relative_to(stage)) for p in stage.rglob('*') if p.suffix.lower() in ('.fbx', '.obj', '.blend')],
                              textureLimit=2048))
         print(slug, flush=True)
-    (ROOT / 'tools/imported_models/sources.json').write_text(json.dumps(manifest, indent=2)+'\n')
+    # Keep hand-added entries (models that came without an archive, such as the blackjack table).
+    path = ROOT / 'tools/imported_models/sources.json'
+    if path.exists(): manifest += [e for e in json.loads(path.read_text()) if not e.get('archive')]
+    path.write_text(json.dumps(manifest, indent=2)+'\n')
 
 if __name__ == '__main__':
     main()

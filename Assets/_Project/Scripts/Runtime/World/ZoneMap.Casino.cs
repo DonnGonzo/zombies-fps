@@ -6,7 +6,7 @@ namespace ZombiesFPS.World
     /// <summary>
     /// The Depot's "Last Chance" corner (three slot machines and a blackjack table on its south wall), the Lantern
     /// Core's sci-fi capsules (see SpecimenTanks) and the hex sphere over the upgrade machine. The models come from
-    /// ImportedModels; each piece's collision is a plain box so the map plays the same without the art.
+    /// ImportedModels (the blackjack table from PropModels); each piece's collision is a plain box so the map plays the same without the art.
     /// </summary>
     public partial class ZoneMap
     {
@@ -62,12 +62,32 @@ namespace ZombiesFPS.World
                 SolidModel("a-slot-machine", D(CasinoPositions[i].x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + slotDepth / 2f + 0.05f),
                     2f, new Vector3(0.98f, 2f, slotDepth));
             var table = CasinoPositions[BlackjackStation];
-            SolidModel("gambling-table", D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + tableDepth / 2f + 0.35f),
-                1.2f, new Vector3(1.72f, 1.1f, tableDepth));
+            if (!BlackjackTable(D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + BlackjackDepth / 2f + 0.05f)))
+                SolidModel("gambling-table", D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + tableDepth / 2f + 0.35f),
+                    1.2f, new Vector3(1.72f, 1.1f, tableDepth));
             RemodelSign(DepotZone, "LAST CHANCE  /  SLOTS", 4.1f, 3.2f, CasinoWall + 0.06f, 0f, 4.2f);
             RemodelSign(DepotZone, "THE WATCH'S TABLE  /  BLACKJACK", -18f, 3.2f, CasinoWall + 0.06f, 0f, 4.6f);
             RemodelLight(DepotZone, 4.1f, 3.6f, -10.6f, new Color(1f, 0.62f, 0.22f));
             RemodelLight(DepotZone, -18f, 3.6f, -10.2f, new Color(1f, 0.62f, 0.22f));
+        }
+
+        /// <summary>Ivan's round blackjack table (tools/casino/pack_blackjack_table.py): 2.28 m across, 1.73 m deep with its chairs.</summary>
+        const float BlackjackDepth = 1.73f;
+
+        /// <summary>
+        /// The blackjack table with three chairs, the dealer's against the wall and the open side facing the player;
+        /// false when the map art is off or the model isn't in the project (the old hazard table stands in).
+        /// </summary>
+        bool BlackjackTable(Vector3 floor)
+        {
+            var model = PropModels.GetPack("Casino/blackjack_table", _ => PropModels.Textured("Blackjack table",
+                Resources.Load<Texture2D>("CC0/Casino/blackjack_table_albedo"), null, 0f, 0.3f));
+            if (model == null) return false;
+            AddModel(model, floor, Quaternion.identity, true);
+            var solid = Greybox.Box("Blackjack table collision", Root, floor + Vector3.up * 0.55f, new Vector3(2.2f, 1.1f, BlackjackDepth - 0.1f),
+                Metal, surface: Surface.Metal);
+            solid.GetComponent<Renderer>().enabled = false;
+            return true;
         }
 
         /// <summary>The casino stations stay clear of dressing, like the wall buys do.</summary>

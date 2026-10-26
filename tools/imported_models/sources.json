@@ -205,5 +205,21 @@
       "source\\Zomb.FBX.fbx"
     ],
     "textureLimit": 2048
+  },
+  {
+    "id": "blackjack-table",
+    "archive": null,
+    "generatedBy": "Ivan with Hunyuan3D-2 (local, D:\\GitHub\\LLM3D)",
+    "sourceModels": [
+      "textured_mesh.obj",
+      "material_0.png"
+    ],
+    "sha256": {
+      "textured_mesh.obj": "a9f00c73b472238f8568a20baeb6a63a5339ca54b437aea2e5d51f65e63b6e51",
+      "material_0.png": "19733e5c425a62b5d299d53a9673f310692c4fea089e318e6aad1d9c68003119"
+    },
+    "converter": "tools/casino/pack_blackjack_table.py",
+    "output": "Assets/_Project/Resources/CC0/Casino",
+    "textureLimit": 2048
   }
 ]
