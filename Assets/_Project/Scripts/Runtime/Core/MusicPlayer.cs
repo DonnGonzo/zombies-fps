@@ -1,5 +1,6 @@
 using UnityEngine;
 using ZombiesFPS.Net;
+using ZombiesFPS.World;
 
 namespace ZombiesFPS.Core
 {
@@ -83,8 +84,10 @@ namespace ZombiesFPS.Core
             float step = Time.unscaledDeltaTime / FadeTime;
             _levelA = Mathf.MoveTowards(_levelA, _targetA, step);
             _levelB = Mathf.MoveTowards(_levelB, _targetB, step);
-            _a.volume = _levelA * LevelFor(PieceOf(_a.clip)) * GameSettings.MusicVolume;
-            _b.volume = _levelB * LevelFor(PieceOf(_b.clip)) * GameSettings.MusicVolume;
+            // Ducks under the slot machines' music while the listener stands in the casino corner.
+            float duck = 1f - 0.75f * CasinoAudio.Presence;
+            _a.volume = _levelA * LevelFor(PieceOf(_a.clip)) * GameSettings.MusicVolume * duck;
+            _b.volume = _levelB * LevelFor(PieceOf(_b.clip)) * GameSettings.MusicVolume * duck;
             if (_levelA <= 0f && _targetA <= 0f && _a.isPlaying) _a.Stop();
             if (_levelB <= 0f && _targetB <= 0f && _b.isPlaying) _b.Stop();
         }
