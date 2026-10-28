@@ -32,6 +32,9 @@ namespace ZombiesFPS.CharacterModels
         {
             Clip.Walk, Clip.Idle, Clip.Walk, Clip.Walk, Clip.Walk, Clip.Walk, Clip.Back, Clip.Idle, Clip.Idle, Clip.Fire, Clip.Fire,
         };
+        // The throw clip ("toss grenade", 3.2 s): played from the arm drawing back to the release at the speed that
+        // lets go when the thrower's throwable leaves, then the follow-through a little faster than recorded.
+        const float TossStart = 0.38f, TossRelease = 0.56f, TossEnd = 0.85f, TossFollowRate = 1.6f;
         // The ground speed (m/s) each loop looks right at, so the feet keep up with the player.
         static readonly float[] RefSpeed = { 1f, 1.5f, 1.3f, 1.4f, 1.4f, 4.6f, 3.2f };
 
@@ -56,6 +59,8 @@ namespace ZombiesFPS.CharacterModels
         /// <summary>The upper chest, for anything that rides the body (the gun).</summary>
         public Transform Chest { get; private set; }
         public Transform Head { get; private set; }
+        /// <summary>The hand the throw clip throws with.</summary>
+        public Transform RightHand { get; private set; }
 
         /// <summary>Whether a survivor character and the basic clips are in the project.</summary>
         public static bool Available
@@ -150,6 +155,7 @@ namespace ZombiesFPS.CharacterModels
             _align = _skin.AlignTo(transform, _srcParts);
             transform.localScale = Vector3.one * (height / tall);
             Head = _skin.Head;
+            RightHand = _skin.Parts[(int)Part.RHand];
             Chest = _skin.Parts[(int)Part.UpperChest] ?? _skin.Parts[(int)Part.Chest] ?? _skin.Parts[(int)Part.Spine];
 
             var animator = GetComponent<Animator>();
@@ -255,9 +261,10 @@ namespace ZombiesFPS.CharacterModels
         /// <param name="velocity">Ground velocity in the player's own facing (x right, z forward), m/s.</param>
         /// <param name="grounded">False while jumping or falling.</param>
         /// <param name="fire">Seconds since the last shot (large when none).</param>
-        /// <param name="toss">Seconds since the last throw.</param>
+        /// <param name="toss">Seconds since the last throw started winding up.</param>
+        /// <param name="tossWindUp">Seconds from that start to the throwable leaving the hand.</param>
         /// <param name="hit">Seconds since they were last hurt.</param>
-        public void Animate(float dt, Vector3 velocity, bool grounded, float fire, float toss, float hit)
+        public void Animate(float dt, Vector3 velocity, bool grounded, float fire, float toss, float tossWindUp, float hit)
         {
             if (!_graph.IsValid() || dt <= 0f) return;
             float blend = 1f - Mathf.Exp(-9f * dt);
@@ -309,8 +316,15 @@ namespace ZombiesFPS.CharacterModels
             int active = -1;
             float at = 0f, upper = 0f;
             float hitLen = s_Clips[(int)Clip.Hit].length, tossLen = s_Clips[(int)Clip.Throw].length;
+            float tossRelease = TossRelease * tossLen, tossTime = tossWindUp + (TossEnd - TossRelease) * tossLen / TossFollowRate;
             if (hit < Mathf.Min(hitLen, 0.8f)) { active = (int)Clip.Hit; at = hit; upper = Fade(hit, Mathf.Min(hitLen, 0.8f)); }
-            else if (toss < tossLen) { active = (int)Clip.Throw; at = toss; upper = Fade(toss, tossLen); }
+            else if (toss >= 0f && toss < tossTime)
+            {
+                active = (int)Clip.Throw;
+                at = toss < tossWindUp ? Mathf.Lerp(TossStart * tossLen, tossRelease, toss / Mathf.Max(tossWindUp, 0.01f))
+                    : tossRelease + (toss - tossWindUp) * TossFollowRate;
+                upper = Fade(toss, tossTime);
+            }
             else if (fire < 0.35f) { active = (int)Clip.Fire; at = Mathf.Min(fire, s_Clips[(int)Clip.Fire].length * 0.3f); upper = Fade(fire, 0.35f); }
             _upperWeight = Mathf.Lerp(_upperWeight, upper, 1f - Mathf.Exp(-25f * dt));
             for (int i = 0; i < UpperCount; i++)

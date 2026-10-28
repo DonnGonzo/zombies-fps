@@ -7,7 +7,24 @@ namespace ZombiesFPS.Weapons
     /// <summary>Two gripping gloves and sleeved forearms, anchored to the equipped weapon's own space.</summary>
     public sealed class FirstPersonArms : MonoBehaviour
     {
+        /// <summary>The off hand mid-throw (from <see cref="ThrowMotion"/>), in camera space.</summary>
+        public struct ThrowHand
+        {
+            public float Weight;
+            public Vector3 Position;
+            public Quaternion Rotation;
+            /// <summary>The <see cref="ThrowableKind"/> in the hand, or -1 once it's gone.</summary>
+            public int Held;
+            public bool PinOut;
+        }
+
+        // Where the off hand meets the gun's support grip, and where its elbow hangs mid-throw (out to the side).
+        static readonly Vector3 LeftElbow = new Vector3(-0.28f, -0.38f, -0.04f), ThrowElbow = new Vector3(-0.36f, -0.16f, -0.08f);
+
         Transform _right, _left, _rightSleeve, _leftSleeve, _rightCuff, _leftCuff;
+        // One model of each throwable, in the off hand's palm.
+        readonly Transform[] _held = new Transform[3];
+        Transform _pin;
         Transform _gripSpace, _cameraSpace;
         Vector3 _mainGrip, _supportGrip;
         bool _pistol;
@@ -24,6 +41,18 @@ namespace ZombiesFPS.Weapons
             _leftSleeve = Part("Left sleeve", transform, Vector3.zero, Vector3.one, _cloth);
             _rightCuff = Part("Right cuff", transform, Vector3.zero, Vector3.one, _seam);
             _leftCuff = Part("Left cuff", transform, Vector3.zero, Vector3.one, _seam);
+            for (int i = 0; i < _held.Length; i++)
+            {
+                var kind = (ThrowableKind)i;
+                // Grenades and bangs sit in front of the palm, the fingers round them; the knife is pinched by its
+                // grip with the blade up the fingers, ready to flick.
+                var holder = Greybox.Empty(kind + " in hand", _left, kind == ThrowableKind.Knife ? new Vector3(-0.02f, 0.02f, 0.035f) : new Vector3(-0.025f, 0.01f, 0.06f));
+                holder.localRotation = kind == ThrowableKind.Knife ? Quaternion.Euler(-90f, 0f, 0f) : Quaternion.Euler(0f, 0f, 15f);
+                var model = Throwable.BuildModel(kind, holder);
+                if (kind == ThrowableKind.Grenade) _pin = model.Find("PinRing");
+                holder.gameObject.SetActive(false);
+                _held[i] = holder;
+            }
             Greybox.DisableShadows(gameObject);
         }
 
@@ -77,7 +106,7 @@ namespace ZombiesFPS.Weapons
             if (_pistol) _supportGrip = _mainGrip + new Vector3(-0.055f,-0.012f,0.01f);
         }
 
-        public void Pose(float reload, float melee, bool hidden)
+        public void Pose(float reload, float melee, bool hidden, ThrowHand toss)
         {
             gameObject.SetActive(!hidden && _gripSpace != null);
             if (!gameObject.activeSelf) return;
@@ -92,8 +121,16 @@ namespace ZombiesFPS.Weapons
             support += Vector3.down * (melee * 0.3f);
             _left.position = _gripSpace.TransformPoint(support);
             _left.rotation = _gripSpace.rotation * Quaternion.Euler(0, 0, _pistol ? 170f : -90f);
+            if (toss.Weight > 0f)
+            {
+                _left.position = Vector3.Lerp(_left.position, _cameraSpace.TransformPoint(toss.Position), toss.Weight);
+                _left.rotation = Quaternion.Slerp(_left.rotation, _cameraSpace.rotation * toss.Rotation, toss.Weight);
+            }
+            for (int i = 0; i < _held.Length; i++)
+                if (_held[i].gameObject.activeSelf != (toss.Held == i)) _held[i].gameObject.SetActive(toss.Held == i);
+            if (_pin != null && _pin.gameObject.activeSelf == toss.PinOut) _pin.gameObject.SetActive(!toss.PinOut);
             Sleeve(_right, _rightSleeve, _rightCuff, new Vector3(0.29f,-0.38f,-0.06f));
-            Sleeve(_left, _leftSleeve, _leftCuff, new Vector3(-0.28f,-0.38f,-0.04f));
+            Sleeve(_left, _leftSleeve, _leftCuff, Vector3.Lerp(LeftElbow, ThrowElbow, toss.Weight));
         }
 
         void Sleeve(Transform hand, Transform sleeve, Transform cuff, Vector3 elbow)

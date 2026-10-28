@@ -114,6 +114,9 @@ namespace ZombiesFPS.Net
         CharacterModels.SurvivorModel _survivor;
         Vector3 _rVelocity;
         float _rFireAt = -100f, _rThrowAt = -100f, _rHurtAt = -100f, _rLastHealth = MaxHealth;
+        ThrowableKind _rThrowKind;
+        // The teammate's throwable in their hand during a wind-up, one of each kind.
+        readonly Transform[] _rHeld = new Transform[3];
 
         // Server-only.
         float _lastDamageTime = -100f;
@@ -374,6 +377,26 @@ namespace ZombiesFPS.Net
             _remoteGunRoot.rotation = transform.rotation;
         }
 
+        /// <summary>Shows one kind of throwable in the survivor's throwing hand (-1 for none).</summary>
+        void ShowRemoteHeld(int kind)
+        {
+            var hand = _survivor.RightHand;
+            if (hand == null) return;
+            for (int i = 0; i < _rHeld.Length; i++)
+            {
+                if (i != kind && _rHeld[i] == null) continue;
+                if (_rHeld[i] == null)
+                {
+                    // In the palm, a little way down the fingers, at its real size whatever the rig's scale.
+                    float scale = Mathf.Max(hand.lossyScale.x, 1e-4f);
+                    _rHeld[i] = Greybox.Empty("Held " + (ThrowableKind)i, hand, Vector3.up * (0.07f / scale));
+                    _rHeld[i].localScale = Vector3.one / scale;
+                    Throwable.BuildModel((ThrowableKind)i, _rHeld[i]);
+                }
+                if (_rHeld[i].gameObject.activeSelf != (i == kind)) _rHeld[i].gameObject.SetActive(i == kind);
+            }
+        }
+
         void ApplyRemotePose(LifeState state)
         {
             if (_body == null) return;
@@ -490,7 +513,9 @@ namespace ZombiesFPS.Net
                 bool grounded = State.Value != LifeState.Alive
                     || Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, 0.55f, ~0, QueryTriggerInteraction.Ignore);
                 float now = Time.time;
-                _survivor.Animate(dt, _rVelocity, grounded, now - _rFireAt, now - _rThrowAt, now - _rHurtAt);
+                float windUp = ThrowMotion.WindUp(_rThrowKind);
+                _survivor.Animate(dt, _rVelocity, grounded, now - _rFireAt, now - _rThrowAt, windUp, now - _rHurtAt);
+                ShowRemoteHeld(now - _rThrowAt < windUp && State.Value == LifeState.Alive ? (int)_rThrowKind : -1);
                 return;
             }
 
@@ -506,9 +531,29 @@ namespace ZombiesFPS.Net
             _rHips.localPosition = new Vector3(0f, 0.95f + 0.035f * gait * (Mathf.Abs(Mathf.Cos(p)) - 1f), 0f);
             _rHips.localRotation = Quaternion.Euler(0f, 6f * gait * sinP, 0f);
             // The chest counter-twists and leans into a sprint; the gun rides it.
-            _rSpine.localRotation = Quaternion.Euler(3f + 10f * sprint, -6f * gait * sinP, 2f * gait * Mathf.Sin(p * 2f));
+            RemoteThrowLean(out float throwLean, out float throwTwist);
+            _rSpine.localRotation = Quaternion.Euler(3f + 10f * sprint + throwLean, -6f * gait * sinP + throwTwist, 2f * gait * Mathf.Sin(p * 2f));
             // A little breathing at rest, and the head keeps level with the gun.
             _rHead.localRotation = Quaternion.Euler(-(3f + 10f * sprint) * 0.7f + Mathf.Sin(Time.time * 1.6f) * 1.5f * (1f - gait), 0f, 0f);
+        }
+
+        /// <summary>The blocky body's throw: the chest turns and leans back through the wind-up, then snaps round and forward.</summary>
+        void RemoteThrowLean(out float lean, out float twist)
+        {
+            lean = twist = 0f;
+            float since = Time.time - _rThrowAt, windUp = ThrowMotion.WindUp(_rThrowKind), total = ThrowMotion.Total(_rThrowKind);
+            if (since < 0f || since >= total || State.Value != LifeState.Alive) return;
+            if (since < windUp)
+            {
+                float k = Mathf.SmoothStep(0f, 1f, since / windUp);
+                lean = -10f * k;
+                twist = 30f * k;
+                return;
+            }
+            float t = (since - windUp) / (total - windUp);
+            float snap = Mathf.Clamp01(t / 0.25f), back = Mathf.SmoothStep(0f, 1f, (t - 0.25f) / 0.75f);
+            lean = Mathf.Lerp(Mathf.Lerp(-10f, 15f, snap), 0f, back);
+            twist = Mathf.Lerp(Mathf.Lerp(30f, -25f, snap), 0f, back);
         }
 
         static void PoseRemoteLeg(Transform hip, Transform knee, Transform foot, float phase, int side, float gait, float hipAmp, float kneeAmp)

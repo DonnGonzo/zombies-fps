@@ -11,7 +11,8 @@ namespace ZombiesFPS.Net
     /// <summary>
     /// Melee and throwables for one player. The owner swings or throws and tells the host; the host checks
     /// the supply, flies the authoritative grenade, knife or bang, and deals the damage. Supplies refill a
-    /// little every round.
+    /// little every round. A throw winds up first (<see cref="ThrowMotion"/>): teammates see the wind-up start,
+    /// and the throwable only leaves the hand, aimed where the player is looking then, at the release.
     /// </summary>
     public partial class NetPlayer
     {
@@ -24,9 +25,11 @@ namespace ZombiesFPS.Net
         // Owner.
         float _nextMelee;
         float _nextThrow;
+        float _releaseAt = -1f;
+        ThrowableKind _throwing;
+        int _throwCounter;
 
         // Server.
-        int _throwCounter;
         readonly Collider[] _blast = new Collider[96];
         readonly System.Collections.Generic.HashSet<NetZombie> _blastHit = new System.Collections.Generic.HashSet<NetZombie>();
 
@@ -36,9 +39,25 @@ namespace ZombiesFPS.Net
         /// <summary>Owner, every frame: melee and throw keys.</summary>
         void OwnerEquipmentTick(bool canAct)
         {
-            if (!canAct || Equipment == null || _gun == null) return;
+            if (Equipment == null || _gun == null) return;
             Transform cam = _gun.View != null ? _gun.View.transform.parent : null;
             if (cam == null) return;
+            if (_releaseAt >= 0f)
+            {
+                // Mid wind-up: nothing else until it's thrown. Going down drops it (none is spent).
+                if (!IsAlive)
+                {
+                    _releaseAt = -1f;
+                    _gun.View.CancelThrow();
+                }
+                else if (Time.time >= _releaseAt)
+                {
+                    _releaseAt = -1f;
+                    Release(_throwing, cam);
+                }
+                return;
+            }
+            if (!canAct) return;
             if (GameInput.MeleePressed && Time.time >= _nextMelee)
             {
                 _nextMelee = Time.time + Equipment.meleeCooldown;
@@ -61,14 +80,32 @@ namespace ZombiesFPS.Net
                 if (_uiAudio != null) _uiAudio.PlayOneShot(ProceduralAudio.DryFire, 0.8f);
                 return;
             }
-            _nextThrow = Time.time + Equipment.throwCooldown;
-            _gun.BusyUntil = Time.time + Equipment.throwCooldown * 0.75f;
-            _gun.View.Throw();
-            if (_uiAudio != null) _uiAudio.PlayOneShot(kind == ThrowableKind.Knife ? ProceduralAudio.Whoosh : ProceduralAudio.Pin, 0.8f);
-            // Lob grenades and bangs a little upward; knives fly straight.
-            Vector3 dir = kind == ThrowableKind.Knife ? cam.forward : (cam.forward + Vector3.up * 0.18f).normalized;
-            ThrowRpc(kind, cam.position + cam.forward * 0.4f, dir);
+            float total = ThrowMotion.Total(kind);
+            _nextThrow = Time.time + Mathf.Max(Equipment.throwCooldown, total);
+            _gun.BusyUntil = Time.time + total * 0.85f;
+            _gun.View.Throw(kind);
+            _throwing = kind;
+            _releaseAt = Time.time + ThrowMotion.WindUp(kind);
+            if (_uiAudio != null && kind != ThrowableKind.Knife) _uiAudio.PlayOneShot(ProceduralAudio.Pin, 0.8f);
+            ThrowWindUpRpc(kind);
         }
+
+        /// <summary>Owner: the hand lets go. This copy flies at once; the host's (and everyone else's) follows.</summary>
+        void Release(ThrowableKind kind, Transform cam)
+        {
+            if (_uiAudio != null) _uiAudio.PlayOneShot(ProceduralAudio.Whoosh, kind == ThrowableKind.Knife ? 0.8f : 0.6f);
+            // Lob grenades and bangs a little upward; knives fly straight. They leave from the off hand, just left of centre.
+            Vector3 dir = kind == ThrowableKind.Knife ? cam.forward : (cam.forward + Vector3.up * 0.18f).normalized;
+            Vector3 origin = cam.position + cam.forward * 0.4f - cam.right * 0.05f;
+            int seq = ++_throwCounter & 0xFFFFF;
+            var def = Equipment.Def(kind);
+            if (!IsServer && CountOf(kind) > 0)
+                Throwable.Launch(ThrowId(seq), kind, OwnerClientId, origin, dir * def.throwSpeed, def.fuse, false, null);
+            ThrowRpc(kind, origin, dir, seq);
+        }
+
+        /// <summary>The same id on every machine: the player's object, then the owner's count of throws.</summary>
+        long ThrowId(int seq) => ((long)NetworkObjectId << 20) | (uint)(seq & 0xFFFFF);
 
         // ---------------------------------------------------------------- server
 
@@ -157,7 +194,21 @@ namespace ZombiesFPS.Net
         }
 
         [Rpc(SendTo.Server)]
-        void ThrowRpc(ThrowableKind kind, Vector3 origin, Vector3 direction)
+        void ThrowWindUpRpc(ThrowableKind kind)
+        {
+            if (State.Value == LifeState.Alive && CountOf(kind) > 0) ThrowWindUpFxRpc(kind);
+        }
+
+        /// <summary>Teammates see the arm go back.</summary>
+        [Rpc(SendTo.NotOwner)]
+        void ThrowWindUpFxRpc(ThrowableKind kind)
+        {
+            _rThrowAt = Time.time;
+            _rThrowKind = kind;
+        }
+
+        [Rpc(SendTo.Server)]
+        void ThrowRpc(ThrowableKind kind, Vector3 origin, Vector3 direction, int seq)
         {
             var rounds = RoundManager.Instance;
             if (State.Value != LifeState.Alive || Equipment == null || (rounds != null && rounds.IsGameOver)) return;
@@ -168,14 +219,18 @@ namespace ZombiesFPS.Net
             if ((origin - eye).sqrMagnitude > 2f * 2f) origin = eye;
             direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
             var def = Equipment.Def(kind);
-            long id = ((long)NetworkObjectId << 20) | (uint)(++_throwCounter & 0xFFFFF);
-            ThrowSpawnRpc(id, kind, origin, direction * def.throwSpeed, def.fuse);
+            ThrowSpawnRpc(ThrowId(seq), kind, origin, direction * def.throwSpeed, def.fuse);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
         void ThrowSpawnRpc(long id, ThrowableKind kind, Vector3 origin, Vector3 velocity, float fuse)
         {
-            if (!IsOwner) _rThrowAt = Time.time;
+            if (!IsOwner && Time.time - _rThrowAt > ThrowMotion.Total(kind))
+            {
+                // The wind-up never showed (joined mid-throw): play the throw from its release.
+                _rThrowAt = Time.time - ThrowMotion.WindUp(kind);
+                _rThrowKind = kind;
+            }
             Throwable.Launch(id, kind, OwnerClientId, origin, velocity, fuse, IsServer, IsServer ? ServerDetonate : (System.Action<Throwable, Vector3, Hitbox>)null);
         }
 
