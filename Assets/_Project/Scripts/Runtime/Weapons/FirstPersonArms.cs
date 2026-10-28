@@ -16,6 +16,9 @@ namespace ZombiesFPS.Weapons
             /// <summary>The <see cref="ThrowableKind"/> in the hand, or -1 once it's gone.</summary>
             public int Held;
             public bool PinOut;
+
+            /// <summary>Not throwing: the off hand stays on the gun.</summary>
+            public static ThrowHand None => new ThrowHand { Held = -1 };
         }
 
         // Where the off hand meets the gun's support grip, and where its elbow hangs mid-throw (out to the side).
@@ -105,6 +108,8 @@ namespace ZombiesFPS.Weapons
             }
             if (_pistol) _supportGrip = _mainGrip + new Vector3(-0.055f,-0.012f,0.01f);
         }
+
+        public void Pose(float reload, float melee, bool hidden) => Pose(reload, melee, hidden, ThrowHand.None);
 
         public void Pose(float reload, float melee, bool hidden, ThrowHand toss)
         {
