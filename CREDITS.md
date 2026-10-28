@@ -33,3 +33,8 @@ Third-party art in this project that asks to be credited.
   credit is given anyway.
   - "Music Jingles" by Kenney (https://kenney.nl/assets/music-jingles), CC0: sax and 8-bit jingles.
   - "Casino Audio" by Kenney (https://kenney.nl/assets/casino-audio), CC0: chip clatter.
+- **Blackjack table sounds** (`Assets/_Project/Resources/Audio/Casino/card_*.ogg`, `chip*.ogg`): card slides,
+  card places, a shove and chip clicks copied unchanged from "Casino Audio" by Kenney (https://kenney.nl/assets/casino-audio), CC0.
+
+- **Playing cards and slot reel symbols** (`Assets/_Project/Resources/Casino`): original art drawn by
+  `tools/casino/make_casino_faces.py` with Pillow and the DejaVu fonts (free licence; only shapes rendered from them ship).

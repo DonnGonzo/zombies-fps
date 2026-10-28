@@ -46,25 +46,39 @@ namespace ZombiesFPS.World
             return go;
         }
 
-        /// <summary>An imported model with an invisible box of <paramref name="size"/> (before the yaw) for collision.</summary>
-        void SolidModel(string id, Vector3 floor, float height, Vector3 size, float yaw = 0f)
+        /// <summary>
+        /// An imported model with an invisible box of <paramref name="size"/> (before the yaw) for collision; false
+        /// when the model isn't there, and then the box is left showing.
+        /// </summary>
+        bool SolidModel(string id, Vector3 floor, float height, Vector3 size, float yaw = 0f)
         {
-            AuthoredVisual(id, floor, height, yaw);
+            bool art = AuthoredVisual(id, floor, height, yaw) != null;
             var solid = Greybox.Box(id + " collision", Root, floor + Vector3.up * (size.y / 2f), size, Metal, surface: Surface.Metal);
             solid.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-            solid.GetComponent<Renderer>().enabled = false;
+            solid.GetComponent<Renderer>().enabled = !art;
+            return art;
         }
 
         void BuildCasinoAndResearchProps()
         {
             const float slotDepth = 0.72f, tableDepth = 1.18f;
             for (int i = 0; i < BlackjackStation; i++)
-                SolidModel("a-slot-machine", D(CasinoPositions[i].x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + slotDepth / 2f + 0.05f),
-                    2f, new Vector3(0.98f, 2f, slotDepth));
+            {
+                var floor = D(CasinoPositions[i].x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + slotDepth / 2f + 0.05f);
+                bool art = SolidModel("a-slot-machine", floor, 2f, new Vector3(0.98f, 2f, slotDepth));
+                // The reels turn in the model's window; without the model they sit in the plain cabinet's face.
+                SlotReels.Build(Root, i, art ? floor : floor + Vector3.forward * 0.235f);
+            }
             var table = CasinoPositions[BlackjackStation];
-            if (!BlackjackTable(D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + BlackjackDepth / 2f + 0.05f)))
-                SolidModel("gambling-table", D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + tableDepth / 2f + 0.35f),
-                    1.2f, new Vector3(1.72f, 1.1f, tableDepth));
+            var tableFloor = D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + BlackjackDepth / 2f + 0.05f);
+            if (PlaceBlackjackTable(tableFloor))
+                BlackjackTable.Build(Root, tableFloor, BlackjackFelt, true);
+            else
+            {
+                var standIn = D(table.x - ZoneAnchors[DepotZone].x, 0f, CasinoWall + tableDepth / 2f + 0.35f);
+                SolidModel("gambling-table", standIn, 1.2f, new Vector3(1.72f, 1.1f, tableDepth));
+                BlackjackTable.Build(Root, standIn, 1.1f, false);
+            }
             RemodelSign(DepotZone, "LAST CHANCE  /  SLOTS", 4.1f, 3.2f, CasinoWall + 0.06f, 0f, 4.2f);
             RemodelSign(DepotZone, "THE WATCH'S TABLE  /  BLACKJACK", -18f, 3.2f, CasinoWall + 0.06f, 0f, 4.6f);
             RemodelLight(DepotZone, 4.1f, 3.6f, -10.6f, new Color(1f, 0.62f, 0.22f));
@@ -73,12 +87,14 @@ namespace ZombiesFPS.World
 
         /// <summary>Ivan's round blackjack table (tools/casino/pack_blackjack_table.py): 2.28 m across, 1.73 m deep with its chairs.</summary>
         const float BlackjackDepth = 1.73f;
+        /// <summary>The height of that table's felt, measured on the model (its rail stands at 0.82 m).</summary>
+        const float BlackjackFelt = 0.765f;
 
         /// <summary>
         /// The blackjack table with three chairs, the dealer's against the wall and the open side facing the player;
         /// false when the map art is off or the model isn't in the project (the old hazard table stands in).
         /// </summary>
-        bool BlackjackTable(Vector3 floor)
+        bool PlaceBlackjackTable(Vector3 floor)
         {
             var model = PropModels.GetPack("Casino/blackjack_table", _ => PropModels.Textured("Blackjack table",
                 Resources.Load<Texture2D>("CC0/Casino/blackjack_table_albedo"), null, 0f, 0.3f));

@@ -23,6 +23,7 @@ namespace ZombiesFPS.World
 
         static Runner s_Runner;
         static AudioClip s_Music, s_Spin, s_Win, s_Jackpot, s_Lose;
+        static AudioClip[] s_Deal, s_Place, s_Chips, s_Sweep;
         static bool s_Loaded;
         static AnimationCurve s_Rolloff;
 
@@ -38,6 +39,22 @@ namespace ZombiesFPS.World
             s_Win = Resources.Load<AudioClip>("Audio/Casino/slot_win");
             s_Jackpot = Resources.Load<AudioClip>("Audio/Casino/slot_jackpot");
             s_Lose = Resources.Load<AudioClip>("Audio/Casino/slot_lose");
+            // Kenney's Casino Audio (CC0): cards sliding out of the shoe and onto the felt, chips going down.
+            s_Deal = Clips("card_slide_1", "card_slide_2", "card_slide_3", "card_slide_4");
+            s_Place = Clips("card_place_1", "card_place_2", "card_place_3");
+            s_Chips = Clips("chip_lay_1", "chip_lay_2");
+            s_Sweep = Clips("card_shove_1", "chips_collide_1", "chips_collide_2");
+        }
+
+        static AudioClip[] Clips(params string[] names)
+        {
+            var list = new System.Collections.Generic.List<AudioClip>();
+            foreach (var n in names)
+            {
+                var clip = Resources.Load<AudioClip>("Audio/Casino/" + n);
+                if (clip != null) list.Add(clip);
+            }
+            return list.ToArray();
         }
 
         static Runner Get()
@@ -72,6 +89,20 @@ namespace ZombiesFPS.World
             if (s_Spin != null) fx.PlayOneShot(s_Spin, SpinLevel * GameSettings.EffectsVolume);
             r.Pending[station] = Time.unscaledTime + RevealDelay;
             r.Outcome[station] = multiplier >= JackpotMultiplier ? s_Jackpot : multiplier > 1 ? s_Win : s_Lose;
+        }
+
+        public enum TableCue { Deal, Place, Chips, Sweep }
+
+        /// <summary>A card or chip sound on the blackjack table at <paramref name="at"/>, heard by whoever is near.</summary>
+        public static void TableSound(TableCue cue, Vector3 at)
+        {
+            var r = Get();
+            var set = cue == TableCue.Deal ? s_Deal : cue == TableCue.Place ? s_Place : cue == TableCue.Chips ? s_Chips : s_Sweep;
+            if (set == null || set.Length == 0) return;
+            var source = r.Table();
+            source.transform.position = at;
+            float level = cue == TableCue.Place ? 0.45f : cue == TableCue.Deal ? 0.4f : 0.6f;
+            source.PlayOneShot(set[Random.Range(0, set.Length)], level * GameSettings.EffectsVolume);
         }
 
         static void Configure(AudioSource s)
@@ -111,6 +142,18 @@ namespace ZombiesFPS.World
                 _music.loop = true;
                 _music.clip = s_Music;
                 _music.volume = 0f;
+            }
+
+            AudioSource _table;
+
+            public AudioSource Table()
+            {
+                if (_table != null) return _table;
+                var go = new GameObject("Blackjack table fx");
+                go.transform.SetParent(transform, false);
+                _table = go.AddComponent<AudioSource>();
+                Configure(_table);
+                return _table;
             }
 
             public AudioSource Fx(int station)
