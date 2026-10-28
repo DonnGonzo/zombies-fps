@@ -12,7 +12,8 @@ namespace ZombiesFPS.CharacterModels
     /// (<see cref="CharacterSkin.Retarget"/>): the two rigs' rest rotations differ too much to share Generic clips.
     ///
     /// The legs blend between idle, walking and running in eight directions from the player's velocity in their own
-    /// facing; the upper body plays a shot, a throw or a flinch over them, and a jump takes the whole body.
+    /// facing; the upper body plays a shot, a throw or a flinch over them, and a jump takes the whole body. A slide
+    /// is posed by hand over the standing pose (the pack has no slide clip): hips dropped and leaning back, one leg out.
     /// </summary>
     public sealed class SurvivorModel : MonoBehaviour
     {
@@ -49,7 +50,7 @@ namespace ZombiesFPS.CharacterModels
         readonly float[] _time = new float[ClipCount];
         readonly float[] _weight = new float[BaseCount];
         readonly float[] _target = new float[BaseCount];
-        float _upperWeight, _airborne;
+        float _upperWeight, _airborne, _slide, _tall = 1.8f;
         CharacterSkin _skin;
         Transform[] _srcParts;
         Quaternion[] _srcRest, _align;
@@ -154,6 +155,7 @@ namespace ZombiesFPS.CharacterModels
             _skin.transform.localScale = Vector3.one * (tall / Mathf.Max(_skin.Height, 0.01f));
             _align = _skin.AlignTo(transform, _srcParts);
             transform.localScale = Vector3.one * (height / tall);
+            _tall = tall;
             Head = _skin.Head;
             RightHand = _skin.Parts[(int)Part.RHand];
             Chest = _skin.Parts[(int)Part.UpperChest] ?? _skin.Parts[(int)Part.Chest] ?? _skin.Parts[(int)Part.Spine];
@@ -250,6 +252,8 @@ namespace ZombiesFPS.CharacterModels
             h.x = Mathf.Clamp(h.x, _hipsBind.x - reach, _hipsBind.x + reach);
             h.z = _hipsBind.z;
             _hips.localPosition = h;
+            // Down into a slide (in the body's own scale, so a taller survivor drops as far in proportion).
+            if (_slide > 0.001f) _hips.position -= transform.up * (SlideHipDrop * _slide * transform.lossyScale.y * _tall / 1.8f);
             _skin.Retarget(transform, _srcParts, _srcRest, _srcHipsRest, _align);
         }
 
@@ -264,10 +268,14 @@ namespace ZombiesFPS.CharacterModels
         /// <param name="toss">Seconds since the last throw started winding up.</param>
         /// <param name="tossWindUp">Seconds from that start to the throwable leaving the hand.</param>
         /// <param name="hit">Seconds since they were last hurt.</param>
-        public void Animate(float dt, Vector3 velocity, bool grounded, float fire, float toss, float tossWindUp, float hit)
+        /// <param name="slide">0 standing to 1 fully down in a slide.</param>
+        public void Animate(float dt, Vector3 velocity, bool grounded, float fire, float toss, float tossWindUp, float hit, float slide = 0f)
         {
             if (!_graph.IsValid() || dt <= 0f) return;
             float blend = 1f - Mathf.Exp(-9f * dt);
+            // Sliding legs stop stepping: the slide pose goes over the standing one.
+            _slide = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(slide));
+            velocity *= 1f - _slide;
             velocity.y = 0f;
             float speed = velocity.magnitude;
 
@@ -335,7 +343,33 @@ namespace ZombiesFPS.CharacterModels
             }
             _layers.SetInputWeight(1, _upperWeight);
             _graph.Evaluate(0f);
+            if (_slide > 0.001f) PoseSlide(_slide);
             Pose();
+        }
+
+        // The slide pose, in degrees about the body's own right axis (negative swings a leg forward or leans back).
+        const float SlideHipsLean = -16f, SlideSpineLean = -10f, SlideHeadNod = 22f;
+        const float SlideLeadHip = -62f, SlideLeadKnee = 10f, SlideTuckHip = -18f, SlideTuckKnee = 105f;
+        /// <summary>How far the hips drop at the bottom of a slide, in metres of a 1.8 m survivor.</summary>
+        const float SlideHipDrop = 0.5f;
+
+        /// <summary>Bends the hidden rig into a slide on top of whatever the clips posed, parent bones before children.</summary>
+        void PoseSlide(float k)
+        {
+            Vector3 right = transform.right;
+            Turn(Part.Hips, SlideHipsLean * k, right);
+            Turn(Part.Spine, SlideSpineLean * k, right);
+            Turn(Part.Head, SlideHeadNod * k, right);
+            Turn(Part.LUpperLeg, SlideLeadHip * k, right);
+            Turn(Part.RUpperLeg, SlideTuckHip * k, right);
+            Turn(Part.LLowerLeg, SlideLeadKnee * k, right);
+            Turn(Part.RLowerLeg, SlideTuckKnee * k, right);
+        }
+
+        void Turn(Part part, float degrees, Vector3 axis)
+        {
+            var bone = _srcParts[(int)part];
+            if (bone != null) bone.rotation = Quaternion.AngleAxis(degrees, axis) * bone.rotation;
         }
 
         static float Fade(float t, float length) => Mathf.Clamp01(t / 0.08f) * Mathf.Clamp01((length - t) / 0.2f);

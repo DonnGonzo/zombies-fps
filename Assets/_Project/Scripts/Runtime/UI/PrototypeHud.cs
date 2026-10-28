@@ -486,6 +486,7 @@ namespace ZombiesFPS.UI
                 }
             }
             var motor = _player.Motor;
+            if (motor != null && motor.IsSprinting) Tips.Offer("slide", $"Press {K(GameAction.Slide)} while sprinting to slide: a burst of speed, low enough to slip under things. Jump out of a slide to keep the speed.");
             if (motor != null && motor.Exhausted) Tips.Offer("stamina", "Out of breath! Sprinting drains the stamina bar under your health. Stop running for a moment and it refills; Fleet Foot makes it last twice as long.");
             if (motor != null && motor.IsMantling) Tips.Offer("mantle", $"Jump at anything your head can reach and keep pushing {K(GameAction.MoveForward)} to climb up onto it. Zombies climb after you.");
             if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
@@ -1017,7 +1018,7 @@ namespace ZombiesFPS.UI
         {
             var lines = new List<string>
             {
-                $"{Keys(GameAction.MoveForward, GameAction.MoveLeft, GameAction.MoveBack, GameAction.MoveRight)} move  ·  {K(GameAction.Sprint)} sprint  ·  {K(GameAction.Jump)} jump (jump at a ledge to climb it)",
+                $"{Keys(GameAction.MoveForward, GameAction.MoveLeft, GameAction.MoveBack, GameAction.MoveRight)} move  ·  {K(GameAction.Sprint)} sprint  ·  {K(GameAction.Slide)} slide (while sprinting)  ·  {K(GameAction.Jump)} jump (jump at a ledge to climb it)",
                 $"{K(GameAction.Fire)} fire  ·  {K(GameAction.Aim)} aim  ·  {K(GameAction.Reload)} reload  ·  {K(GameAction.SwitchWeapon)} switch gun",
                 $"{K(GameAction.Melee)} melee  ·  {K(GameAction.Grenade)} grenade  ·  {K(GameAction.ThrowingKnife)} knife  ·  {K(GameAction.Concussion)} bang",
                 $"{K(GameAction.Interact)} buy / hold to revive  ·  {PickNames} pick power-up  ·  {RerollName} redraw  ·  {K(GameAction.Map)} map",

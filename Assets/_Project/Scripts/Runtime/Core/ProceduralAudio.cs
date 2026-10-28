@@ -68,6 +68,47 @@ namespace ZombiesFPS.Core
         /// library isn't in the project, as there were no footsteps before it.
         /// </summary>
         public static AudioClip Footstep(string surface) => File("footstep_" + surface) ?? File("footstep_concrete");
+
+        static readonly System.Collections.Generic.Dictionary<string, AudioClip> s_Slides = new System.Collections.Generic.Dictionary<string, AudioClip>();
+
+        /// <summary>
+        /// A body sliding over <paramref name="surface"/>: a recorded "slide_surface" or "slide" clip if one is in
+        /// Resources/Audio/SFX, else a synthesised scrape (gritty on gravel and dirt, ringing on metal, hollow on wood).
+        /// </summary>
+        public static AudioClip Slide(string surface)
+        {
+            var file = File("slide_" + surface) ?? File("slide");
+            if (file != null) return file;
+            if (!s_Slides.TryGetValue(surface, out var clip)) s_Slides[surface] = clip = MakeSlide(surface);
+            return clip;
+        }
+
+        static AudioClip MakeSlide(string surface)
+        {
+            var rng = new System.Random(surface.GetHashCode() & 0xffff);
+            const float length = 0.85f;
+            int n = (int)(Rate * length);
+            var d = new float[n];
+            bool grit = surface == "gravel" || surface == "dirt";
+            float cutoff = surface == "metal" ? 0.45f : surface == "wood" ? 0.12f : grit ? 0.3f : 0.2f;
+            float lp = 0f, lp2 = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)Rate;
+                // A quick thump as the body hits the floor, then a scrape that thins out as it slows.
+                float env = Mathf.Clamp01(t / 0.03f) * Mathf.Pow(1f - t / length, 1.4f);
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                if (grit && rng.NextDouble() < 0.02) noise *= 4f; // Stones skittering.
+                float c = cutoff * Mathf.Lerp(1f, 0.55f, t / length);
+                lp += (noise - lp) * c;
+                lp2 += (lp - lp2) * c;
+                float scrape = (lp - lp2 * 0.6f) * env;
+                if (surface == "metal") scrape += Mathf.Sin(2f * Mathf.PI * 1180f * t) * 0.05f * env;
+                float thump = Mathf.Sin(2f * Mathf.PI * 70f * t) * Mathf.Exp(-t * 30f) * 0.6f;
+                d[i] = Mathf.Clamp(scrape * 1.4f + thump, -1f, 1f);
+            }
+            return Build("Slide_" + surface, d);
+        }
         /// <summary>Grenade pin and spoon.</summary>
         public static AudioClip Pin => s_Pin ? s_Pin : (s_Pin = MakeTone("Pin", 0.08f, 3200f, 2600f, 0.3f));
         /// <summary>A bright little tune when a perk tonic is bought.</summary>

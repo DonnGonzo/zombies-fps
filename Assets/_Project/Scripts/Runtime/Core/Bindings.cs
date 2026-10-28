@@ -12,6 +12,7 @@ namespace ZombiesFPS.Core
         MoveRight,
         Jump,
         Sprint,
+        Slide,
         Fire,
         Aim,
         Reload,
@@ -37,7 +38,7 @@ namespace ZombiesFPS.Core
         static readonly KeyCode[] Defaults =
         {
             KeyCode.W, KeyCode.S, KeyCode.A, KeyCode.D,
-            KeyCode.Space, KeyCode.LeftShift,
+            KeyCode.Space, KeyCode.LeftShift, KeyCode.LeftControl,
             KeyCode.Mouse0, KeyCode.Mouse1, KeyCode.R, KeyCode.E,
             KeyCode.Q, KeyCode.Alpha1, KeyCode.Alpha2,
             KeyCode.V, KeyCode.G, KeyCode.T, KeyCode.C,
@@ -47,7 +48,7 @@ namespace ZombiesFPS.Core
         static readonly string[] Labels =
         {
             "Move forward", "Move back", "Move left", "Move right",
-            "Jump", "Sprint",
+            "Jump", "Sprint", "Slide (while sprinting)",
             "Fire", "Aim down sights", "Reload", "Use / buy / revive",
             "Switch weapon", "Weapon 1", "Weapon 2",
             "Melee", "Throw grenade", "Throw knife", "Throw concussion bang",
@@ -200,9 +201,9 @@ namespace ZombiesFPS.Core
         static readonly PadButton[] Defaults =
         {
             PadButton.None, PadButton.None, PadButton.None, PadButton.None,
-            PadButton.South, PadButton.LeftStick,
+            PadButton.South, PadButton.LeftStick, PadButton.East,
             PadButton.RightTrigger, PadButton.LeftTrigger, PadButton.West, PadButton.North,
-            PadButton.East, PadButton.None, PadButton.None,
+            PadButton.DpadUp, PadButton.None, PadButton.None,
             PadButton.RightStick, PadButton.RightShoulder, PadButton.LeftShoulder, PadButton.DpadRight,
             PadButton.Select,
         };
@@ -274,6 +275,20 @@ namespace ZombiesFPS.Core
                 int saved = PlayerPrefs.GetInt(PrefKey((GameAction)i), (int)Defaults[i]);
                 var b = (PadButton)saved;
                 if (b == PadButton.None || IsCapturable(b)) s_Buttons[i] = b;
+            }
+            // An action added since the layout was saved (Slide) takes its default button; whoever had that button
+            // moves to its own new default if that's free (Switch weapon to d-pad up), else goes unbound.
+            for (int i = 0; i < s_Buttons.Length; i++)
+            {
+                var b = Defaults[i];
+                if (b == PadButton.None || PlayerPrefs.HasKey(PrefKey((GameAction)i))) continue;
+                for (int other = 0; other < s_Buttons.Length; other++)
+                {
+                    if (other == i || s_Buttons[other] != b) continue;
+                    var own = Defaults[other];
+                    s_Buttons[other] = own != b && Array.IndexOf(s_Buttons, own) < 0 ? own : PadButton.None;
+                }
+                s_Buttons[i] = b;
             }
         }
 

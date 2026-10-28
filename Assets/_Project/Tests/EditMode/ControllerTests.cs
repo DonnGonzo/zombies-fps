@@ -33,6 +33,17 @@ namespace ZombiesFPS.Tests
         }
 
         [Test]
+        public void Slide_HasItsOwnKeyAndButton_AndASound()
+        {
+            Assert.AreEqual(KeyCode.LeftControl, Bindings.Default(GameAction.Slide));
+            var keys = new HashSet<KeyCode>();
+            for (int i = 0; i < Bindings.Count; i++) Assert.IsTrue(keys.Add(Bindings.Default((GameAction)i)), $"{Bindings.Default((GameAction)i)} is used twice");
+            Assert.AreEqual(PadButton.East, PadBindings.DefaultLayout()[(int)GameAction.Slide]);
+            foreach (var surface in new[] { "concrete", "wood", "metal", "gravel", "dirt" })
+                Assert.IsNotNull(ZombiesFPS.Core.ProceduralAudio.Slide(surface), surface);
+        }
+
+        [Test]
         public void PadRebind_SwapsWithTheActionThatHadTheButton()
         {
             var layout = PadBindings.DefaultLayout();
