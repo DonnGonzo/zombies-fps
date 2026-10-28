@@ -354,7 +354,7 @@ namespace ZombiesFPS.Weapons
             float melee = Mathf.Clamp01((Time.time - _meleeStart) / MeleeTime);
             float meleeWeight = melee < 1f ? Mathf.Sin(Mathf.PI * melee) : 0f;
             float sinceThrow = Time.time - _throwStart;
-            var hand = new FirstPersonArms.ThrowHand { Held = -1 };
+            var hand = FirstPersonArms.ThrowHand.None;
             if (ThrowMotion.Sample(_throwKind, sinceThrow, out hand.Position, out hand.Rotation, out hand.Weight))
             {
                 hand.Held = sinceThrow < ThrowMotion.WindUp(_throwKind) ? (int)_throwKind : -1;
