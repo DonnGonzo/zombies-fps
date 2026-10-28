@@ -6,6 +6,7 @@ API credentials stay in the environment or ignored .env, never in Unity assets.
 """
 import argparse, concurrent.futures, hashlib, json, os, subprocess, threading
 import urllib.request, urllib.error
+from fix_ogg_granules import repair
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +69,7 @@ def generate(line):
     filters += ['loudnorm=I=-19:TP=-2:LRA=9','aresample=44100']
     temp=dest.with_suffix('.pending.ogg')
     subprocess.run(['ffmpeg','-v','error','-y','-i',str(raw),'-af',','.join(filters),'-ac','1','-c:a','libvorbis','-q:a','5',str(temp)],check=True)
+    repair(temp)  # FFmpeg 8 can overstate the length; Unity then warns the clip is truncated
     seconds=duration(temp)
     if not 0.2 < seconds < 120: raise RuntimeError('Invalid audio duration: '+line['path'])
     temp.replace(dest)
