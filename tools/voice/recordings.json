@@ -8,9 +8,9 @@
       "voice_id": "nPczCjzI2devNBz1zQrb",
       "voice_name": "Brian",
       "model": "eleven_multilingual_v2",
-      "duration": 3.718,
+      "duration": 3.737,
       "source_sha256": "a2a2a6a0104a5ef42cd70b51dccfccec55751f2f1526f2a548dc0bc5f33379b1",
-      "audio_sha256": "305f99234df66deae326a592fbc23c127049c92da2c9d502b8f8277df642e511"
+      "audio_sha256": "7392c77be71e29ebbaf811573f01570476059b7d98cff82e1693a8d4503930d7"
     },
     {
       "speaker": "Ashgrave",
@@ -19,9 +19,9 @@
       "voice_id": "nPczCjzI2devNBz1zQrb",
       "voice_name": "Brian",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.294,
       "source_sha256": "4f508611aa9e39f2b84ef85b3bb1b6d58fb8a6a2d2cbcfdbfaaf99d3a0363389",
-      "audio_sha256": "963ebfe6e39977835b3e8f6e712fb4c0a35b4f7c553b037aa496c19d13ce4aac"
+      "audio_sha256": "26532bf506aa800ed0308e101b47a03a2798214b83a46132f5d7f0297e5f15ff"
     },
     {
       "speaker": "Ashgrave",
@@ -30,9 +30,9 @@
       "voice_id": "nPczCjzI2devNBz1zQrb",
       "voice_name": "Brian",
       "model": "eleven_multilingual_v2",
-      "duration": 9.7,
+      "duration": 9.67,
       "source_sha256": "51156d7147bf8ffebb60016f70d25c87fe233b242813090f3f9bee2e3bc226e1",
-      "audio_sha256": "6a044a51299a11480387d7fd2ad409a1e23e19dd5bd9b03d42a6641ab043130a"
+      "audio_sha256": "cca0883df2c565df1d197c50090bbcc8eead3efdaf0b110f3cca98aa93917eeb"
     },
     {
       "speaker": "Ashgrave",
@@ -41,9 +41,9 @@
       "voice_id": "nPczCjzI2devNBz1zQrb",
       "voice_name": "Brian",
       "model": "eleven_multilingual_v2",
-      "duration": 5.1,
+      "duration": 5.075,
       "source_sha256": "8817ff21859ecb5a773d470bf7f66fff040c4c07e26d044b2b662cf47c88d2eb",
-      "audio_sha256": "7ce810ccb5f385adb0cbc7e16a5ec878b8a0ef2c8376114e48742003be1cab6b"
+      "audio_sha256": "91d4cf95c63824d57b1e1ec640d0ef523b3be522cc3e30b4cc702b782492e653"
     },
     {
       "speaker": "Ashgrave",
@@ -52,9 +52,9 @@
       "voice_id": "nPczCjzI2devNBz1zQrb",
       "voice_name": "Brian",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.233,
       "source_sha256": "31dbd40ff1794a2b2aa921d1806dbb416eba65fdd3fc7ef6a1731bd386d8f558",
-      "audio_sha256": "c8983f30b7fb05de1d3624873a360e5d16852698b01d44b730b210dff84e62bb"
+      "audio_sha256": "ed2928ccd20ae03c5178ab377090d5ac8653285c8e102eb2a740dabab3145a42"
     },
     {
       "speaker": "Azhrakel",
@@ -63,9 +63,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 3.732,
+      "duration": 3.746,
       "source_sha256": "b0f0f5d9fc980482e567d6046e7e101de4da7901238359ed46fdf51990eb1431",
-      "audio_sha256": "180ce68bc09931e5042c7ed60b0d909b433f13b1ba052fdfc792255c2f405770"
+      "audio_sha256": "b5db6e04112225a2f202ff8c3ba972980393f98d9e28fdbca6ae99544c3550df"
     },
     {
       "speaker": "Azhrakel",
@@ -74,9 +74,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 7.4,
+      "duration": 7.319,
       "source_sha256": "03c20725c7743bcfe900e683b4e87bc46fd0b6f9006e1c21de257c74612087a1",
-      "audio_sha256": "1ff1c75814c238e8e3718e20da76abde27bb0e635249f810c7dfd13a5c878b08"
+      "audio_sha256": "bf4bb2e1b638e569fbff3a8bbfe3ce772ecbaf01063ec02b61c99487f587d1a5"
     },
     {
       "speaker": "Azhrakel",
@@ -85,9 +85,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 6.3,
+      "duration": 6.282,
       "source_sha256": "3dc03bce5a1dcc7b1a728f4f635b6c88f7a8811543515bc90c664ce2458bd0d9",
-      "audio_sha256": "283048fac07760196dc17277532314e3950b16e95c3e469b3774d17e9d8c55dc"
+      "audio_sha256": "b0d28e325610266dbd94e01154cd495a57fcc58110d1d392ffbb6342428b7eea"
     },
     {
       "speaker": "Azhrakel",
@@ -96,9 +96,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 5.8,
+      "duration": 5.76,
       "source_sha256": "41fb495a60e0c2a7003afc276ffeaec680b83f20550cc58b1bf29dec5fc2ba60",
-      "audio_sha256": "d60a97e543f66ebe1bd88e05f1dc71a473a905591087cc64400afce7b2f16907"
+      "audio_sha256": "dbb73082085eb21162c0f3c9bd21983d7ff0fcc5fb8c9daf7a7a14db2d9ebdc4"
     },
     {
       "speaker": "Azhrakel",
@@ -107,9 +107,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 8.1,
+      "duration": 8.036,
       "source_sha256": "ff7f70748a4a1676e6bc8594a0de0601b2efc5ebac045ddabd4333338e4fced8",
-      "audio_sha256": "3cba2845113d70a64676d3e83a6005dfc90a5d637262f1efbbff0c6013a37e17"
+      "audio_sha256": "2dda347770784752e75040cd575490243519ef97f6f8fd6e871cb18fc38a83f9"
     },
     {
       "speaker": "Azhrakel",
@@ -118,9 +118,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 11.9,
+      "duration": 11.873,
       "source_sha256": "fc41c21955ac98ae525fe243f3414aadc86b651008c2f8acf673524d28ed0eb3",
-      "audio_sha256": "b5f2ccb83088eca9942c1ce79ab27c44d8015061fa192afeb3743de0f8715048"
+      "audio_sha256": "8194cf2e7136ddb0ac48180ead1b4419ab905dea2d7984bf9d914968ba9dfd50"
     },
     {
       "speaker": "Azhrakel",
@@ -129,9 +129,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 11.6,
+      "duration": 11.533,
       "source_sha256": "8f9afb77618c6c813cd2da17761d55cda114f2ad666cb8c4d21aeda20121295f",
-      "audio_sha256": "0b5238c4d698d88985de1340502dd63470e2ced9dc4e8e18a1029cffb9b91591"
+      "audio_sha256": "e2ea4b2ecbf5d4c065f4502eda2ec05346bc17dab97406619d2831ce426bc354"
     },
     {
       "speaker": "Azhrakel",
@@ -140,9 +140,9 @@
       "voice_id": "pNInz6obpgDQGcFmaJgB",
       "voice_name": "Adam",
       "model": "eleven_multilingual_v2",
-      "duration": 11.8,
+      "duration": 11.725,
       "source_sha256": "e7082badd33d6dba2c649d9c48d78f45b2c4bb56831dbb14fc7af9a061466fb9",
-      "audio_sha256": "ed0ba5577c2a1c0a2f0698997bf0ae670c21e704e92264f422821dccf309f430"
+      "audio_sha256": "8f19414cdea7d249ba2d9be9cd86b1a5cb4c210d8afebfc7430dcbb582da9a35"
     },
     {
       "speaker": "Brannock",
@@ -151,9 +151,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 5.0,
+      "duration": 4.971,
       "source_sha256": "ff28cbf6d60375058991745580ae1256c7571334be679389b663a67a826572b1",
-      "audio_sha256": "22c783f82ccae77e01fdcc9c4c41ca48f86ffb10397b8f9ef4e23fda372c346f"
+      "audio_sha256": "b42fd8dd7e444ed38c2dd56f59e6f54b4666df313dc26d6acea02c655d2fb002"
     },
     {
       "speaker": "Brannock",
@@ -162,9 +162,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 4.5,
+      "duration": 4.477,
       "source_sha256": "8d54bcf5c0deb821bb7aa70a10402a816a5fe718931b76c88ed166ea2982bd62",
-      "audio_sha256": "4bc5603d7b47f562b5f85c4e6a84945dc26d3366ee5cbe405ef8b32f58cfce77"
+      "audio_sha256": "84267fd46c8e76c3bbe20459f4c66b9a05da5b159debf47d99f4dcbcace047a9"
     },
     {
       "speaker": "Brannock",
@@ -175,7 +175,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.6,
       "source_sha256": "7e701aec740679d7fbc02efeb231ab764e4637b6f564033b6c500311a785a5ff",
-      "audio_sha256": "06d535c7ff9eeaf4ec6fd3fe9175ce803c32a916b2757e95e3948aba6fd658c6"
+      "audio_sha256": "da107e2a5a31334a6aa8255e78c6c657e1d1f8c6e40a36c5da73775d40023a16"
     },
     {
       "speaker": "Brannock",
@@ -184,9 +184,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 5.1,
+      "duration": 5.031,
       "source_sha256": "2fdc2947c29fd41f23fafe896b407a02aebcc95db4b30b6ba4aab4d289a821b0",
-      "audio_sha256": "3df28b0197d08a5201ecd51666bb6433ea83701dc3de01758729a0d1ce2f7828"
+      "audio_sha256": "4e96f39253b6c3e7ebeedef4256ffad378e42026219cef5df0acdeb8039dbb5f"
     },
     {
       "speaker": "Brannock",
@@ -195,9 +195,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 8.1,
+      "duration": 8.056,
       "source_sha256": "dacaf238182dc47352339ee135745401c6922c267475970a0d3c85d4b7743464",
-      "audio_sha256": "f0d0d9da6a8117ce25c9882c531b32122714f7c8e1cc52c48f954898a0c62f54"
+      "audio_sha256": "2162552b1a5fb7911781cc33f345f943e4ae4de07869a66ef41125f66de0d7b8"
     },
     {
       "speaker": "Brannock",
@@ -206,9 +206,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 13.1,
+      "duration": 13.071,
       "source_sha256": "2df273b5502afff6be8b17123988313462b8069634499ec3cf12131afc1cbb16",
-      "audio_sha256": "9f3e099312a603fa527a5ce4495af74ebc185204c7df690f5bcca4649bb8ee75"
+      "audio_sha256": "f1dcccfb71ef5b1a9931ac7a713ff4a2e4abd91004856d32440d40d4c7571882"
     },
     {
       "speaker": "Brannock",
@@ -217,9 +217,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 11.6,
+      "duration": 11.58,
       "source_sha256": "660397bdd586b0e46b185346e90b8e1382707c076cb4b49ab52e7d8ffc122d05",
-      "audio_sha256": "a7c5bf0f83da50e4b1142feef52636d2cb89bf0da024b71630bbe2bcc0004be6"
+      "audio_sha256": "31c2d8eb14f7565066a7b69dc583737b1403c43225556af8b52dc19d7dcc5bb7"
     },
     {
       "speaker": "Brannock",
@@ -228,9 +228,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 14.9,
+      "duration": 14.824,
       "source_sha256": "c38b0d6fbf23e58eab80404533c6262a7c7686e78507d029f59955f7eea23feb",
-      "audio_sha256": "8b27738b1820e9ef4c40d2e5cf9e2edaa34232dcf100c6406a972f75a282225d"
+      "audio_sha256": "a5b188e521f2fb5ba5eeea4172e7db53d135998f90ec146ccae3978c66a22317"
     },
     {
       "speaker": "Brannock",
@@ -239,9 +239,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 7.5,
+      "duration": 7.443,
       "source_sha256": "8eca42e6ad97db84f401863672ecf42adf1670d205d1499b3b4dfb4f44e12c34",
-      "audio_sha256": "179973757a7a4ff167c5595fbcabdce428a7ce22cf48a7bc0a0b2fbff8bb6200"
+      "audio_sha256": "2e420c6e108dee52b69adbc56b31eb265e5df7f2a2591aa62a3e1ba9ec161888"
     },
     {
       "speaker": "Brannock",
@@ -250,9 +250,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 5.3,
+      "duration": 5.264,
       "source_sha256": "e2c5a8524d42b913c1698d9d2ecf5f4804f6225bb53fde19d50d5f32e767df19",
-      "audio_sha256": "d36f29e40acf5b94e8ce7ecf46c2143c352d097a37c6187f82c7c963f00832da"
+      "audio_sha256": "88cc0219386e4a538bc6610949c881206d8866e1b4318957864011d54db0af14"
     },
     {
       "speaker": "Brannock",
@@ -261,9 +261,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 9.4,
+      "duration": 9.35,
       "source_sha256": "3be8f24e6b02692af38eb6c03f2fa991042de327990bde636ec763bf27493768",
-      "audio_sha256": "07c44a96438b408d1448950ac99b11adbce98199a8b3ef10b5b694f34ff2a735"
+      "audio_sha256": "9216ab13537e5788f1f3b9472779cf4b92d23908dc42a3d7cfb8d69d3d83fe2d"
     },
     {
       "speaker": "Brannock",
@@ -272,9 +272,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 7.8,
+      "duration": 7.771,
       "source_sha256": "7eceb8ad9140b6fbb76e55279885958ddb7c29a924370f86ea0183ec46480c82",
-      "audio_sha256": "ef060219efcef9e95a68731f894c306a57a966a91012c736ec12db14ed7648f0"
+      "audio_sha256": "6eb70ad0c4a06995fba9e8f00499d7540c10995a872d30dd0f16fc3c61f05f72"
     },
     {
       "speaker": "Brannock",
@@ -283,9 +283,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 4.2,
+      "duration": 4.146,
       "source_sha256": "2a6ff1128f453eb852417acb4af163dbefd8f6d19a39d837cc9e7afc3a9c7a1c",
-      "audio_sha256": "e9b2393a814eace553ca3240b584bf9b6855823a9fda60689ea12c13532b7ae2"
+      "audio_sha256": "3d37da54083fa7d21bd6f9aee36d7b47ae83419f96b77f7552e25d61840f82ca"
     },
     {
       "speaker": "Brannock",
@@ -294,9 +294,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 9.4,
+      "duration": 9.397,
       "source_sha256": "66310b809e92be6fb0887df0e42a57560c894a6db8b4a4cedf974190b9b22ce0",
-      "audio_sha256": "fc4532c683803cd16708a47db8cd786d2f81bc2433e9ddb43df22c44ef3acddc"
+      "audio_sha256": "edae5818df248275f29d2ec642c2d0f736bde51aaf6cfc5e030ae53448ecd1a3"
     },
     {
       "speaker": "Brannock",
@@ -305,9 +305,9 @@
       "voice_id": "pqHfZKP75CvOlQylNhV4",
       "voice_name": "Bill",
       "model": "eleven_multilingual_v2",
-      "duration": 5.2,
+      "duration": 5.177,
       "source_sha256": "cdddb31d4e23f47f120216b68bb57a37921adc273b0e694579ea87c2cb66c117",
-      "audio_sha256": "4dd3550cb31879122c7d902e692fc12c1367ec5dca21e7d77d7a1e4862025fbc"
+      "audio_sha256": "18e34ad67f2db987eb25df7671857b0495ddebcd5c67ea2add01116131fb880b"
     },
     {
       "speaker": "Brannock",
@@ -318,7 +318,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.8,
       "source_sha256": "06065616162eecc398e3734ce64b38e57a7eb993268c1aca0843cef3e608a98d",
-      "audio_sha256": "886b4e816ad2f590c3cb7c1fa7b8949f11d3d40d0be6f825347498c885038e75"
+      "audio_sha256": "13ddbe2adb8263873c364adee35c9050ba0335c91a51eaeb776e0352b0af856b"
     },
     {
       "speaker": "Dee",
@@ -811,9 +811,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 3.393,
+      "duration": 3.4,
       "source_sha256": "e1c8a5e47d9b43269294893ea218bb7a3b26cccedf319b0e60f7fc92894965e6",
-      "audio_sha256": "493b6163dd96a3d69e889529bba72d16c50d2c0a6284ae07b8750799e989f370"
+      "audio_sha256": "ef9fa6828731bb3f9af3cc75758fbe043542e11fa8e66f0517efddec608acd67"
     },
     {
       "speaker": "Hale",
@@ -910,9 +910,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 3.765,
+      "duration": 3.766,
       "source_sha256": "203a86507781f9fa5cb271bc2fd9ab9683eaa3b5213d9b747c6032dd577d997c",
-      "audio_sha256": "77f6b6beecd648b7e873a7eed6f9cdfe34406c5f0bfe0da7637612a28ebd5595"
+      "audio_sha256": "c4de99c11048e5c6059047f13aeb9c3bdfe8aff51b7d62780a2fc760c0620543"
     },
     {
       "speaker": "Hale",
@@ -932,9 +932,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 3.579,
+      "duration": 3.586,
       "source_sha256": "89d5baccb4505488da5fd7868bf32b4ac335fb8a39856e9e497371ba8fef89b7",
-      "audio_sha256": "6cccf32d262a804fe54368bae1f1fa55f3c0a8ea51db5860d445536a10220891"
+      "audio_sha256": "23b3073da9b0d662d9a4e1d9986c3d7e878126ba41845f02f96d6172d2ae0cb3"
     },
     {
       "speaker": "Hale",
@@ -998,9 +998,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 3.439,
+      "duration": 3.458,
       "source_sha256": "1b04f8307b565982ab00c9640079094bcefc1d80d906ccdb2b49f1a039fc5777",
-      "audio_sha256": "e44c4f14523773c1c55acc2b8835c5adad8c0e48e1d16a418b05a50933b4e5b3"
+      "audio_sha256": "a756b6af7ed04961b0424f2b842e95f38f4b604f7f170a087e806eb68b16d372"
     },
     {
       "speaker": "Hale",
@@ -1009,9 +1009,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 3.161,
+      "duration": 3.159,
       "source_sha256": "937d31318ade1d27a130db0e7d1444dda3be6935c127ec7d786dfb5337bd86f8",
-      "audio_sha256": "9b47c31ef4006e1b4ef08e686cbc225fbcec11347f3b99f3a1c581050f26c5b1"
+      "audio_sha256": "d3056fea5b2a267a75f2bb7df48b0ca78eb1286441b8d9abca034f37459237f3"
     },
     {
       "speaker": "Hale",
@@ -1152,9 +1152,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 4.0,
+      "duration": 3.923,
       "source_sha256": "10def151281cb9aa3f7949e8868df8ecf87b3c7cf2442b82de5679664f65bd8b",
-      "audio_sha256": "fd053b89de368ea860d0d5524a5f66635c7ffff3a5c50436d3b0fb0df203cb85"
+      "audio_sha256": "eb1facee3747da7d6da6e036a51fb664e1f464eee42d62487d17dd8c8c72c89c"
     },
     {
       "speaker": "Hale",
@@ -1207,9 +1207,9 @@
       "voice_id": "JBFqnCBsd6RMkjVDRZzb",
       "voice_name": "George",
       "model": "eleven_multilingual_v2",
-      "duration": 4.0,
+      "duration": 3.952,
       "source_sha256": "4966febe8545d66d4169cd52dc28361194f0bf457e8be44216057b7eff12fe4a",
-      "audio_sha256": "b88ab39bc7422b7776c956c0c6d235fc5982b6448b7e4f519b7d9233eff54b9e"
+      "audio_sha256": "eef0d9dcb20106050265b5c4b538ac409cd13412b6224047421bab14df6fbfa1"
     },
     {
       "speaker": "Hale",
@@ -1273,9 +1273,9 @@
       "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
       "voice_name": "Roger",
       "model": "eleven_multilingual_v2",
-      "duration": 3.068,
+      "duration": 3.084,
       "source_sha256": "d4a73bbb63b9aee6a5c40110007176bb5bdc27c95eac1801d181d3fe2dd4f60c",
-      "audio_sha256": "f456831b50d630a6782ab002c893d6053d561ad48cda2d6a22661873e3052b32"
+      "audio_sha256": "fec29a1f72546e5460b58c1d129ddbceacb5227b97ed55f2e5d3a975380099ce"
     },
     {
       "speaker": "Marlow",
@@ -1746,9 +1746,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 6.3,
+      "duration": 6.274,
       "source_sha256": "edd469499f8547ab093162371cdb006f4139d1633bf94caa03b96259e8116b43",
-      "audio_sha256": "f8ddcb710e0970cd2eb031d52d36b5d72efb3b951b7b3ba9819ec1ff04d263ee"
+      "audio_sha256": "24555af6769254cebcb6972271fb859e901937b81074fd75f2fe665f46351d19"
     },
     {
       "speaker": "Morrow",
@@ -1757,9 +1757,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 6.0,
+      "duration": 5.946,
       "source_sha256": "dc0db4512a293863b9dc167035872479f26073853de2f816483ce57f85f7337f",
-      "audio_sha256": "025700835224f04ab6368aa93052d72991c1df02793fe51aebebb91fbebc529d"
+      "audio_sha256": "fc0fe84456f82676c25cf5486451ab5744aef1c7e8d4d31e8facafb636b60adf"
     },
     {
       "speaker": "Morrow",
@@ -1768,9 +1768,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 7.0,
+      "duration": 6.976,
       "source_sha256": "2638cc91b61a222b92f96a7d94fb18a07ba583618be80350b8f3e988f2a52fc0",
-      "audio_sha256": "5a3590431cd13d1b94140fae862ff8dc3ec8d70684e13cf4a4e47ff193cdac59"
+      "audio_sha256": "e66a31087ecbedc77ff75636f946642fd63491123b5e2ac77c2b6f834ff234f3"
     },
     {
       "speaker": "Morrow",
@@ -1781,7 +1781,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.1,
       "source_sha256": "71f7d09cb38e5b9cc176a2115f4c22032fe6f64870035a293e820c38625f9899",
-      "audio_sha256": "b7858539d49ecbd1ae0895525386a6df60e8f621ea250ec1ee87794905386425"
+      "audio_sha256": "6128c14a7ce14d22a1e085d18576a270eceab03841665b7d92e211eb999dd94a"
     },
     {
       "speaker": "Morrow",
@@ -1790,9 +1790,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 5.5,
+      "duration": 5.499,
       "source_sha256": "c34f1eb9285175f2ee30abf392d0881741847cada087e6ff95d7f78bd26f9807",
-      "audio_sha256": "e345db239afb92406ec71d2b1dbd887c87d6b86e4ec26190471013735c970644"
+      "audio_sha256": "6bedb63288b1230b220cf06b48280c936ff6e2b0de2dc0537d5624b3f1d56546"
     },
     {
       "speaker": "Morrow",
@@ -1801,9 +1801,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 5.9,
+      "duration": 5.821,
       "source_sha256": "aead1284fb8d3202f3549ea331ec389372d45ab485f63ca4e0c2cb03a34d652a",
-      "audio_sha256": "ad2b3219c3aec7f317b5acb60eff70ced17acb233c27827437adaaca81f965a3"
+      "audio_sha256": "5022a69ef37853cf056179503b3ef1dad224c7fa4b7d516040b47b46e449d647"
     },
     {
       "speaker": "Morrow",
@@ -1814,7 +1814,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 17.0,
       "source_sha256": "72365b5ebcff5d2037c128e34f2627b11ea5eb6ae0b4783c520519093e4761ba",
-      "audio_sha256": "f20241ca98afa304ae863e49a91f767ac85f98658c52cb3c8ea7c75b425ca29c"
+      "audio_sha256": "b4945d187524ebc8d6cde21a981f7d56c1c272bcb7403ada91d230bd5dc377ad"
     },
     {
       "speaker": "Morrow",
@@ -1823,9 +1823,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 6.2,
+      "duration": 6.195,
       "source_sha256": "0899d0ac549925165ae530a8ded12e0ebdd0557875687c091d23dd8fee8d510c",
-      "audio_sha256": "b2cf5e4546bc7190c3de0f79f0bbff1fc8b6e1c5bacfe88636bd8775d8e9fc02"
+      "audio_sha256": "c954cc93a2942d1f57fda851ad6cfa3298c76d2446a05473dfa6368593b286b9"
     },
     {
       "speaker": "Morrow",
@@ -1836,7 +1836,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 8.1,
       "source_sha256": "a177016f64cd5f1906d6ff52c92bdc9bce78b55082751cd222c948309801aef4",
-      "audio_sha256": "3bad7e3998d589310345f2085d386d9791c01ce18ec8fe57bfe11a26ea78b67c"
+      "audio_sha256": "e5166d363f003c9ec5f5157b12c1ebec79b229530b0519864912f49037f44b41"
     },
     {
       "speaker": "Morrow",
@@ -1845,9 +1845,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 9.8,
+      "duration": 9.716,
       "source_sha256": "121eab7eb58231ce90ef594b9c09334142d687da3085d74585db48fdf5304b34",
-      "audio_sha256": "bd2ab8dd9c0d53e1e8626fd5b23877e050fdd7999833ab5f7edd50313b960f4d"
+      "audio_sha256": "94ab998b1e51f4834a3b8cd3d40b7ca5f932bf6fdc868f2558009fdaf3cab960"
     },
     {
       "speaker": "Morrow",
@@ -1856,9 +1856,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 10.0,
+      "duration": 9.995,
       "source_sha256": "b300d6df7ecdf96f5d52886c226bfd25b440ba4bd8711b9186b7ba6d92905dfb",
-      "audio_sha256": "977b24068953f31b04e0d0d18685876f14026a95c105b96b594abcd9c2cb06a4"
+      "audio_sha256": "1c2647c190a3b8ace4f38a9c9ff92f4ab4cf7713833ac4b5dd2d1f446b9fd387"
     },
     {
       "speaker": "Morrow",
@@ -1867,9 +1867,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 4.8,
+      "duration": 4.738,
       "source_sha256": "6a17af18e07944f830b4bd5e322f18e9cc13a772b0f1530efcb829f7b183f0df",
-      "audio_sha256": "98ef8f51e05243518d7e59ba3606d27ce9bda0572084f35dad3a713e7d0f0381"
+      "audio_sha256": "e4f21b7d3bcfe671c3f2b8278151fb434c717356bb17688fd026c9fb33c51b8c"
     },
     {
       "speaker": "Morrow",
@@ -1878,9 +1878,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 3.765,
+      "duration": 3.769,
       "source_sha256": "94249cef97c31390103778ca4d779f49928e5016deeb5a744fdb1758bbf8e3c7",
-      "audio_sha256": "d9e4f557609b861af9149bcb9fee5408baff2511b47806d01029944751c2f049"
+      "audio_sha256": "c63124190c1791b0c5241167943c675d299554a3711be2c79939d9e706165d95"
     },
     {
       "speaker": "Morrow",
@@ -1889,9 +1889,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 3.207,
+      "duration": 3.22,
       "source_sha256": "faaf3248d0122899851e5e07690b473ae976098a8f8a7cd7cb8a36b2acacae7c",
-      "audio_sha256": "3f1ad03d571e5b8065a68d84ed50fe193c4d270ed80340ce6da1e943da874f2c"
+      "audio_sha256": "a03c14c1bee976b7bae1631040c546dfa60cfe1fccef0de8b0820b9e7af1eb33"
     },
     {
       "speaker": "Morrow",
@@ -1902,7 +1902,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.0,
       "source_sha256": "4d0554b7a81708b04d316f5a6800758553e11cfc85ecb1bd33eb1770ca0a58e4",
-      "audio_sha256": "dfdd35d8f7dad89991979557973f5f70b7c4493974af9c38200c373a72d05112"
+      "audio_sha256": "e390b7eed87ac00c72380bb10f78099de08a8a9890a4fa5b722d4b6b097af125"
     },
     {
       "speaker": "Morrow",
@@ -1911,9 +1911,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 10.9,
+      "duration": 10.868,
       "source_sha256": "5e41d38a5df82eb647c4c6daf49590a940f2c57b584bba90547aa57b2b90d63a",
-      "audio_sha256": "f3bf4832b7e56287425216c617ef7441cff039f08005ee815ffcb2261d8b061a"
+      "audio_sha256": "887ae7a401b0306512e0a74d5afc21748adbe06bc76317f5717dbad5a658a057"
     },
     {
       "speaker": "Morrow",
@@ -1922,9 +1922,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 6.6,
+      "duration": 6.523,
       "source_sha256": "02b12d50b6a07e0f930c435bf4cd6d6fb5437dfac85e199896f039ae2cdf539d",
-      "audio_sha256": "f9db0b497a74eaeb8a7e8302cd767f7c1b1db0b57060f7e583d4d98775f74675"
+      "audio_sha256": "e258da2ae506ca9a5abf3db473fa41c5cbc81b638c21ea450f28159732f16d25"
     },
     {
       "speaker": "Morrow",
@@ -1933,9 +1933,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.23,
       "source_sha256": "b58215fc0b7a116df5a513ead6ea2accfad23caec52a20437fb65e44f14fa129",
-      "audio_sha256": "abb7db1c2a27cf8f5d64e9dd5fc95ee112edc888a764bd55f2feadde2b714086"
+      "audio_sha256": "38b0ea98396409db769eb2fe36f47911d6e726ccf2872656e6c0f18a99e97f13"
     },
     {
       "speaker": "Morrow",
@@ -1944,9 +1944,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 8.0,
+      "duration": 7.943,
       "source_sha256": "746e605b0438fd2877b601f0be6717ee397f1443bbfa407c5d9db43639e6a5e4",
-      "audio_sha256": "ce2f58bede720bd4245d6dbea8360be03844b081965488e572d50f2cfd1e2395"
+      "audio_sha256": "138598486259495b0047946bb38946c60db7b911a137b7c456096b8a901aaad6"
     },
     {
       "speaker": "Morrow",
@@ -1955,9 +1955,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 7.4,
+      "duration": 7.388,
       "source_sha256": "4876539e6f864e761d55ebb39f1f6e6e23994c449e618c34674778d75a2b5cb7",
-      "audio_sha256": "1d8b3563a36d81485e4e805cf5a367fc1718dc27eebd50cd4b0769c6394bc6cc"
+      "audio_sha256": "e0e4fea7fa0726fcf4cab5becf68d9561407276bf7237612f9095371e23cfce5"
     },
     {
       "speaker": "Morrow",
@@ -1966,9 +1966,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 6.9,
+      "duration": 6.875,
       "source_sha256": "42beb593842b655bfd83f038291c877c3b98f708d428248a16aefbeb8e421e68",
-      "audio_sha256": "6d33f84aac06734a7c57a7a00bb2a252ba5b367f2e541e5529af479f41105dc1"
+      "audio_sha256": "b3bff96a7739285344566823fee0a9b0755b9889bc6fc520c5b0faacf4e4b76b"
     },
     {
       "speaker": "Morrow",
@@ -1977,9 +1977,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 6.1,
+      "duration": 6.097,
       "source_sha256": "1e7ff64a5961bfcb1b3ae30c0823934e3f84500d71e897629843b680b98ba1dc",
-      "audio_sha256": "429add4744152ca6e8afbcb43f27757ecb3f224e529616ca416fd67bc824a088"
+      "audio_sha256": "6cbf71684e37a2c875c6d22558579b8346b5bb9758e19a4901d6368d5c4e5506"
     },
     {
       "speaker": "Morrow",
@@ -1988,9 +1988,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 5.1,
+      "duration": 5.075,
       "source_sha256": "1f342e1aecfbbf6aad151685d5f5873b65f574693fb2d1655e33e6ce34cbbd6b",
-      "audio_sha256": "c4bba94ba99be58e7f224c7cb359bbe7a1d7349c42961ef5f06904bb0256a768"
+      "audio_sha256": "d7c72927eb65eee65c7be0c08e7b424bdb978e5d93517e1c8361050be436755d"
     },
     {
       "speaker": "Morrow",
@@ -1999,9 +1999,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 10.5,
+      "duration": 10.456,
       "source_sha256": "74d76202fd3a444b06103444f05d9cc4cbaa2fd61c1cd8ce194a7e6d95444a89",
-      "audio_sha256": "d0cd5d52f2caa2539f02cff9f77cc093f5c73e1d1e2e148dcc2a8eddc5775b2c"
+      "audio_sha256": "1c61bc50ec5aa5fb703aa768ceefbe0fae6b7cb769222e815d1f05b5efe051e1"
     },
     {
       "speaker": "Morrow",
@@ -2010,9 +2010,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 7.2,
+      "duration": 7.153,
       "source_sha256": "1f4602081dc24f8f8ca37f29ff9c132364efbca0923e9ec930e4d004f8f68143",
-      "audio_sha256": "eca41566d809cfdededc4110667d4a993107df0cb6d0fe7f83c7925c6f802bc1"
+      "audio_sha256": "7e88828cfb916e34701628a1b104666840b5599f7ad291fb5201ad94d3b7970d"
     },
     {
       "speaker": "Morrow",
@@ -2021,9 +2021,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 7.2,
+      "duration": 7.124,
       "source_sha256": "149319d141820e95856d6392dd44884754ffc4c5a626edb411145aca871297d5",
-      "audio_sha256": "8eb7b446347b1f0d4c5e4d2d4923e35c5b974e8198f44c672c5ac3ae486e68e8"
+      "audio_sha256": "f363488b288be1cc43d7d84385e63d28c9720812372c3e7247f19fcbbeb9df35"
     },
     {
       "speaker": "Morrow",
@@ -2032,9 +2032,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 5.3,
+      "duration": 5.258,
       "source_sha256": "c65316fba1d7ad73c33dc80fbb051c1b1d27597b16be7e53764f9fda46fd6b1c",
-      "audio_sha256": "bfc1605e295cfbaf4ad51e779a172a107b81208e1733b5d20366e9f626557b93"
+      "audio_sha256": "f8406b8457f49afab2f8a3313ffef35c2c9444f4f17b53bb7347ec47df59a4ed"
     },
     {
       "speaker": "Morrow",
@@ -2043,9 +2043,9 @@
       "voice_id": "onwK4e9ZLuTAKqWW03F9",
       "voice_name": "Daniel",
       "model": "eleven_multilingual_v2",
-      "duration": 8.8,
+      "duration": 8.735,
       "source_sha256": "6ccfe9a90cfbcb40bc134722755fb4c91383590374787de6bbde74b3d30f8dd8",
-      "audio_sha256": "758eaaa315bf5a465aa472567ecefa8c42f605d68b00f0bffd0b10c69e915b4d"
+      "audio_sha256": "a81e6b0f5ea129e080c8f2856d2a3470de4c0214e0694e95fec43abb1b74a5a5"
     },
     {
       "speaker": "Rook",
@@ -2274,9 +2274,9 @@
       "voice_id": "TX3LPaxmHKxFdv7VOQHJ",
       "voice_name": "Liam",
       "model": "eleven_multilingual_v2",
-      "duration": 3.672,
+      "duration": 3.688,
       "source_sha256": "9a0d5b63c98f2f6eb9589d79c0754664f2685366598e478883ea25a2b11b120c",
-      "audio_sha256": "8f2fb4704af0da1dc998e8be5b7463bb1130ec33b0dc0dee17fa6754cf858b61"
+      "audio_sha256": "3ad0f85dc65608abb630b231f00fd3587f7cfd09da4c4f62e92368fc493952a4"
     },
     {
       "speaker": "Rook",
@@ -2527,9 +2527,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.857,
+      "duration": 3.868,
       "source_sha256": "004706dadb49d90c750522c6a6fa7a04c6bb9b4f7fc75d53137402ddc16d075a",
-      "audio_sha256": "fd1048f920b275d2bca44e0fbb17f6eb5f699b0453dbf20afdb0d13c6e4386a1"
+      "audio_sha256": "a4b70f8e521f35df0f12c0913b371732baf060964909f9485e48970b748e1d2e"
     },
     {
       "speaker": "Trader",
@@ -2538,9 +2538,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.687,
       "source_sha256": "d002165284705b320629020fb586b8b0171568ddff12f45c34813201ba5fdbfc",
-      "audio_sha256": "c99cc72ea09a826061f9effebf9f9dba68972fa1afb83e0e46bbcb2a418392f2"
+      "audio_sha256": "eed745927aa02b351bb391ff293b01756112f05883057789fde7ecec054897c1"
     },
     {
       "speaker": "Trader",
@@ -2549,9 +2549,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.4,
+      "duration": 4.378,
       "source_sha256": "1e4ab0a8aa485ec49b371faa429c024ac9ef6d8256d1694c525081a8b6c703f0",
-      "audio_sha256": "ffdb4d440b0b7133a2fc8b9540ddaf43cced16a9150136349054afa109d22066"
+      "audio_sha256": "e5ddf6437a68dee4573f4730e80992c8fd5c2ebd7b41101886609dc00d5e8b93"
     },
     {
       "speaker": "Trader",
@@ -2560,9 +2560,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.857,
+      "duration": 3.865,
       "source_sha256": "7f0610d0c8da6f5f28e22768073b0b2ab6d799ee5d24d9aa9280056a2fce75bc",
-      "audio_sha256": "3965419efb40bf5b4f067a4f9b3bcaaea9765ae16baf1d02a236e808856de3e9"
+      "audio_sha256": "f2d7fb80f782170e302c0321b3872cc525680e0798d4b0da8a9eaf602cb2d97b"
     },
     {
       "speaker": "Trader",
@@ -2573,7 +2573,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.0,
       "source_sha256": "373d047fe7837bb787c0af3faa685b19db33373c6980651a406561bf2071b1ad",
-      "audio_sha256": "83c07f8c7a3e47f39deaec813813a6a2bf18f80b8fc11ae3b9e928c13519d9b9"
+      "audio_sha256": "fed2083cd151078e3c2fef930e6f0d4f8083ad1615b909a73331dbd1f359c40d"
     },
     {
       "speaker": "Trader",
@@ -2582,9 +2582,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.532,
+      "duration": 3.548,
       "source_sha256": "e73895b81025d40a53e71983fa2b87fe9b72ec1c9ed06faed8355de7a3ce8d01",
-      "audio_sha256": "fd378f75cc064f8a866d241a5b3f65695449ed7bae5b6f1a02a2ff68a6839210"
+      "audio_sha256": "3566661fc0f94270d75f8b49255a556ecb2da3a81fd95bcee57b00941ca270a8"
     },
     {
       "speaker": "Trader",
@@ -2595,7 +2595,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 5.3,
       "source_sha256": "23b873d78d3a63da6d9085c30536537e8525fd56605239fe9751527610dba356",
-      "audio_sha256": "9260cb301c4cfb709ed2c4d8f1a2a2b266f98d6162a09d6e31b90b8d25a40b67"
+      "audio_sha256": "cd46b1b09897b767240c82344617f6c4b1c8a3cca14e84eb8f673937950e2700"
     },
     {
       "speaker": "Trader",
@@ -2604,9 +2604,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 6.1,
+      "duration": 6.091,
       "source_sha256": "080e4a2cf81848659e900636f68177074cbf706ca82abf27456ae07e44e3abf9",
-      "audio_sha256": "768ffca544a7539f53d86c63f6c888a4ad3f5e86c40b687a14ab5c43717f87da"
+      "audio_sha256": "d41b8e6429a751e52136646ec59fc899cb0eba81323e234fa5bf49004d68a4d6"
     },
     {
       "speaker": "Trader",
@@ -2615,9 +2615,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.811,
+      "duration": 3.81,
       "source_sha256": "c97550b588dbcc06245fdc0b24e645c411435cf11af1c04ee19c70da2b826d7d",
-      "audio_sha256": "0ef0d82572ee8c25b29d5108d1960e7ba59b94fa3a8fb77f1e08bd19e766ca53"
+      "audio_sha256": "cd3d3a8969e6b25758c347b597ebf6e28997f35e7bd716f540cd48d9b3fbb751"
     },
     {
       "speaker": "Trader",
@@ -2626,9 +2626,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.1,
+      "duration": 5.078,
       "source_sha256": "cf337d544d4c39f7434868f62a3882b95b139f6f1e221aada5474c5ee99bf8f4",
-      "audio_sha256": "2d6ee2964dfc0f6704c3d3e7d5060cf2d16e1d1f025c611ace48ddaeb8dfaf0e"
+      "audio_sha256": "61616ca3228228d17cbcf21862203eae9dce249cf73f6760ecc742938d281ebf"
     },
     {
       "speaker": "Trader",
@@ -2637,9 +2637,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 8.2,
+      "duration": 8.189,
       "source_sha256": "f85cd3d0e3123845b7ac72aca983be7ef0d7354bb4c58437e34879ca63abff95",
-      "audio_sha256": "f7559c8f2064a7ef3bc46d053db4e64fe6c2a894bd44dcff8edb0c09eed41952"
+      "audio_sha256": "c182372b37a723ea31b660c65eb8a0bbf743cdcc283ca27119aa1eef2c290b8d"
     },
     {
       "speaker": "Trader",
@@ -2648,9 +2648,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 6.6,
+      "duration": 6.549,
       "source_sha256": "dcbe8e2abd199a795bd0b481c199d4b2c5cc0cf321d1c16f7c5a8463de23c1c5",
-      "audio_sha256": "05f429b0a4f7e465843067430c28518b4786d7820fcabd15910a96e5bd426331"
+      "audio_sha256": "bd5b218c1c6fd8cc916e2a0cae5d65aacbaee06e6a81d9233d7e552499c454e7"
     },
     {
       "speaker": "Trader",
@@ -2659,9 +2659,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.2,
+      "duration": 5.162,
       "source_sha256": "d9e15effbd8637cd9f8400c68278c590b99d9fd39f00a918e86eb70ad79e47a2",
-      "audio_sha256": "a7b8f41e3961f2f22993c8773d61938a32d1427526b3814ca7687db9247dead6"
+      "audio_sha256": "88b4795af6d07580bc5127c1f09c964aa61e74be732fd87f08cf70b948c43218"
     },
     {
       "speaker": "Trader",
@@ -2681,9 +2681,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.1,
+      "duration": 4.042,
       "source_sha256": "2a551f79a49ef1d45688e2a048477756e8b8875624906c878e3c9b91c2acc66d",
-      "audio_sha256": "80f79e13e3c8cd33d7e5bac12643baa529550c5b8a40408d4e5a61b081a2319e"
+      "audio_sha256": "9d435fc03ce20b7434cf3b8874d7ca1052640317b8544bf7e35711bac2c5973e"
     },
     {
       "speaker": "Trader",
@@ -2692,9 +2692,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 6.5,
+      "duration": 6.474,
       "source_sha256": "7304f17fc71ac2b704b3e369aa866e17e7b595bae03314c85ccbecb5c9e90c39",
-      "audio_sha256": "e129b179f04565eeb0466531cc74da8f426287642512b016f299cc49da1121a4"
+      "audio_sha256": "84c2da928b6208bf5b44313340955fc30a8ffa3f4f1874b4b46e19b67c73e1b5"
     },
     {
       "speaker": "Trader",
@@ -2703,9 +2703,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.1,
+      "duration": 4.056,
       "source_sha256": "12599a9684fd2fefc419b96e5e8903213a91e0fea4d7b48ab93d806393715e63",
-      "audio_sha256": "0444775aa14d73b7632782bab78b3f8dd8c6b759e3ee0fc40f53416e1ea5754e"
+      "audio_sha256": "f93960352669adf1ee5583f2af7d9f0ad4ccc19e3cb99f978529f8901f3c286a"
     },
     {
       "speaker": "Trader",
@@ -2714,9 +2714,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.0,
+      "duration": 4.944,
       "source_sha256": "8d4ffcecb731ea5555ab5bf2408f9bf3b7e7cbcd3c30abc2460786ca631f7c60",
-      "audio_sha256": "30f09e6529426e9c62b4ed2ab251b54bf0a81903d0c961c21a5263a31e9c955f"
+      "audio_sha256": "c267a3590282c8ccbbc4708d5ca2611a904163278bec3963b4b8fa59663648b2"
     },
     {
       "speaker": "Trader",
@@ -2736,9 +2736,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 7.5,
+      "duration": 7.452,
       "source_sha256": "2506481b2d6bdd852e5ffc97cb4c8572c233ada8d909e29fb18962b3f981f4c2",
-      "audio_sha256": "e13541e5e50cf0b70bd70d4e19773663c83f5ff2b244376a67ad5f4e45202764"
+      "audio_sha256": "2b99f226ceafe773579f7ae64542d0680c8bcc7a98d1449996d96a6d6af3f92b"
     },
     {
       "speaker": "Trader",
@@ -2747,9 +2747,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.532,
+      "duration": 3.537,
       "source_sha256": "6326f5a9f799c5967e46a3f25890316d30216e2ab0bdbb3d4e8a52d428058719",
-      "audio_sha256": "0ae3309c57850d3bd9e55f3aa3e65a32b1190758d779f42272b67c9bd364b378"
+      "audio_sha256": "0ef63b5f33579a1b72460a60e0e53b8c22ca5e77454ec377f8a861d3afe18dc3"
     },
     {
       "speaker": "Trader",
@@ -2758,9 +2758,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.5,
+      "duration": 4.419,
       "source_sha256": "6d535c09ad7dc65d789ece41a3a18d8a219906f35a2cba8d048ec02c1ec6658b",
-      "audio_sha256": "a52efc136f05e9fd88bec78b75996c0683f8a75a1b34ecb143f73c6812dadc1c"
+      "audio_sha256": "be6f4a80dd4ca37e99a1216b618095f358e30f0faa7ecfba32375811c59cbf1f"
     },
     {
       "speaker": "Trader",
@@ -2769,9 +2769,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.0,
+      "duration": 3.998,
       "source_sha256": "217f4468dab8967129b2391102f790d2345d26b051beed91b7fc1c0c95f2a270",
-      "audio_sha256": "cdf5e479f15dc021e25127ab805aab93b722e22639d2b7054a15898e28520c05"
+      "audio_sha256": "a08413cd02a94accafe0c868f16f3c7e86a68e68ae1df751efd6267eb206fbd7"
     },
     {
       "speaker": "Trader",
@@ -2780,9 +2780,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.245,
       "source_sha256": "21760b47d77e5da881ba9caf00687494e85bc417d7b607647a9241a901e96bda",
-      "audio_sha256": "e77f2df6872e5ea5aeaca384c15aca8522c281457f899c8f87def7528e07bfe8"
+      "audio_sha256": "5fdb3b4b3a40b08086bf79d28f741ce57f54307190c1e5fc22040e84ab7152c8"
     },
     {
       "speaker": "Trader",
@@ -2791,9 +2791,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.3,
+      "duration": 5.269,
       "source_sha256": "df9e398bac56cba162810c7c2ec52e173572247d65dbc9c09cbbd9419f7067e9",
-      "audio_sha256": "f65866006fdc674ef66c7940177d39b3b8062b9dd232863eed0d6e1ec0f8fa03"
+      "audio_sha256": "a91bdcdd40f913dcb3c091541171bae4b10d18b39c43895931745f2c0a911456"
     },
     {
       "speaker": "Trader",
@@ -2802,9 +2802,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.5,
+      "duration": 5.444,
       "source_sha256": "738ba54a669245f30373798b5e9aaa84a7b89a6e10540272f3332c8d24e0bf83",
-      "audio_sha256": "e3def82e0a4645f8d7df9da8379702d0bde73aa4e06caa1ea9fbc15a979757cb"
+      "audio_sha256": "34526e54d4be81252acb022bdb72741d45f82df6ea92ea8318b7159759932aaa"
     },
     {
       "speaker": "Trader",
@@ -2813,9 +2813,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.277,
       "source_sha256": "3b03083dc19defa99f2595005df7797fdf0029be20c1d33a18b456187c0e6070",
-      "audio_sha256": "2e33e9608794d925274cef8d531bfa8ad97a3467b92a4c0630d34857b8247b7f"
+      "audio_sha256": "255c2afaba16e03aad8b984bf360686914cba7a9a732ae420b1a185d0f51d75f"
     },
     {
       "speaker": "Trader",
@@ -2824,9 +2824,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.9,
+      "duration": 5.864,
       "source_sha256": "da376af3c8613d022f0b8d5c91d8893c8d39a5b1368c4ac028a9943b1dd8e924",
-      "audio_sha256": "39cdd77a1be8cfb96b90393d8cbcfc117d345d5385b99fd17db7c841aa398bf9"
+      "audio_sha256": "80d5b0a32c785778ea35713eab2800d81dc2b2229d95391d49cf92c166aa2482"
     },
     {
       "speaker": "Trader",
@@ -2835,9 +2835,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.9,
+      "duration": 4.849,
       "source_sha256": "829e4aca35aebf854cd5b7f5585b3ae41a87b150a92ecfa0f2674e0d75a643b2",
-      "audio_sha256": "148da24d62d72763aadd90b8c14475ab0a8ec604c8f5a9fd08ff1e04e1270b60"
+      "audio_sha256": "350adf34fc2d7f5b7c7834f158755dde85b18a37ed6c30862244d0b4afb071ad"
     },
     {
       "speaker": "Trader",
@@ -2846,9 +2846,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.2,
+      "duration": 5.121,
       "source_sha256": "ae682e298e643ddf9c9a62864eb43ee345b58f53cd716176ec8687aa8c75bbc4",
-      "audio_sha256": "1c04657620f541949568ac8d4b5f69889bbd1a892ba0201b5b119f10a3149f30"
+      "audio_sha256": "a8ddec7f6931a315a51fe41cb3bc88bf4a6a7171638f9810f194195cf38b977a"
     },
     {
       "speaker": "Trader",
@@ -2857,9 +2857,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.486,
+      "duration": 3.499,
       "source_sha256": "7fcd2ab9a2fb617b876beddc52fffcd3b0c773ce7c1fdbd3ece8d658cd9d3105",
-      "audio_sha256": "abe58111eeefcdbec5169a2336327c10a162c9abd74c804bd02e5fd3a792b668"
+      "audio_sha256": "c013f097f6108395bcf2c59997d9c7dff4812b8fad99562d27e00ad04260e21b"
     },
     {
       "speaker": "Trader",
@@ -2868,9 +2868,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.021,
+      "duration": 3.026,
       "source_sha256": "c17712f023bba26b462109fbf97e4fe281f787e9af6aa0852fb740f983cb50b3",
-      "audio_sha256": "b6c67a524a94b5f7762faffbd9f29ba4133ab59b8cd636b026302deacf26e426"
+      "audio_sha256": "5318f3be632d37ecb4d908ced6f90be7765b57bd8efe843e029153cde5d64422"
     },
     {
       "speaker": "Trader",
@@ -2879,9 +2879,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.1,
+      "duration": 4.062,
       "source_sha256": "ec5a08c132300d6ab353c91a370a107a03a16c967f41de62e0ac4c4d101eb9da",
-      "audio_sha256": "3e362e5ca8a3aaa06a8a9f9d363c596707346d0614aecd08cd094fc25616883b"
+      "audio_sha256": "67a92f375c358c71b949e92fbc511fc4ce1ffce2e20d62137a0c494bf2891f57"
     },
     {
       "speaker": "Trader",
@@ -2890,9 +2890,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 4.7,
+      "duration": 4.66,
       "source_sha256": "96121741c0a7cbd647dd47955f1b41654ac190420ddbf8e67b86d2356c122927",
-      "audio_sha256": "3cb4512ff05b2a315c9dd02bdd1e5af54d573d25a5a7f04480c1322bdc4460d8"
+      "audio_sha256": "377b1946dbd7934fcc43f7a1f05850fdae3445886b7a0cae9cc5ae1781f543c8"
     },
     {
       "speaker": "Trader",
@@ -2901,9 +2901,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.672,
+      "duration": 3.688,
       "source_sha256": "b293edb2cabc37ab04447b1b17368c32cea7cbf95764ef460ece017e6632fccd",
-      "audio_sha256": "de531f602bc805ef9bca4aa1ef8e5a7957efd654a562e767e96b898190a170b0"
+      "audio_sha256": "e147ac96c54198b786fc79fd40eafdbb07192bdb82039300d575c1ac5b61764c"
     },
     {
       "speaker": "Trader",
@@ -2912,9 +2912,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.676,
       "source_sha256": "7cf2e5301747c73f26a068eb9d89401ecca0f7528dfc25d6c124b9d9aad6f36d",
-      "audio_sha256": "61e178fc43b7acd4610c3c26e3a85b812a1c29c5fad1a62d1150d786ef632a0a"
+      "audio_sha256": "86d9ed0b0beecac024149ab745063f0a1eb4f3be1dd537a904830504fd72f3a8"
     },
     {
       "speaker": "Trader",
@@ -2925,7 +2925,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 5.3,
       "source_sha256": "464d8453b4e5c6681bafd57257b38a1b5c50e67a94ebaff1b4edba86c44aa93e",
-      "audio_sha256": "1026b9eed28a23448630d51f8426db577b5affb63c48edc1e25fb437838aa9da"
+      "audio_sha256": "c1196ab2f4cc3226c84af81b8653fe38ea0c2ec1c16c22ea6ad34f1189929ff2"
     },
     {
       "speaker": "Trader",
@@ -2934,9 +2934,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.632,
       "source_sha256": "5689c3ea535dc7094a292000fb6a43245183505a5e787ca5714df1a83301f623",
-      "audio_sha256": "2ce7925a9e0e252516edf5e0f7fbb5b82e03b119f8d5fa78d56a779146e43a7c"
+      "audio_sha256": "c1858269b305b4f2dc14ac5a54d3434a823c999f7200ca226293cd749b2f8777"
     },
     {
       "speaker": "Trader",
@@ -2945,9 +2945,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.641,
       "source_sha256": "5f2b627d2a02c834477574babcf2dbb941c1fee0b9020b420b79d9f09b55de02",
-      "audio_sha256": "15235e0decac15288c8bd858f0773e67ca205611f0b3841ca0872e37458971e2"
+      "audio_sha256": "934817ac182ea9336005bc071f2cc716f855ed61751255a92851f4c24e329535"
     },
     {
       "speaker": "Trader",
@@ -2958,7 +2958,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.2,
       "source_sha256": "01bcc15a4d6de62791a33fe0eebda87fdd62d2e172dcbd5c113d7f57261aa674",
-      "audio_sha256": "8cf53b9e5ba90910331c0b55a0bf5309f2cbaa484a5ebf092379604e4a9a5c1c"
+      "audio_sha256": "d5c12b90f8b36a3cbbbb80b7fb8bdc2fc1563b620c42322164de89cdbc989196"
     },
     {
       "speaker": "Trader",
@@ -2967,9 +2967,9 @@
       "voice_id": "N2lVS1w4EtoT3dr4eOWO",
       "voice_name": "Callum",
       "model": "eleven_multilingual_v2",
-      "duration": 3.161,
+      "duration": 3.159,
       "source_sha256": "66b6eeb32c34d2ba634842522edb5e1a9511384a108df3364d03ba60537a0fa6",
-      "audio_sha256": "486a6adec5e6b28e48923599d365f86b309b79a971f4d7093d065fdd9208d970"
+      "audio_sha256": "ad0d05dd417eff9532cb76aec3e67f04fc122c0746afe438095269f4877431d8"
     },
     {
       "speaker": "Trader",
@@ -2980,7 +2980,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 5.4,
       "source_sha256": "71523348b3c9e098e8eec66ba404b08d3eea9ad801334a592bfd053df81097b5",
-      "audio_sha256": "6a5dc83f44b5f597ac5bc6fce344991172d5e2255c66c636239983a19f61d589"
+      "audio_sha256": "5af4adccee732468669cc5459e828e758f2287bcae5b426b01b057a54063e4eb"
     },
     {
       "speaker": "Vale",
@@ -2989,9 +2989,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.2,
+      "duration": 6.178,
       "source_sha256": "33143af52df360803b57d5bf5babf406ac498ee204ef1758fe6aa7b2e7035f85",
-      "audio_sha256": "8475f83b28200ec8cd133c3b1514571f7cd58f0b34cbb649ec6614ae6fa2c608"
+      "audio_sha256": "bd6a6c8484859f182b2b00cd654726bcd31673a9d66f1711b1a60b1e15f4c69c"
     },
     {
       "speaker": "Vale",
@@ -3000,9 +3000,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.021,
+      "duration": 3.032,
       "source_sha256": "858ddb380c415f419140f177912b0460c670e51fc2239bf70c9e70aa9f615dba",
-      "audio_sha256": "4831bdb182ffce34cb279fc3c6321aa1640b03dd597a5466e3c0f945edf656d1"
+      "audio_sha256": "ba204fcb64b9a2a6cfa8920456495ba4c49540b4a3a3f590311cec0d3abcfa1e"
     },
     {
       "speaker": "Vale",
@@ -3011,9 +3011,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.1,
+      "duration": 6.088,
       "source_sha256": "e72c7bc391d35fbd427dad4334e187e19292efe3ec33597f4d6bf5c08278c31f",
-      "audio_sha256": "b07e0c9201803bd1684962f9ca12a55aa244b1b0f391b64765f7817db117e3dd"
+      "audio_sha256": "46ba437f8a973c7fef920c2e52bccfedea650d425eef59f4e4e16fb9d786a4f1"
     },
     {
       "speaker": "Vale",
@@ -3033,9 +3033,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.1,
+      "duration": 4.091,
       "source_sha256": "634ec3cbfd6f97448c649d3081fd91a422d6b223fa0fd3e620eb3a7fc2bb9690",
-      "audio_sha256": "b51cfc568e435607d7e00ca19938e41e33be540fa0760463c08af01d5052923e"
+      "audio_sha256": "5e9479648a1fe24a8d925a41c1ce81eb12d0cdd3c429796b6afedec008464ed3"
     },
     {
       "speaker": "Vale",
@@ -3044,9 +3044,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.3,
+      "duration": 5.206,
       "source_sha256": "19d2107481fccfa4efa06694ec8bc310fd399b62862256695358e2e9e92ef284",
-      "audio_sha256": "3d4aec44f21c16a098fd02073fa7a0f5274165d21c610dbf792708a9de65df7b"
+      "audio_sha256": "9a40c50597e20f05f0b6d429351ad6993dfa34dfb0336790e068f62465073df5"
     },
     {
       "speaker": "Vale",
@@ -3055,9 +3055,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.233,
       "source_sha256": "75591027efd43a7b94124441d71d1d0d40633e57445d88c510f589e974015383",
-      "audio_sha256": "c99ad38d35cd30ae8b61f83c7113bfa301eaf9e787ce044edb920d71318237a0"
+      "audio_sha256": "273b2a05f37e4566a532839425873e5521d5909f1ebb008e273e1709a876944c"
     },
     {
       "speaker": "Vale",
@@ -3066,9 +3066,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.6,
+      "duration": 4.526,
       "source_sha256": "cc77fc9ce3af43869e986e2f598c5e45ae150efb16c36b373b35ccc70c9bc18d",
-      "audio_sha256": "d80d77e3b66b9438b51ead1d939d8a500cc0d986a402955ba759e9c9acd303e8"
+      "audio_sha256": "1168cc91c5993fea32bd6066b5b0581431f304579569a866e430288fab1bd066"
     },
     {
       "speaker": "Vale",
@@ -3079,7 +3079,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 5.4,
       "source_sha256": "be2e8d9232543fbc5b3965ab89037143649cb1e9e5b4ba69e599f7eb55ada283",
-      "audio_sha256": "37199e4ac6d1433ee905a213bc7d93e135a0ac9f120a935ecccc95f78e9a04ed"
+      "audio_sha256": "7530432d5198cc1f54d215b3a715e26c08a9a42746c7cda6f232c77bf5694608"
     },
     {
       "speaker": "Vale",
@@ -3088,9 +3088,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.9,
+      "duration": 6.877,
       "source_sha256": "6d49bffac3753a450a3c0eabcb96b68eca6532125ae71587c6938a5ca4bc1c6d",
-      "audio_sha256": "104f9d0ed3d411267c1bdce889fd755f015730ccf2ea455be96669dcc7dabade"
+      "audio_sha256": "d25688063ec5e893729316c4cfb28ef52f9851faf09023766ffc7e4d8a72fa83"
     },
     {
       "speaker": "Vale",
@@ -3099,9 +3099,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 7.3,
+      "duration": 7.295,
       "source_sha256": "65a063cb054fb4665bc377d85fd501e2e5d8c80d28b6580940438697a23427b7",
-      "audio_sha256": "b970165efb05ca3ccdf5d09cf1ac24052167bd373e449d35a583bf8fce3e169b"
+      "audio_sha256": "15e7cb610a639da6b0e5cba73a85fe660d756797801290e938a010e0301e0519"
     },
     {
       "speaker": "Vale",
@@ -3110,9 +3110,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.5,
+      "duration": 6.413,
       "source_sha256": "e6cee6d67efbfd4fc22049c2731a177066b41777fbbedd6a9fb00eab26986629",
-      "audio_sha256": "3c9a60ffcf0bf41fd3d7e1c8cc2f23fff13e32d450764783d33b9d957518c44d"
+      "audio_sha256": "2fc1b5b328d254ea88cdf171a18e5e83dc3d4d010b42803bfb339f716c75e98e"
     },
     {
       "speaker": "Vale",
@@ -3132,9 +3132,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.3,
+      "duration": 4.277,
       "source_sha256": "3a3d1677c4dcf058d6b88898e892db9779d6d7f42ddc07a721eced61e2a77ecd",
-      "audio_sha256": "36eea1dfd7556e9e7148cfec743913b9ca30c5c21d93909dc0cc2f1c10fa6ca8"
+      "audio_sha256": "0e0d50f1b91ecff803e78ca57a8b96b6c176b24a7b6fe1b94dd8a2437bca59fa"
     },
     {
       "speaker": "Vale",
@@ -3143,9 +3143,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.1,
+      "duration": 6.053,
       "source_sha256": "1bc4fabf1bddfa36720aa69506194f9930d1552d5ca0bdcb0c23a5c59a9a8e9a",
-      "audio_sha256": "3cd27363534ced342f32d2c4c29bdbd59b1ee1e8262675de2daf71ca8635761f"
+      "audio_sha256": "20687cb795670147b7efee2733f8eed9cdd9dc6ad37aea1adfd377f0a5ee1312"
     },
     {
       "speaker": "Vale",
@@ -3154,9 +3154,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.9,
+      "duration": 4.837,
       "source_sha256": "22e9402f6f077aacfa202e05e24f518bece9d1e4b606338bd8af17ba1aa70ee2",
-      "audio_sha256": "047be863c1de0f3d608547b7fb59d3b4a14cb7a05e2a653f288d38f964289ceb"
+      "audio_sha256": "0c06700147c5ca2a90ba58ae45a20ee980927574b57e9cc298c20ebc8e3d94dc"
     },
     {
       "speaker": "Vale",
@@ -3187,9 +3187,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.5,
+      "duration": 4.431,
       "source_sha256": "caa254b800c39eb60922412d38d5c4d0124593ea6309d486b361c30c7fccbb52",
-      "audio_sha256": "e4ae3d46648356673b959fa0fe31a7eb76072ac5213d139004900f61e6cde80f"
+      "audio_sha256": "956bd7773307dc5724b6dc5c6c65c6a2c22f8f48746e0e0f60854bd19da6cfd9"
     },
     {
       "speaker": "Vale",
@@ -3198,9 +3198,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.7,
+      "duration": 4.648,
       "source_sha256": "e1c47831c9e59130bbb24eaf88dd525587f00f9d01492df9694c930cc83f2f0e",
-      "audio_sha256": "5ec023a7c28c0038e002314f498d7e3832f600b4fe1d31cad2182d55dcb6c46d"
+      "audio_sha256": "4c0b987c3a0f16301a9ec27c694f7bd81cc09fb420acdbe6253a102c95f1da5f"
     },
     {
       "speaker": "Vale",
@@ -3209,9 +3209,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.114,
+      "duration": 3.13,
       "source_sha256": "187395dd37f6355c38cdc6e565f8bd38e7d99dcafa5494a59d505907441bc46a",
-      "audio_sha256": "9ee0d0a0b734c5243a744edcbd8d84e6b4532470be91856d9c352bf9d8e84324"
+      "audio_sha256": "13e6464dc4d103136ab90ee1fdc3831b05945e8ed79626c8a7484e7a2abcdc34"
     },
     {
       "speaker": "Vale",
@@ -3220,9 +3220,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.0,
+      "duration": 3.969,
       "source_sha256": "1fcc2662035e60eff58464ba2ee4a3d06b6a68f32b6afb25855f1c450a5ccea1",
-      "audio_sha256": "e0428876b5567aa046acfb614f16c9ff5c31d449d5f932b20b6fd08608659763"
+      "audio_sha256": "af185db5e862a58b073e50079ca6933dc656406c0c8ed318de27e07a3533bf76"
     },
     {
       "speaker": "Vale",
@@ -3231,9 +3231,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.532,
+      "duration": 3.537,
       "source_sha256": "0b15c28fccbc7085c2a9e38d1518c1083332b1c57462188bfe58d9b83bcc277e",
-      "audio_sha256": "4e0d0826b31a1d8c641019b1a5f5915a970f3b8885fccea1522f847773d5a320"
+      "audio_sha256": "cfa43e03c596a9dabe0c554b425920f8884d03d086913a1f8941f35aa2a86ef2"
     },
     {
       "speaker": "Vale",
@@ -3242,9 +3242,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.9,
+      "duration": 6.883,
       "source_sha256": "6e29fc8c9ba3387f319c46808bf8292066763e21adc27a96946b71e8316678eb",
-      "audio_sha256": "3f56ad5a2cd3088cc5e341811b8890f0d5d217b8a1ca73a64da3da9d796438a4"
+      "audio_sha256": "e3e3248476007d679f0689d994e9dcd0898c99728aa74663aff3f1e50ad657a6"
     },
     {
       "speaker": "Vale",
@@ -3253,9 +3253,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.2,
+      "duration": 5.124,
       "source_sha256": "4ec83baa9df0c35c29c3590318846afdc5819fab94cdebf1e4cacf72f3e994a0",
-      "audio_sha256": "3d1701ac0eba89268ac3ffb68c3b2b5ce2bd4b63e9f846cf3a4d000131f599de"
+      "audio_sha256": "39e709bf74a6c3b2a51c44d826b3b2928fff146b3581cafc43829d7024c1dbac"
     },
     {
       "speaker": "Vale",
@@ -3264,9 +3264,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.3,
+      "duration": 5.252,
       "source_sha256": "9f087e40a3c006f83669537c70e64081624e18118891e2cef67ed20372df4d1e",
-      "audio_sha256": "76dc3bee0f141183b1dc59fffddf33aaed45336ec944705e7ce9f8a0824dfc08"
+      "audio_sha256": "60bd1ca1b1a3eccf28b0dcc0fff834171c6487d263435be6b7c45450883faef3"
     },
     {
       "speaker": "Vale",
@@ -3275,9 +3275,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.6,
+      "duration": 6.523,
       "source_sha256": "6be49c08baee66a76be49c161415ff41d5c427ae6e46a056bcd8e76b454bde61",
-      "audio_sha256": "086a7fe7b152be8674b1f18f36a118aecf23089a2e4bc81caee444a4ae5d62e2"
+      "audio_sha256": "16045e23c80b8074dbeebd33796dd07aee46b610cfd87679f95c0243eed95c13"
     },
     {
       "speaker": "Vale",
@@ -3286,9 +3286,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.8,
+      "duration": 5.763,
       "source_sha256": "f3b633cfb9eb865ced10152fc304c3dee495376d1b88e8392590d2139a40cf72",
-      "audio_sha256": "58f28ff9a5a72716e76373ad679ba7353585e16627bd2feba972da5649a925bf"
+      "audio_sha256": "d5ac129f7734fe7653767b75d1870f14d466cd99b235e01b9e6d4ff9089d3d6e"
     },
     {
       "speaker": "Vale",
@@ -3310,7 +3310,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 4.1,
       "source_sha256": "14b0aabf9aa0af68ab36bbd3dbd2c4a0350c4b331f7bc7c1c61337f0df803a1f",
-      "audio_sha256": "f0ae3d0db3b160700f28b88ab99eb27441e61903686053891497adbac7167e7a"
+      "audio_sha256": "45b30636507392dc2cf303dac1f8866489e8dcb97368a460e57e38049ca54d6d"
     },
     {
       "speaker": "Vale",
@@ -3330,9 +3330,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.3,
+      "duration": 5.261,
       "source_sha256": "b17c83f11d85c46d4d1b215d2f64c01060cb25f244fdaef0e799e07056abc2b7",
-      "audio_sha256": "a2e4b7a7477575199d36749029b1809965ddc3e36bea423d52e9417929092ef0"
+      "audio_sha256": "2b098ee0f87a0fcb62d8d7acd9ea167cfb75a07676c0bb9cc92756a8d1b4e4e3"
     },
     {
       "speaker": "Vale",
@@ -3341,9 +3341,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.068,
+      "duration": 3.087,
       "source_sha256": "f14debd7332869cc2e937509d071c52a9a3ed0fdd2bb80179966b5017170896d",
-      "audio_sha256": "49da352844ee7efd6402e59fb7740ce5861acb4f06b4c2324d384f84a2ef1ee9"
+      "audio_sha256": "25e790869d1e6b6a7988500383cb8f56c4166f19b6a2836dcf2c9675f004ba1e"
     },
     {
       "speaker": "Vale",
@@ -3352,9 +3352,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.114,
+      "duration": 3.127,
       "source_sha256": "4649e72dea0a99be5d9f32a6d0a2265c18ad57cf4ca0f796a3d348675147a2b8",
-      "audio_sha256": "671d08fa61879911b8f25dda3c92bb77995752381c913bb4561a861c25cca934"
+      "audio_sha256": "6383f9fa783866928a42135380d216a58adbf4508dd8c29bf596830baeaf87a1"
     },
     {
       "speaker": "Vale",
@@ -3374,9 +3374,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.532,
+      "duration": 3.537,
       "source_sha256": "0e943023890a069c20d06d5c50854d4c1af0d83ae8ca6f7642995896d5203270",
-      "audio_sha256": "8f297c7c1a6cfce45d5139c908db95ad78d74bb0e6c38e2cfdc768af70634c14"
+      "audio_sha256": "82f414c87795c44307d032d3291c5d931a6b7f0268bc3b76a7103732d4339829"
     },
     {
       "speaker": "Vale",
@@ -3385,9 +3385,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.5,
+      "duration": 4.422,
       "source_sha256": "d1866425d0024b6f349351aa4db54090fe81e64a27adaf33ead4dcb3370475dc",
-      "audio_sha256": "fc72ff17688ac4b9b7d4be213920c7ca3495af6d939b3c9024073c9d991789df"
+      "audio_sha256": "a410b991d8b3ece2709e4b7832b74999e7452ffea99621f8c02ee334c7c54b5d"
     },
     {
       "speaker": "Vale",
@@ -3396,9 +3396,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.641,
       "source_sha256": "ce6468474ad3497946dc5fa756c0efe4c1c0cd42f8b37d28f36a86c163b71d0b",
-      "audio_sha256": "58ec532246baf22d75354f5e70eda0d8653042cfbc97962503cc67da11eb7bb3"
+      "audio_sha256": "abe64962db1637478b3d36072b8e8186d40a543e7cd8e375f6741dcef7aa3a96"
     },
     {
       "speaker": "Vale",
@@ -3407,9 +3407,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.673,
       "source_sha256": "829b50c5cf6c77175b53ea07f83ac0a7fb712488224e5c6c0dd52a03ca37b55a",
-      "audio_sha256": "0a2d5a827316bbf79886cc5825fbebe2bb4c90f0d8f3b1aff229d25fad34cfb5"
+      "audio_sha256": "da501ca3522d191c3134e496dd26233eb264d2ce5d13335e7128be35d1a96501"
     },
     {
       "speaker": "Vale",
@@ -3420,7 +3420,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 5.9,
       "source_sha256": "10ed6d0943af2cd84a71d71a02c591fd878964a618c36d30758081bca1f77fe7",
-      "audio_sha256": "ad34c7f3f62cad2bbf13e66c81148ec409a301b686ddbd3e649ea36bc8edb5b6"
+      "audio_sha256": "978018c8c0ed0b3924933ec6747a58bedc84c97445bfc0a099640ab932095ea4"
     },
     {
       "speaker": "Vale",
@@ -3440,9 +3440,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 7.4,
+      "duration": 7.394,
       "source_sha256": "fb954236a77a3d3c5c5f7f319f704ce1160acd69e6d57a8e8c025a1326472b66",
-      "audio_sha256": "d123db006ed58bd719ae8a0f09351efffa178dd530939c21b3d78eab61f7e804"
+      "audio_sha256": "838347828243c2a6f672df4eb46105578c572d89230c7f9bd4252099075b6278"
     },
     {
       "speaker": "Vale",
@@ -3451,9 +3451,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.439,
+      "duration": 3.455,
       "source_sha256": "7d5c7cf379c96955c0a4b9501ff003f4b57e36be3d12761b24c02057c4ebd97d",
-      "audio_sha256": "f2fcc22092f7524ac4a30f31c8cecf508df7c1ff0deb7ea54b233c5ae5f36fae"
+      "audio_sha256": "e869288a97eccd9f3e4acad7087e69dd4611d04628669a4602b1e8440dade098"
     },
     {
       "speaker": "Vale",
@@ -3473,9 +3473,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.5,
+      "duration": 5.447,
       "source_sha256": "1f6d30810f11e32a559c1c338adacd34ccb505cba792b3f8bd39b2ecf835dded",
-      "audio_sha256": "7103754dcf35ecd983406f9498d9e208897eda06538eff5055685ee5629451e5"
+      "audio_sha256": "c8591f72f5383e0178b9247f78d5b78acbe848ba234b80be5ca87979a99eecad"
     },
     {
       "speaker": "Vale",
@@ -3484,9 +3484,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.207,
+      "duration": 3.215,
       "source_sha256": "5683f81d56ba6151298e89ae58bea6506f17d751dd245e3e7bca9979550a80d8",
-      "audio_sha256": "49eb1c156ed8294b6fef21b9a7231e886c7149f16c826429da39a094ce8ffe30"
+      "audio_sha256": "ebdc5fe53187bcad603c4f418978f34e95f4fc9aa8a2a5552530e9fc3dc15f13"
     },
     {
       "speaker": "Vale",
@@ -3506,9 +3506,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.7,
+      "duration": 6.689,
       "source_sha256": "716163891a5868c8697fcada34295c1d61086da5d9437f413e146c14888b723d",
-      "audio_sha256": "7bb75a6d923870dfc820c9ec12375710ad4b1da3bdc0261fd67f5a72be440262"
+      "audio_sha256": "723f82b477d011ec6b4317419f8382b7186ef9675120dad8aeaa7de955e3d1d9"
     },
     {
       "speaker": "Vale",
@@ -3517,9 +3517,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.579,
+      "duration": 3.58,
       "source_sha256": "49ae0c9b84b6872c409d93551893fa5e819012fc410412f476151f96e82b48c5",
-      "audio_sha256": "5afcd21fb370e7547d8e3e3de9fea29f389f2aa00df3f4d2cd815b718a44b7eb"
+      "audio_sha256": "e8f23c6faed52fecedf37798f639080a70dfdc975400ac0421b28607b15b79bb"
     },
     {
       "speaker": "Vale",
@@ -3528,9 +3528,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.9,
+      "duration": 4.834,
       "source_sha256": "c18334e77378fb6a98e783f86761294d982c48991d1ef4c36f1a1cfdec614136",
-      "audio_sha256": "a70c82be8ab2f8dc6bca2c13aadd39de0c967498948879e05cadf485388ffe46"
+      "audio_sha256": "1f2382b698833c9931f5e3317df05ca80d37a7b30f5880366b0a69f0b614ac67"
     },
     {
       "speaker": "Vale",
@@ -3539,9 +3539,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.672,
+      "duration": 3.679,
       "source_sha256": "511b4dbfcda73f366ce6a3abb41547d0099389d5513b88bb989c8af05afff634",
-      "audio_sha256": "12b8cc92dc81043adec6b9f098fbc1dcb5fde22e56b1013425b44267344c7032"
+      "audio_sha256": "8c29953dd511dc992ff618ba56e7f0a41d94d5bc13da5be8cb5354d89495dd2e"
     },
     {
       "speaker": "Vale",
@@ -3550,9 +3550,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.8,
+      "duration": 4.741,
       "source_sha256": "97e58b01a563192fe6f097cec46dcd82742ab184d07e71c8cfffb2b965b4fd2e",
-      "audio_sha256": "bf535e6aa705c7a60480bc5557e092b62a924295bdd7475588704c0109ab626a"
+      "audio_sha256": "4f3722ddc45865a90886fdf7248aa24df84045a3658d44862bff5d01167040fb"
     },
     {
       "speaker": "Vale",
@@ -3563,7 +3563,7 @@
       "model": "eleven_multilingual_v2",
       "duration": 7.2,
       "source_sha256": "55369b5f379b5a74e086979a33c9b5002b60f5bdbce1e4d36f611bfdab436cd0",
-      "audio_sha256": "32d97e92b598900beaafe884df87a8da27061091ab34378791498a346bab4ce5"
+      "audio_sha256": "b26fff7c73fc86eae6ddc43b4a3b3bdcc8f92188c40de2512e965f430a33cb24"
     },
     {
       "speaker": "Vale",
@@ -3572,9 +3572,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.068,
+      "duration": 3.081,
       "source_sha256": "bf82339a9ca2a6d8caab00e694cc2ba88c2415fe16a604928f31383e11065293",
-      "audio_sha256": "b2010a2dadb89f45f9c6bf3509500eea735b0164c1e622d7c05ae640e9998a42"
+      "audio_sha256": "4ccf70deef061fb86bbac7677644f656985270420ea615613f97530901e763a8"
     },
     {
       "speaker": "Vale",
@@ -3583,9 +3583,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 5.7,
+      "duration": 5.685,
       "source_sha256": "fb2259537989e1552c998f729d2526559cbdc988fa8aaa8f4578f5f48fdc891d",
-      "audio_sha256": "379e120f445fde20ff977cfb071e3c500a4ef9cb5e936c59d1ff9511a2619e4b"
+      "audio_sha256": "805031a5e5512658d75dbba215a582de4118bdce324d9265a4d34f2e41e2853a"
     },
     {
       "speaker": "Vale",
@@ -3594,9 +3594,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.6,
+      "duration": 6.567,
       "source_sha256": "94a65a66d21dfcd43c5ca3307bd05eb67a53e35fc35e7a79af96a96d31e3f914",
-      "audio_sha256": "981a5d9e4b3fa85630e7480242a8b8e0e51ec26983a30eb502d0d4082ecf9afd"
+      "audio_sha256": "a4d18e4098b6e8d2bbd42029fcf556a5e26f57b592162a273018ac7fbdbbe5f4"
     },
     {
       "speaker": "Vale",
@@ -3616,9 +3616,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 3.857,
+      "duration": 3.862,
       "source_sha256": "eb16d216aebbf844dc073499b9d359aeac87e8900dfd8ded49d8a1202b9b51f2",
-      "audio_sha256": "396a5ca3f097ed8c79cd03d59b603b3980f5d1bf3a27429b52447fe69396c6a1"
+      "audio_sha256": "bf0b371ac7af3e50cb53ab328c1fc352eb7cccd271b76c0c5ef4d8925aff91af"
     },
     {
       "speaker": "Vale",
@@ -3627,9 +3627,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 7.2,
+      "duration": 7.127,
       "source_sha256": "aa853472b7775d7bbcf33764dba60780e41e5308cd7ff80668bbb0b227460b6f",
-      "audio_sha256": "bc854cfa8dedb85e1d82b0a940cd24a416d6fe82fe284acb40df892df791108f"
+      "audio_sha256": "1feb780f76dfc22dab01c3734bcec3c7cf47ceb4d8b28e900393fbf4abc6493a"
     },
     {
       "speaker": "Vale",
@@ -3638,9 +3638,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.2,
+      "duration": 6.137,
       "source_sha256": "9707d91e9fef5e1ec0569145f95ce47815f1a5df867e7f80d74247fb19739692",
-      "audio_sha256": "09abc7ff5f602f81dbb8832a66e80bb194e63b70f135ac3fc5f9b959ae2a7c5f"
+      "audio_sha256": "eda3769a0e869343da944dcb75c321ed126cad27ac3358889e4c955f99b42ed2"
     },
     {
       "speaker": "Vale",
@@ -3649,9 +3649,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 6.0,
+      "duration": 5.963,
       "source_sha256": "ed2a855e9baceb194531c3ba1781bb88c3d58648867c894af88240a280dc2249",
-      "audio_sha256": "125e42a6bbb36f90c55bcda672ef2627051253fb2f522f9dfc1fdea23964340b"
+      "audio_sha256": "992619a537cd38551550bdd4fbf6b757be6fff101b52b886b462e05c2733751c"
     },
     {
       "speaker": "Vale",
@@ -3671,9 +3671,9 @@
       "voice_id": "EXAVITQu4vr4xnSDxMaL",
       "voice_name": "Sarah",
       "model": "eleven_multilingual_v2",
-      "duration": 4.2,
+      "duration": 4.193,
       "source_sha256": "b0f0f2fc8177eb283445c7aa9cc87ec01d02985e9a3beb63f6236563286d2b7d",
-      "audio_sha256": "db0fd9b4175b6f4ca3cff0889700207c0ba56a05d51a3a24f4d0f672f96f6d96"
+      "audio_sha256": "600bb32e14ed736c5d1209a2689c1f1b3c0e8ecff5f5f83ea3a126345dfe4cdf"
     }
   ],
   "subscription_after": {
