@@ -36,6 +36,8 @@ namespace ZombiesFPS.Net
         public const float ReviveRange = 2.2f;
         public const int SlotCount = 2;
         const float EyeHeight = 1.62f;
+        /// <summary>How far the eyes drop and how many degrees the view rolls at the bottom of a slide.</summary>
+        const float SlideEyeDrop = 0.75f, SlideRoll = 5f;
 
         static readonly List<NetPlayer> s_All = new List<NetPlayer>();
         public static IReadOnlyList<NetPlayer> All => s_All;
@@ -71,6 +73,9 @@ namespace ZombiesFPS.Net
         /// <summary>Which slot is in the player's hands. The owner switches; the host reads it for damage.</summary>
         public NetworkVariable<int> ActiveSlot = new NetworkVariable<int>(
             0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        /// <summary>Sliding right now. The owner sets it, so teammates see the slide and hear it.</summary>
+        public NetworkVariable<bool> Sliding = new NetworkVariable<bool>(
+            false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         // Owner-only rig.
         PlayerMotor _motor;
@@ -114,6 +119,9 @@ namespace ZombiesFPS.Net
         CharacterModels.SurvivorModel _survivor;
         Vector3 _rVelocity;
         float _rFireAt = -100f, _rThrowAt = -100f, _rHurtAt = -100f, _rLastHealth = MaxHealth;
+        // How far down into a slide the teammate is, eased from Sliding.
+        float _rSlide;
+        bool _rWasSliding;
         ThrowableKind _rThrowKind;
         // The teammate's throwable in their hand during a wind-up, one of each kind.
         readonly Transform[] _rHeld = new Transform[3];
@@ -504,6 +512,7 @@ namespace ZombiesFPS.Net
             float forward = Vector3.Dot(delta, transform.forward);
             _rForward = Mathf.Lerp(_rForward, forward < -0.001f ? -1f : 1f, k);
             if (State.Value != LifeState.Alive) _rSpeed = 0f;
+            RemoteSlide(dt);
             if (_survivor != null)
             {
                 var local = State.Value == LifeState.Alive ? transform.InverseTransformDirection(delta / dt) : Vector3.zero;
@@ -514,7 +523,7 @@ namespace ZombiesFPS.Net
                     || Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, 0.55f, ~0, QueryTriggerInteraction.Ignore);
                 float now = Time.time;
                 float windUp = ThrowMotion.WindUp(_rThrowKind);
-                _survivor.Animate(dt, _rVelocity, grounded, now - _rFireAt, now - _rThrowAt, windUp, now - _rHurtAt);
+                _survivor.Animate(dt, _rVelocity, grounded, now - _rFireAt, now - _rThrowAt, windUp, now - _rHurtAt, _rSlide);
                 ShowRemoteHeld(now - _rThrowAt < windUp && State.Value == LifeState.Alive ? (int)_rThrowKind : -1);
                 return;
             }
@@ -535,6 +544,36 @@ namespace ZombiesFPS.Net
             _rSpine.localRotation = Quaternion.Euler(3f + 10f * sprint + throwLean, -6f * gait * sinP + throwTwist, 2f * gait * Mathf.Sin(p * 2f));
             // A little breathing at rest, and the head keeps level with the gun.
             _rHead.localRotation = Quaternion.Euler(-(3f + 10f * sprint) * 0.7f + Mathf.Sin(Time.time * 1.6f) * 1.5f * (1f - gait), 0f, 0f);
+            if (_rSlide > 0.001f) PoseRemoteSlide(_rSlide);
+        }
+
+        /// <summary>The blocky body in a slide: hips near the floor and leaning back, left leg out in front, right tucked under.</summary>
+        void PoseRemoteSlide(float k)
+        {
+            k = Mathf.SmoothStep(0f, 1f, k);
+            _rHips.localPosition = Vector3.Lerp(_rHips.localPosition, new Vector3(0f, 0.42f, 0f), k);
+            _rHips.localRotation = Quaternion.Slerp(_rHips.localRotation, Quaternion.Euler(-18f, 0f, 0f), k);
+            _rSpine.localRotation = Quaternion.Slerp(_rSpine.localRotation, Quaternion.Euler(-8f, 0f, 0f), k);
+            _rHead.localRotation = Quaternion.Slerp(_rHead.localRotation, Quaternion.Euler(20f, 0f, 0f), k);
+            _rLegL.localRotation = Quaternion.Slerp(_rLegL.localRotation, Quaternion.Euler(-62f, 0f, -2f), k);
+            _rKneeL.localRotation = Quaternion.Slerp(_rKneeL.localRotation, Quaternion.Euler(8f, 0f, 0f), k);
+            _rFootL.localRotation = Quaternion.Slerp(_rFootL.localRotation, Quaternion.Euler(30f, 0f, 0f), k);
+            _rLegR.localRotation = Quaternion.Slerp(_rLegR.localRotation, Quaternion.Euler(-20f, 0f, 8f), k);
+            _rKneeR.localRotation = Quaternion.Slerp(_rKneeR.localRotation, Quaternion.Euler(105f, 0f, 0f), k);
+            _rFootR.localRotation = Quaternion.Slerp(_rFootR.localRotation, Quaternion.Euler(-40f, 0f, 0f), k);
+        }
+
+        /// <summary>Eases the teammate down into a slide and back up, with the scrape where they are as they drop.</summary>
+        void RemoteSlide(float dt)
+        {
+            bool sliding = Sliding.Value && State.Value == LifeState.Alive;
+            if (sliding && !_rWasSliding && _remoteAudio != null)
+            {
+                var clip = ProceduralAudio.Slide(PlayerMotor.SurfaceAt(transform.position));
+                if (clip != null) _remoteAudio.PlayOneShot(clip, 0.7f);
+            }
+            _rWasSliding = sliding;
+            _rSlide = Mathf.MoveTowards(_rSlide, sliding ? 1f : 0f, dt * (sliding ? 7f : 4f));
         }
 
         /// <summary>The blocky body's throw: the chest turns and leans back through the wind-up, then snaps round and forward.</summary>
@@ -645,10 +684,24 @@ namespace ZombiesFPS.Net
         void OwnerTick()
         {
             if (_pivot == null) return;
-            float targetHeight = State.Value == LifeState.Alive ? EyeHeight : State.Value == LifeState.Downed ? 0.55f : 0.3f;
+            // A slide dips the eyes low and rolls the view a little; it's eased already, so it follows quickly.
+            bool alive = State.Value == LifeState.Alive;
+            float slide = alive ? _motor.SlideAmount : 0f;
+            float targetHeight = alive ? EyeHeight - SlideEyeDrop * slide : State.Value == LifeState.Downed ? 0.55f : 0.3f;
             var p = _pivot.localPosition;
-            p.y = Mathf.Lerp(p.y, targetHeight, 1f - Mathf.Exp(-8f * Time.deltaTime));
+            p.y = Mathf.Lerp(p.y, targetHeight, 1f - Mathf.Exp((slide > 0.001f ? -18f : -8f) * Time.deltaTime));
             _pivot.localPosition = p;
+            _look.Roll = -SlideRoll * slide;
+            bool sliding = alive && _motor.IsSliding;
+            if (sliding != Sliding.Value)
+            {
+                Sliding.Value = sliding;
+                if (sliding)
+                {
+                    _look.AddShake(0.12f);
+                    GameInput.Rumble(0.25f, 0.15f, 0.25f);
+                }
+            }
 
             var rounds = RoundManager.Instance;
             if (rounds != null && rounds.GodMode.Value && _gun.Reserve < _gun.MaxReserve) _gun.RefillAmmo();

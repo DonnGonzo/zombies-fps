@@ -6,8 +6,8 @@ using ZombiesFPS.World;
 namespace ZombiesFPS.Player
 {
     /// <summary>
-    /// First-person movement on a CharacterController: walk, sprint (on a stamina bar), aim-walk, jump, climb ladders,
-    /// and climb up onto ledges the head reaches mid-jump.
+    /// First-person movement on a CharacterController: walk, sprint (on a stamina bar), slide out of a sprint, aim-walk,
+    /// jump, climb ladders, and climb up onto ledges the head reaches mid-jump.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMotor : MonoBehaviour
@@ -33,6 +33,22 @@ namespace ZombiesFPS.Player
         [Header("Climbing over")]
         public float mantleRiseSpeed = 4.2f;
         public float mantleForwardSpeed = 3.2f;
+        [Header("Sliding")]
+        /// <summary>Speed at the start of a slide, as a multiple of sprint speed.</summary>
+        public float slideBoost = 1.2f;
+        /// <summary>Speed lost per second on flat ground (downhill slides keep going, uphill ones stop sooner).</summary>
+        public float slideFriction = 6.5f;
+        /// <summary>The slide ends once it slows to this (m/s).</summary>
+        public float slideEndSpeed = 3.4f;
+        public float slideMaxTime = 1.1f;
+        /// <summary>Pause after a slide before the next one.</summary>
+        public float slideCooldown = 0.45f;
+        /// <summary>The body's height while sliding, low enough to slip under things.</summary>
+        public float slideHeight = 1f;
+        /// <summary>Stamina a slide takes from the bar.</summary>
+        public float slideStaminaCost = 0.08f;
+        /// <summary>Crawling speed when a slide ends somewhere too low to stand up.</summary>
+        public float slideCrawlSpeed = 1.8f;
 
         CharacterController _controller;
         Vector3 _velocity;
@@ -66,6 +82,10 @@ namespace ZombiesFPS.Player
         public Vector3 Velocity => _velocity;
         /// <summary>On a ladder right now.</summary>
         public bool IsClimbing => _ladder != null;
+        /// <summary>Sliding along the ground out of a sprint (or crawling out from under something after one).</summary>
+        public bool IsSliding => _sliding;
+        /// <summary>0 standing to 1 fully down in a slide, eased, for the camera dip and the gun's tilt.</summary>
+        public float SlideAmount { get; private set; }
 
         Ladder _ladder;
         float _noGrabUntil;
@@ -79,6 +99,12 @@ namespace ZombiesFPS.Player
         float _mantleTop, _mantleTime;
         Vector3 _mantleTo, _mantleDir;
         static readonly Collider[] s_Overlap = new Collider[16];
+
+        bool _sliding;
+        float _slideSpeed, _slideTime, _slideAir, _nextSlide;
+        Vector3 _slideDir;
+        float _standHeight;
+        AudioSource _slideAudio;
 
         /// <summary>A ledge has to be at least this far above the feet to climb onto it (lower ones are a step or a hop).</summary>
         const float MantleMinRise = 0.5f;
@@ -95,6 +121,7 @@ namespace ZombiesFPS.Player
         void Awake()
         {
             _controller = GetComponent<CharacterController>();
+            _standHeight = _controller.height;
         }
 
         /// <summary>Moves the player instantly (spawn, respawn), bypassing collision.</summary>
@@ -107,6 +134,7 @@ namespace ZombiesFPS.Player
             _ladder = null;
             _mantling = false;
             _haveSafe = false;
+            if (_sliding) EndSlide();
         }
 
         /// <summary>
@@ -132,6 +160,14 @@ namespace ZombiesFPS.Player
             Vector2 input = InputLocked ? Vector2.zero : GameInput.Move;
             bool aiming = !InputLocked && GameInput.AimHeld;
             bool firing = !InputLocked && GameInput.FireHeld;
+            SlideAmount = Mathf.MoveTowards(SlideAmount, _sliding ? 1f : 0f, dt * (_sliding ? 7f : 4f));
+            if (_sliding)
+            {
+                IsSprinting = false;
+                UpdateStamina(dt);
+                Slide(dt, input);
+                return;
+            }
 
             // Walking into a ladder while facing it grabs it.
             if (_ladder == null && !Downed && !InputLocked && Time.time >= _noGrabUntil && input.y > 0.1f)
@@ -158,6 +194,13 @@ namespace ZombiesFPS.Player
             }
 
             IsSprinting = !InputLocked && !Downed && !Exhausted && Stamina > 0f && GameInput.SprintHeld && input.y > 0.1f && !aiming && !firing;
+            if (IsSprinting && _controller.isGrounded && Time.time >= _nextSlide && GameInput.SlidePressed && PlanarSpeed > walkSpeed)
+            {
+                StartSlide();
+                UpdateStamina(dt);
+                Slide(dt, input);
+                return;
+            }
             UpdateStamina(dt);
             float targetSpeed = Downed ? downedSpeed : (IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed) * SpeedMultiplier;
             if (IsSlowed) targetSpeed *= _slowScale;
@@ -177,6 +220,118 @@ namespace ZombiesFPS.Player
             var flags = _controller.Move(_velocity * dt);
             if ((flags & CollisionFlags.Above) != 0 && _velocity.y > 0f) _velocity.y = 0f;
             Footsteps(planar.magnitude * dt);
+        }
+
+        /// <summary>Drops low and shoots forward along the way the player was running, a little faster than the sprint.</summary>
+        void StartSlide()
+        {
+            Vector3 planar = new Vector3(_velocity.x, 0f, _velocity.z);
+            Vector3 fwd = transform.forward;
+            fwd.y = 0f;
+            _slideDir = planar.sqrMagnitude > 0.01f ? planar.normalized : fwd.normalized;
+            float top = sprintSpeed * SpeedMultiplier * (IsSlowed ? _slowScale : 1f);
+            _slideSpeed = Mathf.Max(planar.magnitude, top) * slideBoost;
+            _sliding = true;
+            _slideTime = _slideAir = 0f;
+            IsSprinting = false;
+            Stamina = Mathf.Max(0f, Stamina - slideStaminaCost);
+            _lastSprintTime = Time.time;
+            SetLow(true);
+            PlaySlideSound();
+        }
+
+        /// <summary>
+        /// Carries on along the slide's line, slowing on the flat, speeding down slopes and steering a little toward
+        /// where the stick or keys point. Jump springs out of it keeping the speed; somewhere too low to stand, it
+        /// becomes a crawl until there's head room.
+        /// </summary>
+        void Slide(float dt, Vector2 input)
+        {
+            _slideTime += dt;
+            Vector3 pos = transform.position;
+            bool grounded = _controller.isGrounded;
+            _slideAir = grounded ? 0f : _slideAir + dt;
+            bool canStand = RoomToStand(pos);
+
+            // Gravity along the floor speeds the slide downhill and slows it uphill.
+            float along = 0f;
+            if (grounded && Physics.Raycast(pos + Vector3.up * 0.3f, Vector3.down, out var floor, 0.8f, ~0, QueryTriggerInteraction.Ignore))
+                along = Vector3.Dot(Vector3.ProjectOnPlane(Vector3.down, floor.normal), _slideDir) * -gravity;
+            _slideSpeed = Mathf.Min(_slideSpeed + (along - slideFriction) * dt, sprintSpeed * SpeedMultiplier * 1.8f);
+
+            Vector3 wish = transform.right * input.x + transform.forward * Mathf.Max(0f, input.y);
+            wish.y = 0f;
+            if (wish.sqrMagnitude > 0.01f) _slideDir = Vector3.RotateTowards(_slideDir, wish.normalized, 1.2f * dt, 0f);
+
+            float vertical = _velocity.y;
+            if (grounded && vertical < 0f) vertical = -2f;
+            if (grounded && canStand && !InputLocked && !Downed && GameInput.JumpPressed)
+            {
+                // Out of the slide into a jump, keeping its speed.
+                EndSlide();
+                _velocity = _slideDir * Mathf.Max(_slideSpeed, walkSpeed) + Vector3.up * Mathf.Sqrt(2f * jumpHeight * -gravity);
+                _controller.Move(_velocity * dt);
+                return;
+            }
+            vertical += gravity * dt;
+
+            bool spent = _slideSpeed <= slideEndSpeed || _slideTime >= slideMaxTime || _slideAir > 0.25f || Downed || InputLocked;
+            if (spent && canStand)
+            {
+                EndSlide();
+                _velocity = new Vector3(_slideDir.x * _slideSpeed, vertical, _slideDir.z * _slideSpeed);
+                _controller.Move(_velocity * dt);
+                return;
+            }
+
+            Vector3 planar = spent
+                ? (transform.right * input.x + transform.forward * input.y) * slideCrawlSpeed // Stuck low: crawl out.
+                : _slideDir * _slideSpeed;
+            planar.y = 0f;
+            if (spent) _slideSpeed = slideEndSpeed;
+            _velocity = new Vector3(planar.x, vertical, planar.z);
+            Vector3 before = transform.position;
+            var flags = _controller.Move(_velocity * dt);
+            if ((flags & CollisionFlags.Above) != 0 && _velocity.y > 0f) _velocity.y = 0f;
+            if (!spent && (flags & CollisionFlags.Sides) != 0)
+            {
+                // Into a wall or a zombie: keep only the speed actually made.
+                Vector3 moved = transform.position - before;
+                moved.y = 0f;
+                _slideSpeed = Mathf.Min(_slideSpeed, moved.magnitude / Mathf.Max(dt, 1e-4f) + 0.5f);
+            }
+        }
+
+        void EndSlide()
+        {
+            _sliding = false;
+            _nextSlide = Time.time + slideCooldown;
+            SetLow(false);
+            if (_slideAudio != null && _slideAudio.isPlaying) _slideAudio.Stop();
+        }
+
+        /// <summary>Shrinks the body to slide height, or back to standing, keeping the feet where they are.</summary>
+        void SetLow(bool low)
+        {
+            float h = low ? Mathf.Min(slideHeight, _standHeight) : _standHeight;
+            _controller.height = h;
+            _controller.center = new Vector3(0f, h * 0.5f, 0f);
+        }
+
+        void PlaySlideSound()
+        {
+            var clip = ProceduralAudio.Slide(Underfoot());
+            if (clip == null) return;
+            if (_slideAudio == null)
+            {
+                _slideAudio = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
+                _slideAudio.playOnAwake = false;
+                _slideAudio.spatialBlend = 0f;
+            }
+            _slideAudio.clip = clip;
+            _slideAudio.volume = 0.55f;
+            _slideAudio.pitch = Random.Range(0.95f, 1.05f);
+            _slideAudio.Play();
         }
 
         AudioSource _steps;
@@ -203,9 +358,12 @@ namespace ZombiesFPS.Player
         }
 
         /// <summary>What the player stands on, guessed from the name of the floor's object.</summary>
-        string Underfoot()
+        string Underfoot() => SurfaceAt(transform.position);
+
+        /// <summary>What the floor under <paramref name="feet"/> is made of (concrete, wood, metal, gravel, dirt), for sounds.</summary>
+        public static string SurfaceAt(Vector3 feet)
         {
-            if (!Physics.Raycast(transform.position + Vector3.up * 0.3f, Vector3.down, out var hit, 0.8f, ~0, QueryTriggerInteraction.Ignore))
+            if (!Physics.Raycast(feet + Vector3.up * 0.3f, Vector3.down, out var hit, 0.8f, ~0, QueryTriggerInteraction.Ignore))
                 return "concrete";
             string n = hit.collider.name.ToLowerInvariant();
             if (n.Contains("metal") || n.Contains("catwalk") || n.Contains("grate") || n.Contains("steel") || n.Contains("iron")) return "metal";
@@ -281,6 +439,21 @@ namespace ZombiesFPS.Player
             for (int i = 0; i < n; i++)
                 if (s_Overlap[i] != _controller) return true;
             return false;
+        }
+
+        /// <summary>
+        /// Is there head room to stand up at these feet? Only the map counts: a zombie or teammate alongside shouldn't
+        /// hold the player down in a slide.
+        /// </summary>
+        bool RoomToStand(Vector3 feet)
+        {
+            float r = _controller.radius * 0.85f;
+            Vector3 bottom = feet + Vector3.up * (r + 0.1f);
+            Vector3 top = feet + Vector3.up * (_standHeight - r);
+            int n = Physics.OverlapCapsuleNonAlloc(bottom, top, r, s_Overlap, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+                if (s_Overlap[i] != _controller && s_Overlap[i].GetComponentInParent<NetworkObject>() == null) return false;
+            return true;
         }
 
         /// <summary>Straight up the face until the feet clear the lip, then forward onto the top.</summary>

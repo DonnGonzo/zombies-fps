@@ -33,6 +33,8 @@ namespace ZombiesFPS.Player
         public bool LockedThisFrame { get; private set; }
         public float AimAmount { get; set; }
         public Vector2 LastLookDelta { get; private set; }
+        /// <summary>Degrees the camera rolls about its view (a slide leans it over). Visual only.</summary>
+        public float Roll { get; set; }
 
         public void Init(Transform pitchPivot, Transform cameraTransform)
         {
@@ -115,7 +117,7 @@ namespace ZombiesFPS.Player
                     (Mathf.PerlinNoise(t, 0.1f) - 0.5f) * 6f * s,
                     (Mathf.PerlinNoise(0.3f, t) - 0.5f) * 6f * s,
                     (Mathf.PerlinNoise(t, 0.7f) - 0.5f) * 8f * s);
-                _camera.localRotation = _cameraBaseRotation * shakeRot;
+                _camera.localRotation = _cameraBaseRotation * Quaternion.Euler(0f, 0f, Roll) * shakeRot;
             }
         }
     }

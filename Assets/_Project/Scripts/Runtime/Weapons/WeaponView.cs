@@ -345,6 +345,10 @@ namespace ZombiesFPS.Weapons
                             + new Vector3(12f, -32f, 12f) * _sprintWeight
                             + new Vector3(35f, 0f, 28f) * reloadWeight
                             + new Vector3(40f, 0f, 0f) * lowered;
+            // A slide cants the gun over and drops it a touch, less when aiming down the sights.
+            float slide = _motor.SlideAmount * (1f - aimEased * 0.8f);
+            pos += new Vector3(0.02f, -0.025f, 0f) * slide;
+            euler += new Vector3(4f, 0f, -16f) * slide;
 
             // Melee pulls the gun down and to the side for a moment; a throw lowers it while the off hand is away.
             float melee = Mathf.Clamp01((Time.time - _meleeStart) / MeleeTime);

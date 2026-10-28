@@ -150,6 +150,7 @@ namespace ZombiesFPS.Core
 
         public static bool JumpPressed => Pressed(GameAction.Jump);
         public static bool SprintHeld => Held(GameAction.Sprint) || s_SprintLatched;
+        public static bool SlidePressed => Pressed(GameAction.Slide);
         public static bool FireHeld => Held(GameAction.Fire);
         public static bool FirePressed => Pressed(GameAction.Fire);
         public static bool AimHeld => Held(GameAction.Aim);
