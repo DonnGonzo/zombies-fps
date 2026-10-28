@@ -1224,47 +1224,47 @@ namespace ZombiesFPS.UI
 
         // ---------------------------------------------------------------- shop and power-up cards
 
-        /// <summary>A slot machine or the blackjack table: the hand or reels, the bets and the house rules.</summary>
+        /// <summary>
+        /// A slot machine or the blackjack table. The game itself plays out in the world (the reels turn on the
+        /// machine, the cards are dealt onto the table); this is a slim bar under it with the balance, what's
+        /// happening, the four choices and the house rules.
+        /// </summary>
         void DrawCasino(float w, float h, float u, int station)
         {
             bool blackjack = station == ZoneMap.BlackjackStation;
             var v = _player.Casino;
             bool current = v.station == station;
-            float width = 780 * u, x = (w-width)/2, top = h*0.16f;
-            Ui.RoundRect(new Rect(x, top, width, 600*u), Ui.Panel);
-            void Line(float y, string text, Color color) => Ui.Label(new Rect(x+24*u, top+y*u, width-48*u, 34*u), text, Ui.Body, color, TextAnchor.MiddleLeft);
-            Line(18, blackjack ? "THE WATCH'S TABLE  /  BLACKJACK" : "LAST CHANCE  /  SLOTS", Ui.Amber);
-            Line(58, $"Balance: {_player.Points.Value:N0} points", Ui.Text);
+            float width = Mathf.Min(w - 40 * u, 820 * u), height = 168 * u, x = (w - width) / 2f, top = h - height - 150 * u;
+            Ui.RoundRect(new Rect(x, top, width, height), Ui.Panel);
+            void Line(float y, float size, string text, GUIStyle style, Color color) =>
+                Ui.Label(new Rect(x + 20 * u, top + y * u, width - 40 * u, size * u), text, style, color, TextAnchor.MiddleCenter);
+            Line(8, 28, $"{(blackjack ? "THE WATCH'S TABLE  /  BLACKJACK" : "LAST CHANCE  /  SLOTS")}     <color=#e8e4da>{_player.Points.Value:N0} points</color>", Ui.Small, Ui.Amber);
+            string status;
             if (blackjack)
             {
-                Line(106, "DEALER   " + (current ? v.dealer : "Waiting for your bet"), Ui.Muted);
-                if (current) for (int i=0; i<v.hands.Length; i++) Line(156+i*42, v.hands[i], i==v.active && v.playing ? Ui.Amber : Ui.Text);
-                Line(350, current ? v.result : "Choose a wager to deal.", Ui.Text);
-                if (current && v.playing) Line(396, CasinoOptions("", new[] { "HIT", "STAND", v.doubleAllowed ? "DOUBLE" : null, v.splitAllowed ? "SPLIT" : null }), Ui.Amber);
-                else Line(396, CasinoOptions("BET:  ", Bets), Ui.Amber);
-                Line(442, "6 decks • Dealer stands on all 17s • Blackjack pays 3:2", Ui.Muted);
-                Line(476, "Win 1:1 • Push returns bet • Double on any first two cards", Ui.Muted);
-                Line(510, "Up to 4 split hands • Split aces: one card • No insurance", Ui.Muted);
+                var table = BlackjackTable.Instance;
+                bool mine = current && table != null && table.State.owner == (int)_player.OwnerClientId && table.State.counts.Length > 0;
+                string seen = mine ? table.Summary() : "";
+                if (!mine) status = "Choose a wager to deal.";
+                else if (_player.CasinoDealing) status = seen.Length > 0 ? seen : "Dealing...";
+                else if (v.playing) status = seen + "     <color=#f2b33d>Your move</color>";
+                else status = v.result;
+                Line(40, 34, status, Ui.Body, Ui.Text);
+                if (mine && v.playing && !_player.CasinoDealing)
+                    Line(76, 34, CasinoOptions("", new[] { "HIT", "STAND", v.doubleAllowed ? "DOUBLE" : null, v.splitAllowed ? "SPLIT" : null }), Ui.Body, Ui.Amber);
+                else Line(76, 34, CasinoOptions("BET  ", Bets), Ui.Body, Ui.Amber);
+                Line(114, 22, "6 decks • Dealer stands on all 17s • Blackjack pays 3:2 • Double any first two • Split to 4 hands • No insurance", Ui.Tiny, Ui.Muted);
             }
             else
             {
-                for (int i=0; i<3; i++)
-                {
-                    bool rolling = current && v.reels.Length==3 && Time.unscaledTime < _player.CasinoRevealAt - (2-i)*0.35f;
-                    string symbol = rolling ? CasinoRules.Symbols[((int)(Time.unscaledTime*17)+i*3)%6] : current && v.reels.Length==3 ? CasinoRules.Symbols[v.reels[i]] : "—";
-                    var r = new Rect(x+(24+i*246)*u, top+128*u, 232*u, 112*u);
-                    Ui.RoundRect(r, Ui.PanelLight); Ui.Label(r, symbol, Ui.Bold, Ui.Amber, TextAnchor.MiddleCenter);
-                }
-                Line(272, Time.unscaledTime < _player.CasinoRevealAt ? "Spinning..." : current ? v.result : "Choose a wager to spin.", Ui.Text);
-                Line(328, CasinoOptions("BET:  ", Bets), Ui.Amber);
-                Line(380, "3 alike: CHERRY 5x • LEMON 10x • BELL 20x • BAR 40x", Ui.Muted);
-                Line(414, "DIAMOND 100x • SEVEN 500x • Exactly 2 CHERRIES 1x", Ui.Muted);
-                Line(448, "Payouts include your bet. Every other result loses the bet.", Ui.Muted);
-                Line(482, "Symbol odds: 40% / 25% / 18% / 10% / 5% / 2% per reel", Ui.Muted);
-                Line(516, "Long-run return: 93.739% • Each reel spins independently", Ui.Muted);
+                bool spinning = Time.unscaledTime < _player.CasinoRevealAt;
+                status = spinning ? "Spinning..." : current && v.reels.Length == 3 ? v.result : "Choose a wager to spin.";
+                Line(40, 34, status, Ui.Body, Ui.Text);
+                Line(76, 34, CasinoOptions("BET  ", Bets), Ui.Body, Ui.Amber);
+                Line(114, 22, "3 alike: Cherry 5x • Lemon 10x • Bell 20x • Bar 40x • Diamond 100x • Seven 500x • 2 Cherries 1x • Return 93.7%", Ui.Tiny, Ui.Muted);
             }
-            string pick = GameInput.UsingGamepad ? $"[D-pad] CHOOSE  [{GameInput.PadName(PadButton.South)}] PLAY  •  " : "";
-            Line(558, $"{pick}[{K(GameAction.Interact)}] LEAVE • Leaving / 60s idle stands all hands. Stay alert.", Ui.Muted);
+            string pick = GameInput.UsingGamepad ? $"[D-pad] choose  [{GameInput.PadName(PadButton.South)}] play  •  " : "[1-4] choose  •  ";
+            Line(138, 22, $"{pick}[{K(GameAction.Interact)}] leave  •  {(blackjack ? "Walking away stands your hand. " : "")}Stay alert.", Ui.Tiny, Ui.Muted);
         }
 
         static readonly string[] Bets = { "100", "250", "500", "1,000" };

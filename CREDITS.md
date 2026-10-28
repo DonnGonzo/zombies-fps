@@ -26,3 +26,15 @@ Third-party art in this project that asks to be credited.
 - **Perk machines** (`Assets/_Project/Resources/CC0/Perks`): eight textured machine models that the project owner
   (Ivan) generated with an AI 3D tool and supplied for the perk machines, one per perk. Packed by
   `tools/perks/pack_perk_machines.py`; hashes of the source GLBs are in `tools/imported_models/sources.json`.
+
+- **Slot machine sounds** (`Assets/_Project/Resources/Audio/Casino`), mixed by `tools/casino/make_casino_audio.py`.
+  The lounge loop and the reel ratchet are synthesised by that script (no samples, original to this game). The win,
+  jackpot and lose stings layer CC0 (public domain) clips by Kenney (https://kenney.nl); no attribution is required;
+  credit is given anyway.
+  - "Music Jingles" by Kenney (https://kenney.nl/assets/music-jingles), CC0: sax and 8-bit jingles.
+  - "Casino Audio" by Kenney (https://kenney.nl/assets/casino-audio), CC0: chip clatter.
+- **Blackjack table sounds** (`Assets/_Project/Resources/Audio/Casino/card_*.ogg`, `chip*.ogg`): card slides,
+  card places, a shove and chip clicks copied unchanged from "Casino Audio" by Kenney (https://kenney.nl/assets/casino-audio), CC0.
+
+- **Playing cards and slot reel symbols** (`Assets/_Project/Resources/Casino`): original art drawn by
+  `tools/casino/make_casino_faces.py` with Pillow and the DejaVu fonts (free licence; only shapes rendered from them ship).

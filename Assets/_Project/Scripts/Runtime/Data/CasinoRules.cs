@@ -26,6 +26,22 @@ namespace ZombiesFPS.Data
             foreach (int c in cards) { total += Value(c); ace |= Rank(c) == 1; }
             return ace && total + 10 <= 21 ? total + 10 : total;
         }
+        /// <summary>
+        /// What one settled hand returns (bet included): 0 bust or beaten, the bet on a push, double on a win, 2.5x on
+        /// a natural (two-card 21 on an unsplit hand). A dealer natural beats everything but a player natural, which pushes.
+        /// </summary>
+        public static long HandReturn(IList<int> cards, bool split, int bet, IList<int> dealer)
+        {
+            int v = Total(cards);
+            if (v > 21) return 0;
+            bool natural = !split && cards.Count == 2 && v == 21;
+            bool dealerNatural = dealer.Count == 2 && Total(dealer) == 21;
+            int d = Total(dealer);
+            if (dealerNatural) return natural ? bet : 0;
+            if (natural) return bet * 5L / 2;
+            if (d > 21 || v > d) return bet * 2L;
+            return v == d ? bet : 0;
+        }
         public static string CardName(int card) => (Rank(card) == 1 ? "A" : Rank(card) == 11 ? "J" : Rank(card) == 12 ? "Q" : Rank(card) == 13 ? "K" : Rank(card).ToString()) + new[] { "S", "H", "D", "C" }[card / 13 % 4];
     }
 
@@ -90,16 +106,7 @@ namespace ZombiesFPS.Data
             bool dealerNatural = Dealer.Count == 2 && CasinoRules.Total(Dealer) == 21;
             if (!dealerNatural && Hands.Any(h => !h.Natural && CasinoRules.Total(h.Cards) <= 21))
                 while (CasinoRules.Total(Dealer) < 17) Dealer.Add(Draw());
-            int dealer = CasinoRules.Total(Dealer);
-            foreach (var h in Hands)
-            {
-                int v = CasinoRules.Total(h.Cards);
-                if (v > 21) continue;
-                if (dealerNatural) { if (h.Natural) Return += h.Bet; }
-                else if (h.Natural) Return += h.Bet * 5L / 2;
-                else if (dealer > 21 || v > dealer) Return += h.Bet * 2L;
-                else if (v == dealer) Return += h.Bet;
-            }
+            foreach (var h in Hands) Return += CasinoRules.HandReturn(h.Cards, h.Split, h.Bet, Dealer);
             Done = true;
         }
     }
