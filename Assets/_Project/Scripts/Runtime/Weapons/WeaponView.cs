@@ -49,7 +49,8 @@ namespace ZombiesFPS.Weapons
         /// <summary>Oathbreaker (the easter egg's sword) swings instead of the knife.</summary>
         public bool Sword { get; set; }
         float _meleeStart = -100f, _throwStart = -100f;
-        const float MeleeTime = 0.38f, ThrowTime = 0.45f;
+        ThrowableKind _throwKind;
+        const float MeleeTime = 0.38f;
 
         public Transform Muzzle { get; private set; }
 
@@ -270,8 +271,15 @@ namespace ZombiesFPS.Weapons
         /// <summary>A knife slash across the screen; the gun ducks out of the way.</summary>
         public void Melee() => _meleeStart = Time.time;
 
-        /// <summary>The gun dips while the off hand throws.</summary>
-        public void Throw() => _throwStart = Time.time;
+        /// <summary>The off hand throws (see <see cref="ThrowMotion"/>) while the gun dips out of its way.</summary>
+        public void Throw(ThrowableKind kind)
+        {
+            _throwKind = kind;
+            _throwStart = Time.time;
+        }
+
+        /// <summary>Puts the hand straight back on the gun, for a throw that never left it (went down mid-throw).</summary>
+        public void CancelThrow() => _throwStart = -100f;
 
         public void OnFire()
         {
@@ -338,13 +346,20 @@ namespace ZombiesFPS.Weapons
                             + new Vector3(35f, 0f, 28f) * reloadWeight
                             + new Vector3(40f, 0f, 0f) * lowered;
 
-            // Melee and throws pull the gun down and to the side for a moment.
+            // Melee pulls the gun down and to the side for a moment; a throw lowers it while the off hand is away.
             float melee = Mathf.Clamp01((Time.time - _meleeStart) / MeleeTime);
             float meleeWeight = melee < 1f ? Mathf.Sin(Mathf.PI * melee) : 0f;
-            float thrown = Mathf.Clamp01((Time.time - _throwStart) / ThrowTime);
-            float throwWeight = thrown < 1f ? Mathf.Sin(Mathf.PI * thrown) : 0f;
-            pos += new Vector3(0.06f, -0.12f, -0.04f) * meleeWeight + new Vector3(0.02f, -0.16f, -0.05f) * throwWeight;
-            euler += new Vector3(25f, 20f, -25f) * meleeWeight + new Vector3(30f, 0f, -10f) * throwWeight;
+            float sinceThrow = Time.time - _throwStart;
+            var hand = new FirstPersonArms.ThrowHand { Held = -1 };
+            if (ThrowMotion.Sample(_throwKind, sinceThrow, out hand.Position, out hand.Rotation, out hand.Weight))
+            {
+                hand.Held = sinceThrow < ThrowMotion.WindUp(_throwKind) ? (int)_throwKind : -1;
+                float pin = ThrowMotion.PinPull(_throwKind);
+                hand.PinOut = pin >= 0f && sinceThrow >= pin;
+            }
+            float throwWeight = hand.Weight * (1f - aimEased * 0.5f);
+            pos += new Vector3(0.06f, -0.12f, -0.04f) * meleeWeight + new Vector3(0.04f, -0.13f, -0.05f) * throwWeight;
+            euler += new Vector3(25f, 20f, -25f) * meleeWeight + new Vector3(24f, -6f, -14f) * throwWeight;
 
             bool slashing = melee < 1f;
             if (_knife.gameObject.activeSelf != (slashing && !Sword)) _knife.gameObject.SetActive(slashing && !Sword);
@@ -365,7 +380,7 @@ namespace ZombiesFPS.Weapons
 
             _model.localPosition = pos;
             _model.localRotation = Quaternion.Euler(euler);
-            _arms.Pose(_gun.IsReloading ? _gun.ReloadProgress : -1f, Mathf.Max(meleeWeight, throwWeight), _current == null || (_current.Scoped && aimEased > 0.95f));
+            _arms.Pose(_gun.IsReloading ? _gun.ReloadProgress : -1f, meleeWeight, _current == null || (_current.Scoped && aimEased > 0.95f && hand.Weight <= 0f), hand);
         }
     }
 }
