@@ -1,0 +1,253 @@
+[
+  {
+    "id": "a-slot-machine",
+    "archive": "a-slot-machine.zip",
+    "sha256": "0fa7e766d7a98da757b8a293bf93a639417dc26ac712d23abba1489547b32b45",
+    "sourceModels": [
+      "source\\model.glb"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "animated-oak-trees",
+    "archive": "animated-oak-trees.zip",
+    "sha256": "901467f58c6b946d36223592f0cabc96136de2c62912f4ef698ff0c24ffea741",
+    "sourceModels": [
+      "source\\AnimatedOak.glb"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "church-bench-2",
+    "archive": "church-bench-2.zip",
+    "sha256": "1adb311f6dff15d240c86c561248c709f4a90e0b5501232c9859cdb87cc88407",
+    "sourceModels": [
+      "source\\Bench_2.obj"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "desert-eagle-gun",
+    "archive": "desert-eagle-gun.zip",
+    "sha256": "381a34d91e708462c03f14d9648a7d75a945d36fba65f42bcb086ef83704385e",
+    "sourceModels": [
+      "source\\roof lights.blend"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "gambling-table",
+    "archive": "gambling-table.zip",
+    "sha256": "60d35a65afeb3476342fd581d7a478989cc4534480f2695695cad9df0375c753",
+    "sourceModels": [
+      "source\\hazard table -2.blend"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "geometrynodes-scifi-sphere",
+    "archive": "geometrynodes-scifi-sphere.zip",
+    "sha256": "844f47d43bdfa85ac75792a0a0f9093fc0bd8e250424b74ea2aa32b2889c51d6",
+    "sourceModels": [
+      "source\\geonodes sphere baked.blend"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "gothic-window",
+    "archive": "gothic-window.zip",
+    "sha256": "aa9384dd5fce3f55654633c49d26cffd6e7b1805dc7ae7c62a2f2dcbc11c26ea",
+    "sourceModels": [
+      "source\\GothicWindow.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "gun-m4a1",
+    "archive": "gun-m4a1.zip",
+    "sha256": "b1d5dbd5422f032945cb9ba76bfdd1c21359c023f83c752fdb5fb87f74ee524f",
+    "sourceModels": [
+      "source\\Gun_M41D.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "gun-rhino-smg",
+    "archive": "gun-rhino-smg.zip",
+    "sha256": "6cefca2014234759fd631d88079dd4113c921c6771b62403df9f4afe06a5abea",
+    "sourceModels": [
+      "source\\Gun - Rhino SMG.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "heavy-pulse-machine-gun",
+    "archive": "heavy-pulse-machine-gun.zip",
+    "sha256": "081d93e2467f0de36121e69188de4f5cd8cb4ce7347defd3790da18009410f9e",
+    "sourceModels": [
+      "source\\unpacked\\Heavy Pulse Machine Gun\\Heavy Pulse Machine Gun.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "hl2-beta-air-exchange-truck-remade",
+    "archive": "hl2-beta-air-exchange-truck-remade.zip",
+    "sha256": "04423d0ebacce44e47bb3008b58dd36eb777e481ca3ae784c5bec40926f20f25",
+    "sourceModels": [
+      "source\\airex.FBX"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "hospital-bed",
+    "archive": "hospital-bed.zip",
+    "sha256": "c326650971adaa1f60c52208df4caeb43c806bcc1511f39a91b917dbc02b8e92",
+    "sourceModels": [
+      "source\\bedwhole.fbx.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "low-poly-9mm-hand-gun",
+    "archive": "low-poly-9mm-hand-gun.zip",
+    "sha256": "4e988db79475331dc1f5b22b7a90e08e166ab3bcc3c72ae4839c0e6fac723833",
+    "sourceModels": [
+      "source\\9mm Hand gun.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "mp5-gun",
+    "archive": "mp5-gun.zip",
+    "sha256": "474da17b1ef10ca5c81ad5d5aa52c9e0ed5f872f583ad76fdbc9888fce869c53",
+    "sourceModels": [
+      "source\\MP5 rdy2.blend"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "prison-cell",
+    "archive": "prison-cell.zip",
+    "sha256": "6c1db4df9983c8f760255df68558f543c10b1c9e00f5e79ca8790cfa04224646",
+    "sourceModels": [
+      "source\\maya2sketchfab.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "sci-fi-capsule",
+    "archive": "sci-fi-capsule.zip",
+    "sha256": "1702ea81473685c92e4886b5b1e4561d210c2ea42957def714764f7a782f8df6",
+    "sourceModels": [
+      "source\\Capsula_Animation.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "stylized-old-mage-animated-character",
+    "archive": "stylized-old-mage-animated-character.zip",
+    "sha256": "1a65487417192c030b09ebb45c6b8f16aeeb05d10741469d6a777d360217f368",
+    "sourceModels": [
+      "source\\OldMageTest.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "submachine-gun",
+    "archive": "submachine-gun.zip",
+    "sha256": "2449426cbc26f0f45d36606e729f1dc7583cff7ba9d396eafa921d9724db26c6",
+    "sourceModels": [
+      "source\\Tec_9.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "tommy-gun",
+    "archive": "tommy-gun.zip",
+    "sha256": "56573e772891dd038f4d62fc56b916502d68a175516e7e893b49418909ababbd",
+    "sourceModels": [
+      "source\\Tommy Gun.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "wizard-spell",
+    "archive": "wizard-spell.zip",
+    "sha256": "91b66d82d64b71903c0ba93dee5d0151387cb2fe81e01b0729e7a11aa1d80f5b",
+    "sourceModels": [
+      "source\\magic_ring_-_yingyangblue.glb"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "zombie-dans",
+    "archive": "zombie-dans.zip",
+    "sha256": "c2ab52eb1daa37cfe8c7e6a82100719e4b3deb3d4e8b18bbb025beefd59671d7",
+    "sourceModels": [
+      "source\\Zombie dans.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "zombie-hazmat",
+    "archive": "zombie-hazmat.zip",
+    "sha256": "3e117bda9b921c76e4a273a8461f99ae6444eeb2b404611aeb83f26fe54e5417",
+    "sourceModels": [
+      "source\\ZombieCompleteAnimations.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "zombie-pickup-truck",
+    "archive": "zombie-pickup-truck.zip",
+    "sha256": "43b59a808cfdb091e9573bc7344c0b14b6df3fa91d395d211fc0fd2ea085a55c",
+    "sourceModels": [
+      "source\\Zomb.FBX.fbx"
+    ],
+    "textureLimit": 2048
+  },
+  {
+    "id": "blackjack-table",
+    "archive": null,
+    "generatedBy": "Ivan with Hunyuan3D-2 (local, D:\\GitHub\\LLM3D)",
+    "sourceModels": [
+      "textured_mesh.obj",
+      "material_0.png"
+    ],
+    "sha256": {
+      "textured_mesh.obj": "a9f00c73b472238f8568a20baeb6a63a5339ca54b437aea2e5d51f65e63b6e51",
+      "material_0.png": "19733e5c425a62b5d299d53a9673f310692c4fea089e318e6aad1d9c68003119"
+    },
+    "converter": "tools/casino/pack_blackjack_table.py",
+    "output": "Assets/_Project/Resources/CC0/Casino",
+    "textureLimit": 2048
+  },
+  {
+    "id": "perk-machines",
+    "archive": null,
+    "generatedBy": "Ivan, AI-generated (single textured mesh per file, 40k faces, like his Hunyuan3D-2 output)",
+    "sourceModels": [
+      "dc8e53a5-a4a4-49c1-90e7-f3eb7349f421.glb",
+      "6fd96b50-79b8-4106-867c-165c0219bad9.glb",
+      "280d5cf0-3783-4502-85ab-e89f5b97c2df.glb",
+      "24b84935-668f-4a16-87f2-6477acd43a1f.glb",
+      "5f78d32a-7e0d-4580-bdb2-89ba01cb2dcb.glb",
+      "d13d2cc8-62bf-4007-aa58-ec5e6735632b.glb",
+      "636a099f-1868-43b4-8b0a-2e08deb9d016.glb",
+      "ca3338ab-4622-4548-8b7c-2fad9b808768.glb"
+    ],
+    "sha256": {
+      "dc8e53a5-a4a4-49c1-90e7-f3eb7349f421.glb": "bcb7743be74940f26289f9d601c6ced1785fe5c6c746b4081570c5fa41e57ab4",
+      "6fd96b50-79b8-4106-867c-165c0219bad9.glb": "6684234f5533b496c5b26583695e92495e9fa4f16f4f87b21e43f7d6827cb656",
+      "280d5cf0-3783-4502-85ab-e89f5b97c2df.glb": "0e06c46f5f426fddf09dc282e51f2579cb83ae083784600f07b4666e63ccd07d",
+      "24b84935-668f-4a16-87f2-6477acd43a1f.glb": "a047d73037518b56edff977967f34db2d2f64a36b42f095203bab58724c59fb6",
+      "5f78d32a-7e0d-4580-bdb2-89ba01cb2dcb.glb": "06bb639b24ddee0d4901e5eddecd92590cc5737d283cf49411d35a65720465f4",
+      "d13d2cc8-62bf-4007-aa58-ec5e6735632b.glb": "70190c90394158e271d4bb2557f27ec529fc14529503c7beabfe4e501ad33d4b",
+      "636a099f-1868-43b4-8b0a-2e08deb9d016.glb": "c770e66c501dc79ede86a0d6df64ff87f6f7d7fdfeaa976d638cf4bd8549db4e",
+      "ca3338ab-4622-4548-8b7c-2fad9b808768.glb": "34e139ef97a9f79c29479810a9a4837f44d3b98e2f09b9e18a5898507ffa2222"
+    },
+    "converter": "tools/perks/pack_perk_machines.py",
+    "output": "Assets/_Project/Resources/CC0/Perks",
+    "textureLimit": 2048
+  }
+]

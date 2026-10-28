@@ -1,0 +1,21 @@
+{
+    "name": "ZombiesFPS.Runtime",
+    "rootNamespace": "ZombiesFPS",
+    "references": [
+        "Unity.InputSystem",
+        "Unity.AI.Navigation",
+        "Unity.Netcode.Runtime",
+        "Unity.Collections",
+        "Unity.Networking.Transport",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

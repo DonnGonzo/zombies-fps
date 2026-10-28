@@ -1,0 +1,91 @@
+newmtl BlackSteel
+Kd 0.1137 0.1294 0.1451
+Ks 0.880 0.880 0.880
+Ns 6.93
+d 1.0000
+illum 2
+
+newmtl BluedSteel
+Kd 0.1843 0.2157 0.2667
+Ks 0.810 0.810 0.810
+Ns 9.18
+d 1.0000
+illum 2
+
+newmtl Bronze
+Kd 0.5686 0.4039 0.2392
+Ks 0.780 0.780 0.780
+Ns 8.16
+d 1.0000
+illum 2
+
+newmtl BrushedMetal
+Kd 0.4549 0.4784 0.4980
+Ks 0.910 0.910 0.910
+Ns 10.41
+d 1.0000
+illum 2
+
+newmtl Copper
+Kd 0.6863 0.3608 0.2353
+Ks 0.910 0.910 0.910
+Ns 8.65
+d 1.0000
+illum 2
+
+newmtl EmissiveAmber
+Kd 0.9843 0.5882 0.2431
+Ks 0.350 0.350 0.350
+Ns 22.68
+d 1.0000
+illum 2
+
+newmtl EmissiveCyan
+Kd 0.2549 0.8000 0.9569
+Ks 0.250 0.250 0.250
+Ns 25.00
+d 1.0000
+illum 2
+
+newmtl EnergyGlass
+Kd 0.2314 0.4000 0.6039
+Ks 0.150 0.150 0.150
+Ns 59.17
+d 0.5882
+illum 2
+
+newmtl Gunmetal
+Kd 0.2196 0.2275 0.2471
+Ks 0.840 0.840 0.840
+Ns 5.67
+d 1.0000
+illum 2
+
+newmtl Optics
+Kd 0.0745 0.1412 0.1647
+Ks 0.050 0.050 0.050
+Ns 51.02
+d 1.0000
+illum 2
+
+newmtl Rubber
+Kd 0.0941 0.0980 0.1098
+Ks 0.020 0.020 0.020
+Ns 5.00
+d 1.0000
+illum 2
+
+newmtl SlatePolymer
+Kd 0.2745 0.3020 0.3216
+Ks 0.050 0.050 0.050
+Ns 5.00
+d 1.0000
+illum 2
+
+newmtl WornPaint
+Kd 0.2902 0.3569 0.3725
+Ks 0.390 0.390 0.390
+Ns 5.00
+d 1.0000
+illum 2
+

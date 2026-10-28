@@ -1,0 +1,3 @@
+# Stored in plain git, not LFS: this environment can't reach the LFS server, and the files are small.
+*.obj !filter !diff !merge binary
+*.glb !filter !diff !merge binary

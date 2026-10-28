@@ -1,0 +1,21 @@
+newmtl Bronze
+Kd 0.5686 0.4039 0.2392
+Ks 0.780 0.780 0.780
+Ns 8.16
+d 1.0000
+illum 2
+
+newmtl EmissiveCyan
+Kd 0.2549 0.8000 0.9569
+Ks 0.250 0.250 0.250
+Ns 25.00
+d 1.0000
+illum 2
+
+newmtl Gunmetal
+Kd 0.2196 0.2275 0.2471
+Ks 0.840 0.840 0.840
+Ns 5.67
+d 1.0000
+illum 2
+
