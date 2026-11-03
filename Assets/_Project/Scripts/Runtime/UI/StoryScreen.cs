@@ -6,10 +6,9 @@ using ZombiesFPS.Net;
 namespace ZombiesFPS.UI
 {
     /// <summary>
-    /// The story tab of the map screen, opened once the generator is running: the main story's chapters (the
-    /// power, then the four acts), the current objective and how far through the act the squad is, the last
-    /// radio calls this player heard, their own record, the current jobs, and Doctor Morrow's work once the
-    /// squad has found it. Everything here reads replicated state, so it's the same story for everyone, seen
+    /// The story tab of the map screen, opened once the generator is running: the current objective and how far
+    /// through it the squad is, the story's steps act by act, the last radio calls this player heard, their own
+    /// record, the current jobs, and Doctor Morrow's work once the squad has found the Lantern Core. Everything here reads replicated state, so it's the same story for everyone, seen
     /// from each player's own screen.
     /// </summary>
     public static class StoryScreen
@@ -21,47 +20,58 @@ namespace ZombiesFPS.UI
         {
             var rounds = RoundManager.Instance;
             int round = rounds != null ? rounds.DisplayRound : 1;
-            int act = StoryData.ActFor(round);
+            int step = StoryObjective.Step;
 
             float top = 96 * u, gap = 24 * u;
             float lw = Mathf.Min(660 * u, (w - 80 * u) * 0.6f), rw = Mathf.Min(460 * u, w - 80 * u - lw - gap);
             float x = (w - lw - rw - gap) / 2f, ph = h - top - 30 * u;
-            DrawMain(new Rect(x, top, lw, ph), u, round, act);
+            DrawMain(new Rect(x, top, lw, ph), u, step);
             DrawSide(new Rect(x + lw + gap, top, rw, ph), u, local, round);
         }
 
-        static void DrawMain(Rect r, float u, int round, int act)
+        static void DrawMain(Rect r, float u, int step)
         {
-            Ui.PanelBox(r, StoryData.RadioColor, u, 0.92f);
+            int act = StoryData.ActOf(step);
+            Color radio = StoryData.RadioSpeakerColor(step);
+            Ui.PanelBox(r, radio, u, 0.92f);
             float x = r.x + 26 * u, iw = r.width - 52 * u, y = r.y + 20 * u;
-            string actLine = act < StoryData.StoryActs ? $"MAIN STORY  ·  ACT {act + 1} OF {StoryData.StoryActs}" : "MAIN STORY  ·  COMPLETE";
-            Ui.Label(new Rect(x, y, iw, 22 * u), actLine, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
-            Ui.Label(new Rect(x, y + 22 * u, iw, 40 * u), StoryData.ActNames[act].ToUpperInvariant(), Ui.Header, StoryData.RadioColor, TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(x, y, iw, 22 * u), "MAIN STORY  ·  " + StoryObjective.Header, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(x, y + 22 * u, iw, 40 * u), StoryData.ActNames[act].ToUpperInvariant(), Ui.Header, radio, TextAnchor.MiddleLeft);
             y += 74 * u;
 
-            // What to do now, and how far through the act.
+            // What to do now, and how far through it.
             Ui.Label(new Rect(x, y, iw, 22 * u), "CURRENT OBJECTIVE", Ui.Tiny, Ui.Amber, TextAnchor.MiddleLeft);
             y += 24 * u;
-            y += Para(new Rect(x, y, iw, 0f), StoryData.ActObjectives[act], Ui.Body, Ui.Text) + 8 * u;
-            if (act < StoryData.StoryActs)
+            Ui.Label(new Rect(x, y, iw, 26 * u), StoryObjective.Title, Ui.Bold, Ui.Text, TextAnchor.MiddleLeft);
+            y += 28 * u;
+            y += Para(new Rect(x, y, iw, 0f), StoryObjective.Text, Ui.Body, Ui.Text) + 8 * u;
+            if (!StoryObjective.Complete)
             {
-                int start = StoryData.ActStartRound(act), end = StoryData.ActEndRound(act);
-                float progress = Mathf.Clamp01((round - start) / (float)(end - start + 1));
-                Ui.Bar(new Rect(x, y + 6 * u, iw * 0.6f, 6 * u), progress, StoryData.RadioColor);
-                Ui.Label(new Rect(x, y - 2 * u, iw, 22 * u), $"round {round}  ·  act ends after round {end}", Ui.Tiny, Ui.Muted, TextAnchor.MiddleRight);
+                Ui.Bar(new Rect(x, y + 6 * u, iw * 0.6f, 6 * u), StoryObjective.Fraction, radio);
+                Ui.Label(new Rect(x, y - 2 * u, iw, 22 * u), StoryObjective.ProgressText, Ui.Tiny, Ui.Muted, TextAnchor.MiddleRight);
                 y += 24 * u;
             }
             y += Para(new Rect(x, y, iw, 0f), StoryData.ActSummaries[act], Ui.Small, Ui.Muted) + 18 * u;
 
-            // The chapters: the generator first, then the acts.
-            Ui.Label(new Rect(x, y, iw, 22 * u), "CHAPTERS", Ui.Tiny, Ui.Amber, TextAnchor.MiddleLeft);
+            // The steps, act by act. Steps past the next one stay a mystery.
+            Ui.Label(new Rect(x, y, iw, 22 * u), "STEPS", Ui.Tiny, Ui.Amber, TextAnchor.MiddleLeft);
             y += 26 * u;
-            bool powered = MapState.Instance == null || MapState.Instance.IsPowered;
-            Chapter(ref y, x, iw, u, powered ? 2 : 1, StoryData.PrologueTitle, "the gate generator");
             for (int a = 0; a < StoryData.StoryActs; a++)
             {
-                int state = a < act ? 2 : a == act ? 1 : 0;
-                Chapter(ref y, x, iw, u, state, $"Act {a + 1}: {StoryData.ActNames[a]}", $"rounds {StoryData.ActStartRound(a)}-{StoryData.ActEndRound(a)}");
+                int first = StoryData.FirstStepOf(a);
+                int last = a + 1 < StoryData.StoryActs ? StoryData.FirstStepOf(a + 1) - 1 : StoryData.StepCount - 1;
+                if (a > act)
+                {
+                    Chapter(ref y, x, iw, u, 0, $"Act {a + 1}: {StoryData.ActNames[a]}", $"{last - first + 1} steps");
+                    continue;
+                }
+                Chapter(ref y, x, iw, u, a < act ? 2 : 1, $"Act {a + 1}: {StoryData.ActNames[a]}", "");
+                if (a < act) continue;
+                for (int s = first; s <= last; s++)
+                {
+                    int state = s < step ? 2 : s == step ? 1 : 0;
+                    Chapter(ref y, x + 22 * u, iw - 22 * u, u, state, s <= step + 1 ? StoryData.StepAt(s).title : "???", state == 1 ? "now" : "");
+                }
             }
             y += 14 * u;
 
@@ -114,7 +124,7 @@ namespace ZombiesFPS.UI
             var data = GameConfig.Missions;
             Ui.Label(new Rect(x, y, iw, 22 * u), "JOBS", Ui.Tiny, Ui.Sky, TextAnchor.MiddleLeft);
             if (board != null && data != null && board.SetRound.Value > 0)
-                Ui.Label(new Rect(x, y, iw, 22 * u), $"new set at round {data.NextRefreshRound(board.SetRound.Value)}", Ui.Tiny, Ui.Muted, TextAnchor.MiddleRight);
+                Ui.Label(new Rect(x, y, iw, 22 * u), $"done jobs refill next round  ·  new set at {data.NextRefreshRound(board.SetRound.Value)}", Ui.Tiny, Ui.Muted, TextAnchor.MiddleRight);
             y += 24 * u;
             bool any = false;
             if (board != null)
@@ -141,12 +151,12 @@ namespace ZombiesFPS.UI
 
             // The map's secret, once the squad has stumbled on it.
             var egg = EasterEgg.Instance;
-            bool found = egg != null && (egg.Active.Value || egg.StepsDone.Value > 0);
+            bool found = StoryObjective.EggDiscovered;
             Ui.Label(new Rect(x, y, iw, 22 * u), "DOCTOR MORROW'S WORK", Ui.Tiny, EasterEggData.ScientistColor, TextAnchor.MiddleLeft);
             y += 24 * u;
             if (!found)
             {
-                Para(new Rect(x, y, iw, 0f), "Undiscovered. The Lantern Core hums like something in it is listening.", Ui.Tiny, Ui.Muted);
+                Para(new Rect(x, y, iw, 0f), "Undiscovered. Somewhere deeper in the facility, something hums like it's listening.", Ui.Tiny, Ui.Muted);
                 return;
             }
             int doneSteps = egg.StepsDone.Value;

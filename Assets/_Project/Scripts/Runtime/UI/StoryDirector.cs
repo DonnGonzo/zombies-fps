@@ -7,10 +7,10 @@ using ZombiesFPS.Net;
 namespace ZombiesFPS.UI
 {
     /// <summary>
-    /// Tells the story on this machine: the Dispatcher's radio calls at story rounds, comments on missions,
-    /// bosses and blackouts, the Trader's lore at the spawn shop, and the facility's background hum. Everything
-    /// here follows replicated state (the round, the mission board), so every player hears the same story
-    /// without any extra network traffic.
+    /// Tells the story on this machine: the radio's calls as story steps start, move along and finish (see
+    /// StoryProgress), a few calls at set rounds, comments on missions, bosses and blackouts, the Trader's lore
+    /// at the spawn shop, and the facility's background hum. Everything here follows replicated state (the story
+    /// step, the round, the mission board), so every player hears the same story.
     /// </summary>
     public class StoryDirector : MonoBehaviour
     {
@@ -33,14 +33,16 @@ namespace ZombiesFPS.UI
         float _nextTrader;
         int _traderIndex;
 
+        /// <summary>The story step the squad is on (StoryData.StepCount once it's over).</summary>
+        public static int CurrentStep => StoryProgress.Instance != null ? StoryProgress.Instance.Step.Value : 0;
         /// <summary>The act the squad is in, for the pause menu.</summary>
-        public static int CurrentAct { get; private set; }
+        public static int CurrentAct => StoryData.ActOf(CurrentStep);
         /// <summary>The last story call heard, for the pause menu.</summary>
         public static string LastBeat { get; private set; }
         /// <summary>The last few lines this player heard (speaker, line, colour), newest last, for the story screen.</summary>
         public static readonly List<(string speaker, string text, Color color)> Heard = new List<(string, string, Color)>();
         const int HeardKept = 6;
-        /// <summary>Raised on this machine when round 50 is cleared and the story's finale plays.</summary>
+        /// <summary>Raised on this machine when the story's last step is done and its finale plays.</summary>
         public static event System.Action StoryCompleted;
 
         public void Init(NetPlayer player)
@@ -54,7 +56,6 @@ namespace ZombiesFPS.UI
             _ambience.loop = true;
             _ambience.volume = GameSettings.EffectsVolume * AmbienceVolume;
             _ambience.Play();
-            CurrentAct = 0;
             LastBeat = null;
             Heard.Clear();
             _traderIndex = Random.Range(0, 8);
@@ -62,6 +63,9 @@ namespace ZombiesFPS.UI
             MissionBoard.MissionFailed += OnMissionFailed;
             EasterEgg.LineSaid += OnScientistLine;
             MapState.PowerRestored += OnPowerRestored;
+            StoryProgress.StepChanged += OnStepChanged;
+            StoryProgress.ProgressChanged += OnStepProgress;
+            StoryProgress.SurvivorLost += OnStorySurvivorLost;
         }
 
         void OnDestroy()
@@ -70,6 +74,49 @@ namespace ZombiesFPS.UI
             MissionBoard.MissionFailed -= OnMissionFailed;
             EasterEgg.LineSaid -= OnScientistLine;
             MapState.PowerRestored -= OnPowerRestored;
+            StoryProgress.StepChanged -= OnStepChanged;
+            StoryProgress.ProgressChanged -= OnStepProgress;
+            StoryProgress.SurvivorLost -= OnStorySurvivorLost;
+        }
+
+        /// <summary>The story moved on: the finished step's closing call, then the new step's opening one.</summary>
+        void OnStepChanged(int previous, int current)
+        {
+            if (current <= previous) return; // A fresh game.
+            if (current == previous + 1) Say(StoryData.StepAt(previous)?.onDone, current);
+            if (StoryData.StoryOver(current))
+            {
+                // The finale is Vale's last call; then the Trader picks up her headset.
+                foreach (var line in StoryData.Finale) Radio(line, StoryData.StepCount - 1);
+                foreach (var line in StoryData.TraderTakesOver) Radio(line, current);
+                LastBeat = StoryData.Finale[StoryData.Finale.Length - 1];
+                StoryCompleted?.Invoke();
+                return;
+            }
+            Say(StoryData.StepAt(current)?.onStart, current);
+            Tips.Offer("radio", "That's the radio. Each story step opens the next as soon as it's done; the objective is on screen, top right, and in the story tab of the map.");
+        }
+
+        /// <summary>Calls along the way through a step, when its progress passes their count.</summary>
+        void OnStepProgress(int step, int previous, int current)
+        {
+            var def = StoryData.StepAt(step);
+            if (def == null || def.along == null || current <= previous) return;
+            foreach (var (at, line) in def.along)
+                if (at > previous && at <= current)
+                {
+                    Radio(line, step);
+                    LastBeat = line;
+                }
+        }
+
+        void OnStorySurvivorLost() => Radio(StoryData.SurvivorLost);
+
+        void Say(string[] lines, int step)
+        {
+            if (lines == null || lines.Length == 0) return;
+            foreach (var line in lines) Radio(line, step);
+            LastBeat = lines[lines.Length - 1];
         }
 
         void OnPowerRestored(ulong by)
@@ -78,13 +125,11 @@ namespace ZombiesFPS.UI
             LastBeat = StoryData.PowerOn[0];
         }
 
-        int Round => RoundManager.Instance != null ? RoundManager.Instance.DisplayRound : 1;
+        void Radio(string text) => Radio(text, CurrentStep);
 
-        void Radio(string text)
-        {
-            int round = Round;
-            _queue.Enqueue((StoryData.RadioSpeaker(round), text, StoryData.RadioSpeakerColor(round), 0.72f, null));
-        }
+        /// <summary>A radio line said by whoever has the radio at a story step.</summary>
+        void Radio(string text, int step) =>
+            _queue.Enqueue((StoryData.RadioSpeaker(step), text, StoryData.RadioSpeakerColor(step), 0.72f, null));
 
         static string Pick(string[] lines) => lines == null || lines.Length == 0 ? null : lines[Random.Range(0, lines.Length)];
 
@@ -101,7 +146,7 @@ namespace ZombiesFPS.UI
 
         void OnMissionCompleted(int id)
         {
-            if (Random.value < 0.6f) Radio(Pick(StoryData.MissionComplete[StoryData.ActFor(Round)]));
+            if (Random.value < 0.6f) Radio(Pick(StoryData.MissionComplete[CurrentAct]));
         }
 
         void OnMissionFailed(int id)
@@ -131,7 +176,7 @@ namespace ZombiesFPS.UI
                     _queue.Clear();
                     if (rounds.Won.Value)
                         foreach (var line in StoryData.Victory) Radio(line);
-                    else Radio(StoryData.GameOver[StoryData.ActFor(rounds.DisplayRound)]);
+                    else Radio(StoryData.GameOver[CurrentAct]);
                 }
                 return;
             }
@@ -139,24 +184,22 @@ namespace ZombiesFPS.UI
 
             var phase = rounds.Phase.Value;
             int round = rounds.Round.Value;
-            // Round 50 cleared: the story is over. The game carries on, with the Trader on the radio.
-            if (phase == GamePhase.Intermission && _lastPhase == GamePhase.RoundActive && round == StoryData.FinalRound)
-            {
-                foreach (var line in StoryData.Finale) Radio(line);
-                LastBeat = StoryData.Finale[StoryData.Finale.Length - 1];
-                CurrentAct = StoryData.ActFor(round + 1);
-                StoryCompleted?.Invoke();
-            }
             if (phase == GamePhase.RoundActive && (round != _lastRound || _lastPhase != GamePhase.RoundActive))
             {
                 if (round < _lastRound) _lastSetRound = 0; // A restart.
-                CurrentAct = StoryData.ActFor(round);
                 var beat = StoryData.BeatFor(round);
-                if (beat.HasValue)
+                // The Trader's round calls only once he has the radio.
+                if (beat.HasValue && beat.Value.round >= StoryData.TraderBeatsFrom && !StoryData.StoryOver(CurrentStep)) beat = null;
+                // The first round opens the story, as long as the squad hasn't already got going.
+                if (round == 1 && CurrentStep == 0)
+                {
+                    Say(StoryData.StepAt(0).onStart, 0);
+                    Tips.Offer("radio", "That's the Dispatcher on the radio. Each story step opens the next as soon as it's done; the objective is on screen, top right, and in the story tab of the map.");
+                }
+                else if (beat.HasValue)
                 {
                     foreach (var line in beat.Value.lines) Radio(line);
                     LastBeat = beat.Value.lines[beat.Value.lines.Length - 1];
-                    Tips.Offer("radio", "That's the Dispatcher on the radio. The story moves on at certain rounds; the pause menu keeps track of it.");
                 }
                 else if (GameConfig.Round.IsBossRound(round)) Radio(Pick(StoryData.BossRound));
                 else if (rounds.IsBlackout) Radio(Pick(StoryData.BlackoutRound));
@@ -179,7 +222,7 @@ namespace ZombiesFPS.UI
             if (open && !_shopWasOpen && Time.time >= _nextTrader)
             {
                 _nextTrader = Time.time + TraderCooldown;
-                _queue.Enqueue((StoryData.TraderName, StoryData.TraderLine(Round, _traderIndex++), StoryData.TraderColor, 0.6f, null));
+                _queue.Enqueue((StoryData.TraderName, StoryData.TraderLine(CurrentAct, _traderIndex++), StoryData.TraderColor, 0.6f, null));
             }
             _shopWasOpen = open;
         }

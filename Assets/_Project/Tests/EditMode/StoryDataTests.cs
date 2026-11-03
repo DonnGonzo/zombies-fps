@@ -7,22 +7,24 @@ namespace ZombiesFPS.Tests
     public class StoryDataTests
     {
         [Test]
-        public void Story_RunsFromRoundOne_AndFinishesByFifty()
+        public void Story_IsAChainOfSteps_InActOrder()
         {
-            Assert.AreEqual(50, StoryData.FinalRound);
-            Assert.AreEqual(0, StoryData.ActFor(1));
-            Assert.AreEqual(0, StoryData.ActFor(10));
-            Assert.AreEqual(1, StoryData.ActFor(11));
-            Assert.AreEqual(1, StoryData.ActFor(25));
-            Assert.AreEqual(2, StoryData.ActFor(26));
-            Assert.AreEqual(2, StoryData.ActFor(40));
-            Assert.AreEqual(3, StoryData.ActFor(41));
-            Assert.AreEqual(3, StoryData.ActFor(50));
+            Assert.GreaterOrEqual(StoryData.StepCount, 8);
+            Assert.AreEqual(StoryGoal.Power, StoryData.StepAt(0).goal, "the story opens with the generator");
+            Assert.AreEqual(0, StoryData.ActOf(0));
+            Assert.AreEqual(StoryData.StoryActs - 1, StoryData.ActOf(StoryData.StepCount - 1));
+            for (int s = 1; s < StoryData.StepCount; s++)
+            {
+                int gap = StoryData.ActOf(s) - StoryData.ActOf(s - 1);
+                Assert.That(gap == 0 || gap == 1, $"step {s} skips or goes back an act");
+            }
+            for (int act = 0; act < StoryData.StoryActs; act++)
+                Assert.Less(StoryData.FirstStepOf(act), StoryData.StepCount, $"act {act} has steps");
             // After the story: the aftermath, for as long as the squad lasts.
-            Assert.AreEqual(StoryData.StoryActs, StoryData.ActFor(51));
-            Assert.AreEqual(StoryData.StoryActs, StoryData.ActFor(500));
-            Assert.IsFalse(StoryData.StoryOver(50));
-            Assert.IsTrue(StoryData.StoryOver(51));
+            Assert.AreEqual(StoryData.StoryActs, StoryData.ActOf(StoryData.StepCount));
+            Assert.IsFalse(StoryData.StoryOver(StoryData.StepCount - 1));
+            Assert.IsTrue(StoryData.StoryOver(StoryData.StepCount));
+            Assert.IsNull(StoryData.StepAt(StoryData.StepCount));
             // One entry per act, plus the aftermath, everywhere lines are picked by act.
             int acts = StoryData.StoryActs + 1;
             Assert.AreEqual(acts, StoryData.ActNames.Length);
@@ -31,27 +33,39 @@ namespace ZombiesFPS.Tests
             Assert.AreEqual(acts, StoryData.MissionSet.Length);
             Assert.AreEqual(acts, StoryData.MissionComplete.Length);
             Assert.AreEqual(acts, StoryData.TraderLore.Length);
-            Assert.AreEqual(acts, StoryData.ActObjectives.Length);
-            // The story screen's act ranges agree with ActFor.
-            for (int round = 1; round <= 60; round++)
-            {
-                int act = StoryData.ActFor(round);
-                Assert.That(round >= StoryData.ActStartRound(act) && round <= StoryData.ActEndRound(act), $"round {round}");
-            }
             Assert.Greater(StoryData.Finale.Length, 0);
-            Assert.AreEqual(StoryData.TraderName, StoryData.RadioSpeaker(60), "the Trader has the radio after the story");
+            Assert.Greater(StoryData.TraderTakesOver.Length, 0);
         }
 
         [Test]
-        public void Beats_LandOnTheRequiredRounds_InOrder()
+        public void Steps_HaveATarget_APlace_AndAnObjective()
         {
-            // Every act has calls, the twist lands, and the final round has one.
-            foreach (int round in new[] { 1, 10, 25, StoryData.UnmaskRound, 40, StoryData.FinalRound, StoryData.FinalRound + 1 })
-                Assert.IsTrue(StoryData.BeatFor(round).HasValue, $"round {round}");
-            int storyBeats = 0;
-            foreach (var b in StoryData.Beats)
-                if (b.round <= StoryData.FinalRound) storyBeats++;
-            Assert.GreaterOrEqual(storyBeats, 20, "the story is told over the first 50 rounds");
+            foreach (var step in StoryData.Steps)
+            {
+                Assert.GreaterOrEqual(step.target, 1, step.title);
+                Assert.IsFalse(string.IsNullOrEmpty(step.title));
+                StringAssert.DoesNotContain("{0}", step.Describe(), step.title);
+                if (step.goal == StoryGoal.Hold || step.goal == StoryGoal.Reach)
+                    Assert.That(step.zone >= 0 && step.zone < ZombiesFPS.World.ZoneMap.ZoneCount, step.title);
+                if (step.along != null)
+                    foreach (var (at, line) in step.along)
+                    {
+                        Assert.That(at > 0 && at < step.target, $"{step.title}: a call along the way at {at}");
+                        Assert.IsFalse(string.IsNullOrEmpty(line));
+                    }
+            }
+            // The twist: the radio voice is the Dispatcher until the Defector's logs, then Vale, then the Trader.
+            int unmask = StoryData.UnmaskStep;
+            Assert.That(unmask > 0 && unmask < StoryData.StepCount);
+            Assert.AreEqual(StoryData.DispatcherName, StoryData.RadioSpeaker(unmask));
+            Assert.AreEqual(StoryData.DirectorName, StoryData.RadioSpeaker(unmask + 1));
+            Assert.AreEqual(StoryData.TraderName, StoryData.RadioSpeaker(StoryData.StepCount), "the Trader has the radio after the story");
+            Assert.That(StoryData.MorrowRevealStep > 0 && StoryData.MorrowRevealStep < StoryData.StepCount);
+        }
+
+        [Test]
+        public void RoundBeats_AreInOrder_AndTheTradersWaitForTheStory()
+        {
             for (int i = 1; i < StoryData.Beats.Length; i++)
                 Assert.Greater(StoryData.Beats[i].round, StoryData.Beats[i - 1].round);
             foreach (var b in StoryData.Beats)
@@ -59,6 +73,8 @@ namespace ZombiesFPS.Tests
                 Assert.Greater(b.lines.Length, 0);
                 Assert.LessOrEqual(b.round, RoundData.MaxRound);
             }
+            Assert.IsTrue(StoryData.BeatFor(StoryData.TraderBeatsFrom + 10).HasValue);
+            Assert.IsFalse(StoryData.BeatFor(1).HasValue, "round 1 opens the first story step instead");
         }
 
         [Test]
@@ -101,8 +117,8 @@ namespace ZombiesFPS.Tests
             Assert.AreEqual(0, StoryData.MilestoneIndex(50));
             Assert.AreEqual(3, StoryData.MilestoneIndex(500));
             Assert.AreEqual(-1, StoryData.MilestoneIndex(51));
-            Assert.IsFalse(StoryData.Unmasked(StoryData.UnmaskRound - 1));
-            Assert.IsTrue(StoryData.Unmasked(StoryData.UnmaskRound));
+            Assert.IsFalse(StoryData.Unmasked(StoryData.UnmaskStep));
+            Assert.IsTrue(StoryData.Unmasked(StoryData.UnmaskStep + 1));
         }
     }
 }

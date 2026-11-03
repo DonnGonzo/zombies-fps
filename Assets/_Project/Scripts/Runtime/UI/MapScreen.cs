@@ -173,6 +173,7 @@ namespace ZombiesFPS.UI
         /// <summary>Where the current placed missions are: a pulsing "!" on their generator, beacon or survivor.</summary>
         static void DrawMissionMarkers(ZoneMap map, float u)
         {
+            DrawStoryMarker(u);
             var board = MissionBoard.Instance;
             if (board == null) return;
             for (int i = 0; i < MissionData.SlotCount; i++)
@@ -194,6 +195,21 @@ namespace ZombiesFPS.UI
                 Ui.Label(r, "!", Ui.Bold, new Color(0.05f, 0.05f, 0.06f), TextAnchor.MiddleCenter);
                 Ui.Label(new Rect(c.x - 100 * u, c.y + 12 * u, 200 * u, 18 * u), def.title, Ui.Tiny, Ui.Sky, TextAnchor.UpperCenter);
             }
+        }
+
+        /// <summary>Where the story's current step happens: a pulsing star in the radio's colour (the panel has its own marker).</summary>
+        static void DrawStoryMarker(float u)
+        {
+            var story = StoryProgress.Instance;
+            if (story == null || story.Current == null || story.Current.goal == StoryGoal.Power || !story.TryGetWhere(out var where, out _)) return;
+            Color color = StoryData.RadioSpeakerColor(story.Step.Value);
+            Vector2 c = ToMap(where);
+            float pulse = 26 * u + 6 * u * Mathf.Sin(Time.unscaledTime * 4f);
+            Ui.RoundRect(new Rect(c.x - pulse / 2f, c.y - pulse / 2f, pulse, pulse), Ui.A(color, 0.35f), small: true);
+            var r = new Rect(c.x - 11 * u, c.y - 11 * u, 22 * u, 22 * u);
+            Ui.RoundRect(r, color, small: true);
+            Ui.Label(r, "★", Ui.Bold, new Color(0.05f, 0.05f, 0.06f), TextAnchor.MiddleCenter);
+            Ui.Label(new Rect(c.x - 110 * u, c.y + 13 * u, 220 * u, 18 * u), story.Current.title, Ui.Tiny, color, TextAnchor.UpperCenter);
         }
 
         static void DrawSidePanel(Rect r, float u, NetPlayer local)

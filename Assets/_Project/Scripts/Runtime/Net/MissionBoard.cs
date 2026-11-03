@@ -11,8 +11,11 @@ namespace ZombiesFPS.Net
 {
     /// <summary>
     /// Host-owned optional missions. Three slots, each packed into one network variable (see MissionData.Pack).
-    /// A fresh set comes on round 1 and every 10 rounds after; unfinished missions just go away. The squad
-    /// shares progress, and a finished mission pays every player.
+    /// A fresh set comes on round 1 and every 10 rounds after; a finished or failed mission is replaced at the
+    /// next round's start. The squad shares progress, and a finished mission pays every player.
+    ///
+    /// The board also owns the props the story uses (generators, beacons and the survivor), so it draws the
+    /// story's current step on them too (see StoryProgress).
     /// </summary>
     public class MissionBoard : NetworkBehaviour
     {
@@ -34,6 +37,7 @@ namespace ZombiesFPS.Net
         public NetworkVariable<float> SurvivorHealth = new NetworkVariable<float>(0f);
 
         Survivor _survivor;
+        bool _dealtAfterStory;
         readonly Collider[] _near = new Collider[48];
         readonly HashSet<NetZombie> _nearZombies = new HashSet<NetZombie>();
 
@@ -79,12 +83,24 @@ namespace ZombiesFPS.Net
             }
         }
 
-        /// <summary>Where the survivor is, if a protect mission is running.</summary>
+        /// <summary>The zone the survivor is in: a protect mission's, else the story's (the Defector), else -1.</summary>
+        public int SurvivorZone
+        {
+            get
+            {
+                int slot = ActiveSurvivorSlot;
+                if (slot >= 0) return MissionData.ZoneOf(SlotValue(slot));
+                var story = StoryProgress.Instance;
+                return story != null ? story.SurvivorZone : -1;
+            }
+        }
+
+        /// <summary>Where the survivor is, if a protect mission (or the story's) is running.</summary>
         public bool TryGetSurvivor(out Vector3 position)
         {
-            int slot = ActiveSurvivorSlot;
-            position = slot >= 0 ? ZoneMap.SurvivorSpot(MissionData.ZoneOf(SlotValue(slot))) : Vector3.zero;
-            return slot >= 0;
+            int zone = SurvivorZone;
+            position = zone >= 0 ? ZoneMap.SurvivorSpot(zone) : Vector3.zero;
+            return zone >= 0;
         }
 
         public override void OnNetworkDespawn()
@@ -100,16 +116,19 @@ namespace ZombiesFPS.Net
 
         void OnSlotChanged(ulong previous, ulong current) => ApplyGenerators();
 
-        /// <summary>Lights the generator of each hold mission: amber while it's being worked on, green once done.</summary>
+        /// <summary>Every machine: redraws the props after the story moved on.</summary>
+        public void RefreshProps() => ApplyGenerators();
+
+        /// <summary>
+        /// Lights the generator of each hold mission: amber while it's being worked on, green once done. Generators
+        /// the story has already started stay green; the story's current one is amber.
+        /// </summary>
         void ApplyGenerators()
         {
             if (_survivor != null)
             {
                 if (TryGetSurvivor(out var at))
-                {
-                    int zone = MissionData.ZoneOf(SlotValue(ActiveSurvivorSlot));
-                    _survivor.Show(at, ZoneMap.ZoneCenter(zone) - at);
-                }
+                    _survivor.Show(at, ZoneMap.ZoneCenter(SurvivorZone) - at);
                 else _survivor.Hide();
             }
             var map = GameConfig.Map;
@@ -117,6 +136,13 @@ namespace ZombiesFPS.Net
             foreach (var g in map.Generators) g.SetState(GeneratorState.Idle, 0f);
             if (map.Beacons != null)
                 foreach (var g in map.Beacons) g.SetState(GeneratorState.Idle, 0f);
+            var story = StoryProgress.Instance;
+            int storyStep = story != null ? story.Step.Value : 0;
+            for (int s = 0; s < storyStep && s < StoryData.StepCount; s++)
+            {
+                var done = StoryData.StepAt(s);
+                if (done.goal == StoryGoal.Hold && done.zone >= 0 && done.zone < map.Generators.Length) map.Generators[done.zone].SetState(GeneratorState.Done, 1f);
+            }
             for (int i = 0; i < MissionData.SlotCount; i++)
             {
                 var props = PropsFor(DefIn(i), map);
@@ -127,6 +153,7 @@ namespace ZombiesFPS.Net
                 float progress = MissionData.TargetOf(slot) > 0 ? (float)MissionData.ProgressOf(slot) / MissionData.TargetOf(slot) : 0f;
                 props[at].SetState(MissionData.DoneOf(slot) ? GeneratorState.Done : GeneratorState.Active, progress);
             }
+            if (story != null && story.TryGetProp(map, out var prop)) prop.SetState(GeneratorState.Active, story.Fraction);
         }
 
         /// <summary>The props a hold mission uses: zone generators, or high-spot beacons. Null for other missions.</summary>
@@ -168,11 +195,12 @@ namespace ZombiesFPS.Net
             }
         }
 
-        /// <summary>Host: the survivor counts down while alive; zombies in reach hurt them.</summary>
+        /// <summary>Host: the survivor counts down while alive; zombies in reach hurt them. The story's survivor too.</summary>
         void ProtectTick()
         {
             int i = ActiveSurvivorSlot;
-            if (i < 0 || !Lure.HasValue) return;
+            var story = StoryProgress.Instance;
+            if (!Lure.HasValue || (i < 0 && (story == null || story.SurvivorZone < 0))) return;
             Vector3 at = Lure.Value;
             _nearZombies.Clear();
             int n = Physics.OverlapSphereNonAlloc(at + Vector3.up, Data.survivorReach, _near, ~0, QueryTriggerInteraction.Ignore);
@@ -189,11 +217,21 @@ namespace ZombiesFPS.Net
                 SurvivorHealth.Value = Mathf.Max(0f, SurvivorHealth.Value - dps * Time.deltaTime);
                 if (SurvivorHealth.Value <= 0f)
                 {
+                    if (i < 0)
+                    {
+                        story.ServerSurvivorDied();
+                        return;
+                    }
                     ulong slot = SlotValue(i);
                     SlotVariable(i).Value = MissionData.Pack(MissionData.IdOf(slot), false, MissionData.ZoneOf(slot), MissionData.ProgressOf(slot), MissionData.TargetOf(slot), failed: true);
                     MissionFailedRpc(MissionData.IdOf(slot));
                     return;
                 }
+            }
+            if (i < 0)
+            {
+                story.ServerSurvivorTick(Time.deltaTime);
+                return;
             }
             _holdTime[i] += Time.deltaTime;
             while (_holdTime[i] >= 1f)
@@ -203,12 +241,19 @@ namespace ZombiesFPS.Net
             }
         }
 
+        /// <summary>Host: a fresh survivor (full health) for the story's protect step.</summary>
+        public void ServerHealSurvivor()
+        {
+            if (IsServer && Data != null) SurvivorHealth.Value = Data.survivorHealth;
+        }
+
         [Rpc(SendTo.ClientsAndHost)]
         void MissionFailedRpc(int id) => MissionFailed?.Invoke(id);
 
-        static bool AnyoneNear(Vector3 position, bool level = false)
+        /// <summary>Host: a living player within holding distance of a prop (level: on the same floor as it).</summary>
+        public static bool AnyoneNear(Vector3 position, bool level = false)
         {
-            float r = Data.generatorRadius;
+            float r = Data != null ? Data.generatorRadius : 3f;
             foreach (var p in NetPlayer.All)
             {
                 if (!p.IsAlive) continue;
@@ -220,70 +265,118 @@ namespace ZombiesFPS.Net
             return false;
         }
 
-        /// <summary>Host only. Hands out a new set when a round starts in a new mission window (also after skipping rounds).</summary>
+        /// <summary>
+        /// Host only. A round started: a new set in a new mission window (also after skipping rounds, and once
+        /// after the story ends, for the Trader's bounties); otherwise every finished or failed job is replaced.
+        /// </summary>
         public void ServerOnRoundStarted(int round)
         {
             if (!IsServer || Data == null) return;
             int setRound = Data.SetStartRound(round);
-            if (setRound != SetRound.Value) DealSet(round, setRound);
+            bool storyOver = StoryProgress.Instance != null && StoryProgress.Instance.Complete;
+            if (setRound != SetRound.Value || (storyOver && !_dealtAfterStory))
+            {
+                _dealtAfterStory = storyOver;
+                DealSet(round, setRound);
+                return;
+            }
+            bool any = false;
+            for (int i = 0; i < MissionData.SlotCount; i++)
+            {
+                ulong slot = SlotValue(i);
+                if (MissionData.IdOf(slot) == MissionData.NoMission || MissionData.DoneOf(slot) || MissionData.FailedOf(slot))
+                {
+                    if (!any) BuildPool(round);
+                    any = true;
+                    DealSlot(i, round);
+                }
+            }
         }
 
-        void DealSet(int round, int setRound)
+        /// <summary>Every mission that can be handed out now, shuffled; after the story, the Trader's bounties first.</summary>
+        void BuildPool(int round)
         {
-            SetRound.Value = setRound;
             _pool.Clear();
-            // The first set has no generator job: starting the facility's generator is the opening story step instead.
-            bool firstSet = setRound <= Data.SetStartRound(1);
+            var story = StoryProgress.Instance;
+            bool storyOver = story != null && story.Complete;
+            // No generator jobs until the power's on: starting the facility's generator is the opening story step.
+            bool powered = MapState.Instance == null || MapState.Instance.IsPowered;
             for (int id = 0; id < Data.Count; id++)
-                if (Data.IsEligible(id, round, k => GameConfig.ZombieType(k).firstRound) && !(firstSet && Data.At(id).objective == MissionObjective.HoldGenerator))
+                if (Data.IsEligible(id, round, k => GameConfig.ZombieType(k).firstRound, storyOver) && (powered || Data.At(id).objective != MissionObjective.HoldGenerator))
                     _pool.Add(id);
             for (int i = _pool.Count - 1; i > 0; i--)
             {
                 int j = UnityEngine.Random.Range(0, i + 1);
                 (_pool[i], _pool[j]) = (_pool[j], _pool[i]);
             }
-            // After the story, two of the three jobs are the Trader's bounties.
-            if (round >= MissionData.PostStoryRound)
+            if (!storyOver) return;
+            int moved = 0;
+            for (int i = 0; i < _pool.Count; i++)
             {
-                int moved = 0;
-                for (int i = 0; i < _pool.Count && moved < 2; i++)
-                {
-                    if (Data.At(_pool[i]).minRound < MissionData.PostStoryRound) continue;
-                    int id = _pool[i];
-                    _pool.RemoveAt(i);
-                    _pool.Insert(moved++, id);
-                }
-            }
-
-            int openMask = MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0;
-            int next = 0;
-            bool haveSurvivor = false;
-            for (int i = 0; i < MissionData.SlotCount; i++)
-            {
-                _holdTime[i] = 0f;
-                // Only one survivor at a time: skip a second protect mission in the same set.
-                while (next < _pool.Count && haveSurvivor && Data.At(_pool[next]).objective == MissionObjective.ProtectSurvivor) next++;
-                if (next >= _pool.Count)
-                {
-                    SlotVariable(i).Value = MissionData.Empty;
-                    continue;
-                }
-                int id = _pool[next++];
-                var def = Data.At(id);
-                haveSurvivor |= def.objective == MissionObjective.ProtectSurvivor;
-                int zone = def.objective == MissionObjective.HoldHighGround ? PickHighSpot(openMask)
-                    : MissionData.IsPlaced(def.objective) ? PickGeneratorZone(openMask) : 0;
-                if (def.objective == MissionObjective.ProtectSurvivor) SurvivorHealth.Value = Data.survivorHealth;
-                SlotVariable(i).Value = MissionData.Pack(id, false, zone, 0, def.TargetFor(round));
+                if (!Data.At(_pool[i]).afterStory) continue;
+                int id = _pool[i];
+                _pool.RemoveAt(i);
+                _pool.Insert(moved++, id);
             }
         }
 
-        /// <summary>A generator in a zone that's already open, so every hold mission can be done without buying a door.</summary>
+        void DealSet(int round, int setRound)
+        {
+            SetRound.Value = setRound;
+            for (int i = 0; i < MissionData.SlotCount; i++) SlotVariable(i).Value = MissionData.Empty;
+            BuildPool(round);
+            for (int i = 0; i < MissionData.SlotCount; i++) DealSlot(i, round);
+        }
+
+        /// <summary>Puts the first mission from the pool that isn't already on the board (or just finished there) in a slot.</summary>
+        void DealSlot(int i, int round)
+        {
+            _holdTime[i] = 0f;
+            int previous = MissionData.IdOf(SlotValue(i));
+            var story = StoryProgress.Instance;
+            // Only one survivor at a time, and the story's Defector comes first.
+            bool survivorBusy = (ActiveSurvivorSlot >= 0 && ActiveSurvivorSlot != i) || (story != null && story.WantsSurvivor);
+            int pick = -1;
+            for (int n = 0; n < _pool.Count && pick < 0; n++)
+            {
+                int id = _pool[n];
+                if (id == previous || OnBoard(id, i)) continue;
+                if (survivorBusy && Data.At(id).objective == MissionObjective.ProtectSurvivor) continue;
+                pick = id;
+            }
+            if (pick < 0)
+            {
+                SlotVariable(i).Value = MissionData.Empty;
+                return;
+            }
+            _pool.Remove(pick);
+            var def = Data.At(pick);
+            int openMask = MapState.Instance != null ? MapState.Instance.OpenDoorMask : 0;
+            int zone = def.objective == MissionObjective.HoldHighGround ? PickHighSpot(openMask)
+                : MissionData.IsPlaced(def.objective) ? PickGeneratorZone(openMask) : 0;
+            if (def.objective == MissionObjective.ProtectSurvivor) SurvivorHealth.Value = Data.survivorHealth;
+            SlotVariable(i).Value = MissionData.Pack(pick, false, zone, 0, def.TargetFor(round));
+        }
+
+        /// <summary>Whether a mission is in another slot already.</summary>
+        bool OnBoard(int id, int except)
+        {
+            for (int s = 0; s < MissionData.SlotCount; s++)
+                if (s != except && MissionData.IdOf(SlotValue(s)) == id) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// A generator in a zone that's already open, so every hold mission can be done without buying a door. Not
+        /// the one the story wants held, and not the survivor's room.
+        /// </summary>
         int PickGeneratorZone(int openMask)
         {
             _zones.Clear();
+            var story = StoryProgress.Instance;
+            int storyZone = story != null ? story.HoldZone : -1;
             for (int z = 0; z < ZoneMap.ZoneCount; z++)
-                if (ZoneMap.IsZoneOpen(z, openMask)) _zones.Add(z);
+                if (ZoneMap.IsZoneOpen(z, openMask) && z != storyZone) _zones.Add(z);
             return _zones.Count > 0 ? _zones[UnityEngine.Random.Range(0, _zones.Count)] : ZoneMap.StartZone;
         }
 
@@ -377,6 +470,7 @@ namespace ZombiesFPS.Net
             SetRound.Value = 0;
             SurvivorHealth.Value = 0f;
             Lure = null;
+            _dealtAfterStory = false;
         }
     }
 }
