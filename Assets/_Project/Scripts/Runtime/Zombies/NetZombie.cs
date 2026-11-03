@@ -27,7 +27,16 @@ namespace ZombiesFPS.Zombies
     /// </summary>
     public class NetZombie : NetworkBehaviour, IDamageable
     {
+        // Re-pathing: often up close, where the player's every step matters, less often far off (cheaper, and a
+        // fresh path every 0.2 s made far zombies hitch). Each zombie's timer is staggered so they don't all re-path at once.
         const float RepathInterval = 0.2f;
+        const float FarRepathInterval = 0.75f;
+        // Turning: a zombie slows down to swing round instead of sliding sideways or moonwalking along its path.
+        const float TurnSlowFrom = 35f, TurnSlowTo = 130f;
+        // Up close, each zombie heads for its own spot round the player so a crowd surrounds them instead of queueing.
+        const float SurroundFrom = 5f;
+        // Attacking zombies hold their ground in the crowd; the ones still walking go round them.
+        const int AttackPriority = 20;
         const float DeathFallTime = 0.45f;
         const float CorpseTime = 2.2f;
         const float SinkTime = 1.0f;
@@ -220,6 +229,10 @@ namespace ZombiesFPS.Zombies
         bool _onLink, _linkClimb;
         Vector3 _linkStart, _linkEnd;
         float _linkTime, _linkDuration;
+        /// <summary>Where a climb, leap or scramble has the body face; it swings round to it rather than snapping.</summary>
+        Quaternion _moveFace;
+        float _surroundAngle;
+        int _basePriority = 50;
         bool _scrambling;
         Vector3 _scrambleStart, _scrambleEnd;
         float _scrambleTime, _scrambleDuration, _scrambleClimbSpeed = ClimbSpeed;
@@ -313,13 +326,16 @@ namespace ZombiesFPS.Zombies
                 _agent.height = 1.8f * _data.bodyScale.y;
                 _agent.radius = Mathf.Min(0.32f * Mathf.Max(_data.bodyScale.x, _data.bodyScale.z), 0.6f);
                 _agent.stoppingDistance = Mathf.Min(1.1f, _data.attackRange * 0.65f);
-                _agent.avoidancePriority = _data.IsBoss ? 10 : 50;
+                // A spread of priorities, so two zombies meeting in a doorway don't both give way (or both refuse).
+                _basePriority = _data.IsBoss ? 10 : UnityEngine.Random.Range(35, 66);
+                _agent.avoidancePriority = _basePriority;
+                _surroundAngle = UnityEngine.Random.Range(0f, 360f);
                 _agent.enabled = true;
                 _agent.speed = _moveSpeed;
                 _agent.Warp(transform.position);
 
                 _target = null;
-                _repathTimer = 0f;
+                _repathTimer = UnityEngine.Random.Range(0f, RepathInterval);
                 _attackTimer = 0f;
                 _attackLanded = false;
                 _staggerUntil = 0f;
@@ -1037,6 +1053,7 @@ namespace ZombiesFPS.Zombies
                 _agent.isStopped = true;
                 _spitAt = -1f;
                 if (_mode.Value == ZombieMode.Attacking && !_attackLanded) _mode.Value = ZombieMode.Chasing;
+                if (_mode.Value == ZombieMode.Chasing) _agent.avoidancePriority = _basePriority;
                 return;
             }
 
@@ -1086,6 +1103,7 @@ namespace ZombiesFPS.Zombies
             if (_mode.Value == ZombieMode.Chasing)
             {
                 _agent.isStopped = false;
+                if (_agent.avoidancePriority != _basePriority) _agent.avoidancePriority = _basePriority;
                 _repathTimer -= dt;
                 if (_repathTimer <= 0f)
                 {
@@ -1093,17 +1111,23 @@ namespace ZombiesFPS.Zombies
                     // A survivor being protected draws zombies that are closer to them than to any player.
                     Vector3 dest = _target.transform.position;
                     var lure = Lure;
-                    if (lure.HasValue && (lure.Value - transform.position).sqrMagnitude < distance * distance) dest = lure.Value;
-                    _agent.SetDestination(dest);
-                    _repathTimer = RepathInterval;
+                    bool toLure = lure.HasValue && (lure.Value - transform.position).sqrMagnitude < distance * distance;
+                    if (toLure) dest = lure.Value;
+                    else if (distance < SurroundFrom && distance > attackRange + 0.6f && level) dest += SurroundOffset();
+                    // Same goal as last time (the player standing still): keep the path, don't throw it away and re-plan.
+                    if (!_agent.hasPath || (dest - _agent.destination).sqrMagnitude > 0.3f * 0.3f) _agent.SetDestination(dest);
+                    float far = Mathf.InverseLerp(8f, 40f, distance);
+                    _repathTimer = Mathf.Lerp(RepathInterval, FarRepathInterval, far) * UnityEngine.Random.Range(0.85f, 1.15f);
                 }
                 SteerFacing(dt, toTarget, distance);
+                _agent.speed = speed * TurnSpeedScale();
                 if (distance <= attackRange && level)
                 {
                     _mode.Value = ZombieMode.Attacking;
                     _attackTimer = 0f;
                     _attackLanded = false;
                     _agent.isStopped = true;
+                    _agent.avoidancePriority = Mathf.Min(_basePriority, AttackPriority);
                     SwingRpc();
                 }
             }
@@ -1126,7 +1150,11 @@ namespace ZombiesFPS.Zombies
                         if (_data.slowTime > 0f) _target.ServerSlow(_data.slowOnHit, _data.slowTime);
                     }
                 }
-                if (_attackTimer >= _data.attackWindup + _data.attackRecovery) _mode.Value = ZombieMode.Chasing;
+                if (_attackTimer >= _data.attackWindup + _data.attackRecovery)
+                {
+                    _mode.Value = ZombieMode.Chasing;
+                    _agent.avoidancePriority = _basePriority;
+                }
             }
         }
 
@@ -1149,11 +1177,13 @@ namespace ZombiesFPS.Zombies
                 _linkClimb = Mathf.Abs(rise) > ClimbRise;
                 _linkDuration = _linkClimb ? Mathf.Abs(rise) / ClimbSpeed + flat.magnitude / speed : Mathf.Max(0.4f, flat.magnitude / speed + 0.2f);
                 _linkTime = 0f;
-                if (flat.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
+                _moveFace = flat.sqrMagnitude > 0.01f ? Quaternion.LookRotation(flat.normalized, Vector3.up) : transform.rotation;
                 if (_mode.Value == ZombieMode.Attacking) _mode.Value = ZombieMode.Chasing;
+                _agent.avoidancePriority = _basePriority;
             }
 
             _linkTime += dt;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, _moveFace, 720f * dt);
             float t = Mathf.Clamp01(_linkTime / _linkDuration);
             Vector3 p;
             if (_linkClimb)
@@ -1256,7 +1286,7 @@ namespace ZombiesFPS.Zombies
             _agent.updatePosition = false;
             Vector3 face = land - start;
             face.y = 0f;
-            if (face.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(face.normalized, Vector3.up);
+            _moveFace = face.sqrMagnitude > 0.01f ? Quaternion.LookRotation(face.normalized, Vector3.up) : transform.rotation;
             return true;
         }
 
@@ -1304,7 +1334,7 @@ namespace ZombiesFPS.Zombies
                 _scrambleDuration = across / Mathf.Max(1.5f, _moveSpeed) + (start.y - hit.position.y) / 6f + 0.1f;
                 _agent.isStopped = true;
                 _agent.updatePosition = false;
-                transform.rotation = Quaternion.LookRotation(toward, Vector3.up);
+                _moveFace = Quaternion.LookRotation(toward, Vector3.up);
                 return true;
             }
             _aboveSince = Time.time;
@@ -1315,6 +1345,7 @@ namespace ZombiesFPS.Zombies
         void UpdateScramble(float dt)
         {
             _scrambleTime += dt;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, _moveFace, 720f * dt);
             float t = Mathf.Clamp01(_scrambleTime / _scrambleDuration);
             float rise = _scrambleEnd.y - _scrambleStart.y;
             if (rise < 0f)
@@ -1863,15 +1894,47 @@ namespace ZombiesFPS.Zombies
             Vector3 v = _agent.velocity;
             v.y = 0f;
             float speed = v.magnitude;
-            Vector3 dir = speed > 0.25f ? v / speed : distance > 0.01f ? toTarget / distance : Vector3.zero;
+            // Face where the path wants to go next (the agent's real velocity lags behind it round corners).
+            Vector3 want0 = _agent.desiredVelocity;
+            want0.y = 0f;
+            Vector3 dir = want0.sqrMagnitude > 0.04f ? want0.normalized : speed > 0.25f ? v / speed : distance > 0.01f ? toTarget / distance : Vector3.zero;
             if (distance < 2.5f && distance > 0.01f) dir = Vector3.Slerp(dir.sqrMagnitude > 0f ? dir : toTarget / distance, toTarget / distance, 0.7f);
             if (dir.sqrMagnitude < 0.01f) return;
-            float rate = Mathf.Lerp(150f, _data.kind == ZombieKind.Runner ? 420f : 300f, Mathf.Clamp01(speed / 3f));
+            // Turn rate follows how fast it means to go, not how fast it's going: slowing down for a turn
+            // (TurnSpeedScale) mustn't also slow the turn itself, or a zombie turning round would grind to a halt.
+            float pace = Mathf.Max(speed, _moveSpeed * 0.6f);
+            float rate = Mathf.Lerp(200f, _data.kind == ZombieKind.Runner || _data.kind == ZombieKind.Stalker ? 460f : 320f, Mathf.Clamp01(pace / 3f));
             var want = Quaternion.LookRotation(dir, Vector3.up);
             // Ease into the turn: fast while far off the heading, slowing as it lines up.
             float angle = Quaternion.Angle(transform.rotation, want);
             float step = Mathf.Min(rate * dt, angle * (1f - Mathf.Exp(-6f * dt)) + 20f * dt);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, want, step);
+        }
+
+        /// <summary>
+        /// Host: how much of its speed a chasing zombie keeps while the way its path goes is off to the side of or
+        /// behind where it's facing. Full speed when lined up, down to a shuffle while turning round.
+        /// </summary>
+        float TurnSpeedScale()
+        {
+            Vector3 want = _agent.desiredVelocity;
+            want.y = 0f;
+            if (want.sqrMagnitude < 0.04f) return 1f;
+            float angle = Vector3.Angle(transform.forward, want);
+            float slow = Mathf.InverseLerp(TurnSlowFrom, TurnSlowTo, angle);
+            float floor = _data.kind == ZombieKind.Runner || _data.kind == ZombieKind.Stalker ? 0.45f : 0.3f;
+            return Mathf.Lerp(1f, floor, slow * slow * (3f - 2f * slow));
+        }
+
+        /// <summary>
+        /// Host: this zombie's own spot beside the player, on a circle at about arm's length, so a crowd closes in from
+        /// several sides. Each zombie's angle drifts slowly so the ring doesn't look arranged.
+        /// </summary>
+        Vector3 SurroundOffset()
+        {
+            float r = Mathf.Min(0.75f, _data.attackRange * 0.4f);
+            float a = (_surroundAngle + Time.time * 7f) * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * r;
         }
 
         /// <summary>Tracks the nearest living player (rescanned a few times a second) for the head and arms.</summary>

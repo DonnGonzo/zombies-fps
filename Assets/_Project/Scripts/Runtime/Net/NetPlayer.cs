@@ -681,6 +681,8 @@ namespace ZombiesFPS.Net
             _remoteGun.sharedMaterial = Greybox.Lit(color);
         }
 
+        float _eyeY = -1f;
+
         void OwnerTick()
         {
             if (_pivot == null) return;
@@ -689,7 +691,10 @@ namespace ZombiesFPS.Net
             float slide = alive ? _motor.SlideAmount : 0f;
             float targetHeight = alive ? EyeHeight - SlideEyeDrop * slide : State.Value == LifeState.Downed ? 0.55f : 0.3f;
             var p = _pivot.localPosition;
-            p.y = Mathf.Lerp(p.y, targetHeight, 1f - Mathf.Exp((slide > 0.001f ? -18f : -8f) * Time.deltaTime));
+            if (_eyeY < 0f) _eyeY = p.y;
+            _eyeY = Mathf.Lerp(_eyeY, targetHeight, 1f - Mathf.Exp((slide > 0.001f ? -18f : -8f) * Time.deltaTime));
+            // Stair steps and landings ease the eyes rather than jolting them (see PlayerMotor.CameraOffset).
+            p.y = _eyeY + (alive ? _motor.CameraOffset : 0f);
             _pivot.localPosition = p;
             _look.Roll = -SlideRoll * slide;
             bool sliding = alive && _motor.IsSliding;
