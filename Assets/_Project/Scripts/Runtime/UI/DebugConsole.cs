@@ -45,6 +45,7 @@ namespace ZombiesFPS.UI
             "power          start the generator (skip the start-up code)",
             "code           show the start-up code",
             "parts          find every build part",
+            "story          show the story step; story next finishes it; story N jumps to step N (1-12)",
             "egg            finish the easter egg step being played (or the next one)",
             "egg serve      finish the last step the Serve way (Ashgrave) instead of Fight",
             "relics         pick up every easter egg relic (step 2)",
@@ -261,6 +262,27 @@ namespace ZombiesFPS.UI
                 case "parts":
                     if (BuildManager.Instance != null) BuildManager.Instance.DebugCollectAll();
                     Log("Every part found. Build them at a build station.");
+                    break;
+                case "story":
+                    var story = StoryProgress.Instance;
+                    if (story == null) break;
+                    if (arg.StartsWith("next", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (story.Complete)
+                        {
+                            Log("The story is already over.");
+                            break;
+                        }
+                        string done = story.Current.title;
+                        story.DebugCompleteStep();
+                        Log($"Story step done: {done}.");
+                    }
+                    else if (int.TryParse(arg, out int stepTo) && stepTo >= 1 && stepTo <= StoryData.StepCount + 1)
+                    {
+                        story.DebugGoTo(stepTo - 1);
+                        Log(stepTo > StoryData.StepCount ? "Story jumped to the end." : $"Story jumped to step {stepTo}: {StoryData.StepAt(stepTo - 1).title}.");
+                    }
+                    else Log(story.Complete ? "The story is over." : $"Step {story.Step.Value + 1} of {StoryData.StepCount}: {story.Current.title} ({story.Progress.Value}/{story.Current.target}).");
                     break;
                 case "egg":
                     var egg = EasterEgg.Instance;

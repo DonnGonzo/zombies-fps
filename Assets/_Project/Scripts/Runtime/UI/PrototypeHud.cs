@@ -77,6 +77,8 @@ namespace ZombiesFPS.UI
             EasterEgg.Moment += OnEggMoment;
             MapState.NoteRead += OnNoteRead;
             MapState.PowerRestored += OnPowerRestored;
+            StoryProgress.StepChanged += OnStoryStep;
+            StoryProgress.SurvivorLost += OnStorySurvivorLost;
             // The pause menu has its own Resume button, so a click there mustn't drop straight back into the game.
             PlayerLook.ClickToResume = false;
             gameObject.AddComponent<StoryDirector>().Init(player);
@@ -98,6 +100,8 @@ namespace ZombiesFPS.UI
             EasterEgg.Moment -= OnEggMoment;
             MapState.NoteRead -= OnNoteRead;
             MapState.PowerRestored -= OnPowerRestored;
+            StoryProgress.StepChanged -= OnStoryStep;
+            StoryProgress.SurvivorLost -= OnStorySurvivorLost;
             PlayerLook.ClickToResume = true;
             SettingsMenu.Close();
             DebugConsole.Close();
@@ -187,7 +191,7 @@ namespace ZombiesFPS.UI
         void OnPowerRestored(ulong by)
         {
             string who = by == ulong.MaxValue ? null : NameOf(by);
-            ShowBanner("POWER RESTORED", (who != null ? who + " started the generator. " : "") + $"The doors can be bought now. Press {K(GameAction.Map)} for your story missions.", Ui.Good);
+            ShowBanner("POWER RESTORED", (who != null ? who + " started the generator. " : "") + $"The doors can be bought now. Your next objective is top right; {K(GameAction.Map)} has the whole story.", Ui.Good);
             if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.8f);
         }
 
@@ -222,7 +226,23 @@ namespace ZombiesFPS.UI
         }
 
         void OnStoryCompleted() =>
-            ShowBanner("STORY COMPLETE", "The Lantern is dead. Keep going: the Trader's bounties are on the board, and round 500 is the record.", Ui.Amber);
+            ShowBanner("STORY COMPLETE", "The Lantern is dead. Keep going: the Trader's bounties come on the board next round, and round 500 is the record.", Ui.Amber);
+
+        /// <summary>A story step done: what's next. (The generator has its own banner, and so does the story's end.)</summary>
+        void OnStoryStep(int previous, int current)
+        {
+            var done = StoryData.StepAt(previous);
+            var next = StoryData.StepAt(current);
+            if (current <= previous || next == null || done == null || done.goal == StoryGoal.Power) return;
+            ShowBanner($"{done.title.ToUpperInvariant()}  ·  DONE", $"Next: {next.title}. {next.Describe()}", StoryData.RadioSpeakerColor(current));
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.RoundEnd, 0.9f);
+        }
+
+        void OnStorySurvivorLost()
+        {
+            ShowBanner("THE DEFECTOR IS DOWN", "She'll try again next round. Keep the zombies off her.", Ui.Bad);
+            if (_audio != null) _audio.PlayOneShot(ProceduralAudio.DryFire, 1f);
+        }
 
         void OnEggStarted(int step)
         {
@@ -491,11 +511,11 @@ namespace ZombiesFPS.UI
             if (motor != null && motor.IsMantling) Tips.Offer("mantle", $"Jump at anything your head can reach and keep pushing {K(GameAction.MoveForward)} to climb up onto it. Zombies climb after you.");
             if (Ladder.Near(_player.transform.position) != null) Tips.Offer("ladder", $"Walk into a ladder facing it to climb, {K(GameAction.MoveBack)} to go down, {K(GameAction.Jump)} to let go. Zombies can climb too.");
             if (!Powered) Tips.Offer("power", "The doors have no power: their lamps are red. Three notes in the Gate Yard hold the generator's start-up code. Read them, then enter the code at the generator panel.");
-            else Tips.Offer("story", $"Power's on. Press {K(GameAction.Map)} for your story missions; {MapScreen.TabName} switches between the story and the map.");
+            else Tips.Offer("story", $"Power's on. Your objective is top right: finish it and the next one opens straight away. {K(GameAction.Map)} has the whole story; {MapScreen.TabName} switches between the story and the map.");
             if (rounds.Round.Value >= 3) Tips.Offer("map", $"Press {K(GameAction.Map)} for the map: every zone, where your squad is, the high spots and the build stations.");
             if (_player.HasPowerUpOffer) Tips.Offer("powerup", $"Power-up! Press {PickNames} to pick a card. Power-ups stack and stay for the whole game, even if you go down.");
             if (MissionBoard.Instance != null && MissionBoard.Instance.SetRound.Value > 0 && rounds.Round.Value >= 2)
-                Tips.Offer("mission", "Missions (top right) pay the whole squad. A new set of three arrives every 10 rounds.");
+                Tips.Offer("mission", "Missions (top right, under your objective) pay the whole squad. A finished one is replaced at the start of the next round, and the whole set changes every 10 rounds.");
             if (rounds.Round.Value >= 2 && rounds.Phase.Value == GamePhase.RoundActive)
                 Tips.Offer("grenade", $"{K(GameAction.Grenade)} throws a grenade, {K(GameAction.ThrowingKnife)} a throwing knife, {K(GameAction.Concussion)} a concussion bang that stuns. {K(GameAction.Melee)} is melee. They top up every round.");
             if (_gun.Magazine == 0 && _gun.Reserve > 0) Tips.Offer("reload", $"Press {K(GameAction.Reload)} to reload. {K(GameAction.SwitchWeapon)}{(GameInput.UsingGamepad ? "" : " or the mouse wheel")} switches guns.");
@@ -579,7 +599,7 @@ namespace ZombiesFPS.UI
             DrawTopLeft(u, rounds);
             DrawBottomLeft(h, u);
             DrawAmmo(w, h, u);
-            DrawMissions(w, u);
+            DrawMissions(w, u, DrawObjective(w, u));
             DrawPowerUpOffer(w, h, u);
             DrawTip(w, h, u);
             DrawSubtitles(w, h, u);
@@ -635,13 +655,13 @@ namespace ZombiesFPS.UI
             var style = Ui.Small;
             bool wrap = style.wordWrap;
             style.wordWrap = true;
-            string summary = StoryData.ActSummaries[act];
+            string summary = StoryData.ActSummaries[act] + (StoryObjective.Complete ? "" : $"\n\nNow: {StoryObjective.Title}. {StoryObjective.Text}");
             string last = StoryDirector.LastBeat;
             float sh = style.CalcHeight(new GUIContent(summary), cw - 48 * u);
             float lh = string.IsNullOrEmpty(last) ? 0f : Ui.Tiny.CalcHeight(new GUIContent($"\"{last}\""), cw - 48 * u) + 40 * u;
             // The easter egg shows up here once the squad has found it.
             var egg = EasterEgg.Instance;
-            bool eggFound = egg != null && (egg.Active.Value || egg.StepsDone.Value > 0);
+            bool eggFound = StoryObjective.EggDiscovered;
             string carrying = eggFound ? egg.Carrying : null;
             string eggHint = eggFound && !egg.Finished && !egg.Active.Value ? EasterEggData.At(egg.StepsDone.Value).hint : null;
             float hh = 0f;
@@ -655,8 +675,7 @@ namespace ZombiesFPS.UI
             float eh = eggFound ? 54 * u + hh + (carrying != null ? 22 * u : 0f) : 0f;
             var r = new Rect(pause.xMax + 24 * u, pause.y, cw, 90 * u + sh + lh + eh);
             Ui.PanelBox(r, StoryData.RadioColor, u);
-            string actLine = act < StoryData.StoryActs ? $"ACT {act + 1} OF {StoryData.StoryActs}  ·  THE STORY ENDS AT ROUND {StoryData.FinalRound}" : "STORY COMPLETE";
-            Ui.Label(new Rect(r.x + 24 * u, r.y + 20 * u, cw, 26 * u), actLine, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(r.x + 24 * u, r.y + 20 * u, cw, 26 * u), StoryObjective.Header, Ui.Tiny, Ui.Muted, TextAnchor.MiddleLeft);
             Ui.Label(new Rect(r.x + 24 * u, r.y + 44 * u, cw, 34 * u), StoryData.ActNames[act].ToUpperInvariant(), Ui.Bold, StoryData.RadioColor, TextAnchor.MiddleLeft);
             Ui.Label(new Rect(r.x + 24 * u, r.y + 82 * u, cw - 48 * u, sh), summary, style, Ui.Text, TextAnchor.UpperLeft);
             style.wordWrap = wrap;
@@ -856,10 +875,8 @@ namespace ZombiesFPS.UI
             var power = MapState.Instance;
             if (power != null && !power.IsPowered)
             {
-                string line = power.NotesFound < ZoneMap.CodeDigits
-                    ? $"NO POWER  ·  FIND THE START-UP CODE IN THE GATE YARD  ·  {power.KnownCode}"
-                    : $"NO POWER  ·  ENTER {power.KnownCode} AT THE GENERATOR PANEL";
-                Ui.Label(new Rect(0, y, w, 26 * u), line, Ui.Small, Door.NoPowerColor, TextAnchor.UpperCenter);
+                // The objective box has the details; this just says why the doors won't open.
+                Ui.Label(new Rect(0, y, w, 26 * u), "NO POWER  ·  THE DOORS ARE DEAD", Ui.Small, Door.NoPowerColor, TextAnchor.UpperCenter);
                 y += 26 * u;
             }
             var egg = EasterEgg.Instance;
@@ -971,12 +988,47 @@ namespace ZombiesFPS.UI
             return "";
         }
 
-        void DrawMissions(float w, float u)
+        /// <summary>The story's current objective, top right above the missions. Returns where the missions start.</summary>
+        float DrawObjective(float w, float u)
+        {
+            float pw = 520 * u, x = w - pw - 30 * u, y = 24 * u, iw = pw - 36 * u;
+            if (StoryObjective.Story == null) return y;
+            bool complete = StoryObjective.Complete;
+            Color c = StoryData.RadioSpeakerColor(StoryObjective.Step);
+            string text = StoryObjective.Text, side = StoryObjective.SideText;
+            var tiny = Ui.Tiny;
+            bool wrap = tiny.wordWrap;
+            tiny.wordWrap = true;
+            float th = tiny.CalcHeight(new GUIContent(text), iw);
+            float ph = 70 * u + th + (complete ? 0f : 18 * u) + (side != null ? 24 * u : 0f);
+            var panel = new Rect(x, y, pw, ph);
+            Ui.PanelBox(panel, c, u, 0.85f);
+            Ui.Label(new Rect(x + 18 * u, y + 10 * u, iw, 22 * u), "OBJECTIVE", Ui.Tiny, c, TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(x, y + 10 * u, pw - 18 * u, 22 * u), StoryObjective.Header, Ui.Tiny, Ui.Muted, TextAnchor.MiddleRight);
+            Ui.Label(new Rect(x + 18 * u, y + 32 * u, iw, 26 * u), StoryObjective.Title, Ui.Bold, Ui.Text, TextAnchor.MiddleLeft);
+            Ui.Label(new Rect(x + 18 * u, y + 60 * u, iw, th), text, tiny, Ui.Muted, TextAnchor.UpperLeft);
+            tiny.wordWrap = wrap;
+            float by = y + 64 * u + th;
+            if (!complete)
+            {
+                Ui.Bar(new Rect(x + 18 * u, by + 6 * u, iw * 0.5f, 5 * u), StoryObjective.Fraction, c);
+                var story = StoryObjective.Story;
+                var data = GameConfig.Missions;
+                if (story.SurvivorZone >= 0 && data != null && data.survivorHealth > 0f && MissionBoard.Instance != null)
+                    Ui.Bar(new Rect(x + 18 * u + iw * 0.55f, by + 6 * u, iw * 0.2f, 5 * u), MissionBoard.Instance.SurvivorHealth.Value / data.survivorHealth, Ui.Good);
+                Ui.Label(new Rect(x, by - 2 * u, pw - 18 * u, 20 * u), StoryObjective.ProgressText, Ui.Tiny, Ui.Amber, TextAnchor.MiddleRight);
+                by += 18 * u;
+            }
+            if (side != null) Ui.Label(new Rect(x + 18 * u, by + 2 * u, iw, 22 * u), side, Ui.Tiny, EasterEggData.ScientistColor, TextAnchor.MiddleLeft);
+            return panel.yMax + 12 * u;
+        }
+
+        void DrawMissions(float w, float u, float top)
         {
             var board = MissionBoard.Instance;
             var data = GameConfig.Missions;
             if (board == null || data == null || board.SetRound.Value <= 0) return;
-            float pw = 520 * u, x = w - pw - 30 * u, y = 24 * u;
+            float pw = 520 * u, x = w - pw - 30 * u, y = top;
             int count = 0;
             for (int i = 0; i < MissionData.SlotCount; i++) if (board.DefIn(i) != null) count++;
             if (count == 0) return;

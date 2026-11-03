@@ -25,7 +25,14 @@ namespace ZombiesFPS.Editor
             }
             void Radio(string text, int act) => Add(act < 4 ? "Vale" : "Trader", text);
             foreach (var beat in StoryData.Beats)
-                foreach (var line in beat.lines) Radio(line, StoryData.ActFor(beat.round));
+                foreach (var line in beat.lines) Radio(line, beat.round >= StoryData.TraderBeatsFrom ? StoryData.StoryActs : 0);
+            foreach (var step in StoryData.Steps)
+            {
+                foreach (var line in step.onStart ?? new string[0]) Add("Vale", line);
+                foreach (var line in step.onDone ?? new string[0]) Add("Vale", line);
+                if (step.along != null) foreach (var (_, line) in step.along) Add("Vale", line);
+            }
+            foreach (var line in StoryData.TraderTakesOver) Add("Trader", line);
             foreach (var line in StoryData.PowerOn) Add("Vale", line);
             foreach (var line in StoryData.Finale) Add("Vale", line);
             foreach (var line in StoryData.Victory) Add("Trader", line);
