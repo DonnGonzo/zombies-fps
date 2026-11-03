@@ -16,8 +16,18 @@ namespace ZombiesFPS.Player
         public float sprintSpeed = 7.2f;
         public float aimSpeed = 2.8f;
         public float groundAcceleration = 14f;
+        /// <summary>Braking when the keys are let go or reversed: a little sharper than speeding up, so stops feel planted.</summary>
+        public float groundDeceleration = 20f;
         public float airAcceleration = 2.5f;
+        /// <summary>Speed bled per second in the air with no keys held (almost none: a jump keeps its run-up).</summary>
+        public float airDrag = 0.35f;
         public float jumpHeight = 1.1f;
+        /// <summary>A jump still works this long after running off an edge.</summary>
+        public float coyoteTime = 0.12f;
+        /// <summary>A jump pressed this long before landing goes off on touchdown.</summary>
+        public float jumpBuffer = 0.15f;
+        /// <summary>Walking off a step or down a slope keeps the feet on the ground if the floor is within this.</summary>
+        public float groundSnap = 0.45f;
         public float gravity = -22f;
         public float downedSpeed = 1.1f;
         public float climbSpeed = 3.5f;
@@ -86,6 +96,17 @@ namespace ZombiesFPS.Player
         public bool IsSliding => _sliding;
         /// <summary>0 standing to 1 fully down in a slide, eased, for the camera dip and the gun's tilt.</summary>
         public float SlideAmount { get; private set; }
+        /// <summary>
+        /// Metres to add to the eyes' height this frame: eases out the jolt of a stair step (up or down) and dips
+        /// on a hard landing. Visual only.
+        /// </summary>
+        public float CameraOffset => _stepOffset + _landDip;
+        /// <summary>Fires on touching down after a real fall, with the downward speed (m/s) at impact.</summary>
+        public event System.Action<float> Landed;
+
+        float _lastGroundedTime = -10f, _jumpQueuedAt = -10f;
+        bool _wasGrounded, _jumped;
+        float _stepOffset, _landDip, _landDipVel;
 
         Ladder _ladder;
         float _noGrabUntil;
@@ -134,6 +155,9 @@ namespace ZombiesFPS.Player
             _ladder = null;
             _mantling = false;
             _haveSafe = false;
+            _stepOffset = _landDip = _landDipVel = 0f;
+            _wasGrounded = false;
+            _fallTime = _fallSpeed = 0f;
             if (_sliding) EndSlide();
         }
 
@@ -156,7 +180,13 @@ namespace ZombiesFPS.Player
         void Update()
         {
             GuardFallOut();
-            float dt = Time.deltaTime;
+            BeginFrame();
+            Tick(Time.deltaTime);
+            EndFrame(Time.deltaTime);
+        }
+
+        void Tick(float dt)
+        {
             Vector2 input = InputLocked ? Vector2.zero : GameInput.Move;
             bool aiming = !InputLocked && GameInput.AimHeld;
             bool firing = !InputLocked && GameInput.FireHeld;
@@ -205,21 +235,127 @@ namespace ZombiesFPS.Player
             float targetSpeed = Downed ? downedSpeed : (IsSprinting ? sprintSpeed : aiming ? aimSpeed : walkSpeed) * SpeedMultiplier;
             if (IsSlowed) targetSpeed *= _slowScale;
 
+            bool grounded = _controller.isGrounded;
             Vector3 wish = (transform.right * input.x + transform.forward * input.y) * targetSpeed;
             Vector3 planar = new Vector3(_velocity.x, 0f, _velocity.z);
-            float accel = _controller.isGrounded ? groundAcceleration : airAcceleration;
-            planar = Vector3.Lerp(planar, wish, 1f - Mathf.Exp(-accel * dt));
+            if (grounded)
+            {
+                // Speeding up toward where the keys point, braking harder when they're let go or turned against the run.
+                bool braking = wish.sqrMagnitude < 0.01f || Vector3.Dot(wish, planar) < 0f || planar.sqrMagnitude > wish.sqrMagnitude + 0.01f;
+                planar = Vector3.Lerp(planar, wish, 1f - Mathf.Exp(-(braking ? groundDeceleration : groundAcceleration) * dt));
+            }
+            else if (wish.sqrMagnitude > 0.01f)
+            {
+                // Air steering: turns the run-up toward the keys without throwing away speed a slide-jump built up.
+                float keep = Mathf.Max(planar.magnitude, targetSpeed);
+                if (Vector3.Dot(planar, wish) < 0f) keep = targetSpeed;
+                planar = Vector3.Lerp(planar, wish.normalized * Mathf.Min(keep, sprintSpeed * SpeedMultiplier * 1.8f), 1f - Mathf.Exp(-airAcceleration * dt));
+            }
+            else planar *= Mathf.Exp(-airDrag * dt); // Let go mid-jump: carry on along the arc.
 
             float vertical = _velocity.y;
-            if (_controller.isGrounded && vertical < 0f) vertical = -2f;
-            if (_controller.isGrounded && !InputLocked && !Downed && GameInput.JumpPressed)
+            if (grounded && vertical < 0f) vertical = -2f;
+            bool canJump = grounded || Time.time - _lastGroundedTime <= coyoteTime;
+            if (canJump && !_jumped && !InputLocked && !Downed && JumpQueued)
+            {
+                ConsumeJump();
                 vertical = Mathf.Sqrt(2f * jumpHeight * -gravity);
+                _jumped = true;
+                _lastGroundedTime = -10f;
+            }
             vertical += gravity * dt;
 
             _velocity = new Vector3(planar.x, vertical, planar.z);
+            float yBefore = transform.position.y;
             var flags = _controller.Move(_velocity * dt);
             if ((flags & CollisionFlags.Above) != 0 && _velocity.y > 0f) _velocity.y = 0f;
+            SnapToGround();
+            SmoothSteps(transform.position.y - yBefore, planar.magnitude * dt);
             Footsteps(planar.magnitude * dt);
+        }
+
+        /// <summary>A jump was pressed within the last <see cref="jumpBuffer"/> seconds and hasn't been used.</summary>
+        bool JumpQueued => Time.time - _jumpQueuedAt <= jumpBuffer;
+
+        void ConsumeJump() => _jumpQueuedAt = -10f;
+
+        /// <summary>
+        /// Start of every frame: remembers a jump press (so one pressed just before landing still goes off) and when
+        /// the feet were last on the ground (so one pressed just after running off an edge does too).
+        /// </summary>
+        void BeginFrame()
+        {
+            if (!InputLocked && GameInput.JumpPressed) _jumpQueuedAt = Time.time;
+            if (_controller.isGrounded && _velocity.y <= 0f)
+            {
+                _lastGroundedTime = Time.time;
+                _jumped = false;
+            }
+        }
+
+        /// <summary>
+        /// End of every frame: notices a landing (camera dip, a heavier footfall) and eases the camera's step and
+        /// landing offsets back to nothing.
+        /// </summary>
+        void EndFrame(float dt)
+        {
+            bool grounded = _controller.isGrounded;
+            if (grounded && !_wasGrounded && _fallTime > 0.2f && _fallSpeed > 3.5f)
+            {
+                float impact = _fallSpeed;
+                float kick = Mathf.Min(impact * 0.18f, 2.2f) * (GameSettings.ReduceShake ? 0.4f : 1f);
+                _landDipVel -= kick;
+                LandSound(impact);
+                Landed?.Invoke(impact);
+            }
+            _fallTime = grounded ? 0f : _fallTime + dt;
+            _fallSpeed = grounded ? 0f : Mathf.Max(_fallSpeed, -_velocity.y);
+            _wasGrounded = grounded;
+
+            _stepOffset *= Mathf.Exp(-14f * dt);
+            // A soft spring: drops on the landing, comes back up with a hint of overshoot.
+            _landDipVel += (-170f * _landDip - 20f * _landDipVel) * dt;
+            _landDip = Mathf.Clamp(_landDip + _landDipVel * dt, -0.25f, 0.08f);
+        }
+
+        float _fallTime, _fallSpeed;
+
+        /// <summary>
+        /// Walking off a stair tread or over the crest of a slope: if the floor is just below, put the feet back on
+        /// it instead of drifting down through the air (which skipped footsteps, loosened control and widened the
+        /// gun's spread on every flight of stairs).
+        /// </summary>
+        void SnapToGround()
+        {
+            if (_controller.isGrounded || !_wasGrounded || _jumped || _velocity.y > 0f) return;
+            float r = _controller.radius * 0.9f;
+            Vector3 origin = transform.position + Vector3.up * (r + 0.05f);
+            if (!Physics.SphereCast(origin, r, Vector3.down, out var hit, groundSnap + 0.05f, ~0, QueryTriggerInteraction.Ignore)) return;
+            if (hit.normal.y < Mathf.Cos(_controller.slopeLimit * Mathf.Deg2Rad)) return;
+            if (hit.collider.GetComponentInParent<NetworkObject>() != null) return; // Not onto a zombie's head.
+            _controller.Move(Vector3.down * (hit.distance + 0.02f));
+            if (_controller.isGrounded) _velocity.y = -2f;
+        }
+
+        /// <summary>
+        /// A stair step lifts (or drops) the body in one frame; let the eyes catch up over a few frames instead, so
+        /// stairs read as a smooth climb. Slopes rise gradually and are left alone.
+        /// </summary>
+        void SmoothSteps(float dy, float planarMoved)
+        {
+            if (!_wasGrounded || !_controller.isGrounded) return;
+            if (Mathf.Abs(dy) < 0.05f + planarMoved * 0.6f) return;
+            _stepOffset = Mathf.Clamp(_stepOffset - dy, -0.5f, 0.5f);
+        }
+
+        void LandSound(float impact)
+        {
+            var clip = ProceduralAudio.Footstep(Underfoot());
+            if (clip == null) return;
+            EnsureStepAudio();
+            _steps.pitch = Random.Range(0.8f, 0.9f);
+            _steps.PlayOneShot(clip, Mathf.Clamp(0.3f + impact * 0.04f, 0.35f, 0.75f));
+            _stepDistance = 0f;
         }
 
         /// <summary>Drops low and shoots forward along the way the player was running, a little faster than the sprint.</summary>
@@ -265,9 +401,12 @@ namespace ZombiesFPS.Player
 
             float vertical = _velocity.y;
             if (grounded && vertical < 0f) vertical = -2f;
-            if (grounded && canStand && !InputLocked && !Downed && GameInput.JumpPressed)
+            if (grounded && canStand && !InputLocked && !Downed && JumpQueued)
             {
                 // Out of the slide into a jump, keeping its speed.
+                ConsumeJump();
+                _jumped = true;
+                _lastGroundedTime = -10f;
                 EndSlide();
                 _velocity = _slideDir * Mathf.Max(_slideSpeed, walkSpeed) + Vector3.up * Mathf.Sqrt(2f * jumpHeight * -gravity);
                 _controller.Move(_velocity * dt);
@@ -347,14 +486,17 @@ namespace ZombiesFPS.Player
             _stepDistance = 0f;
             var clip = ProceduralAudio.Footstep(Underfoot());
             if (clip == null) return;
-            if (_steps == null)
-            {
-                _steps = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
-                _steps.playOnAwake = false;
-                _steps.spatialBlend = 0f;
-            }
+            EnsureStepAudio();
             _steps.pitch = Random.Range(0.9f, 1.1f);
             _steps.PlayOneShot(clip, IsSprinting ? 0.5f : 0.35f);
+        }
+
+        void EnsureStepAudio()
+        {
+            if (_steps != null) return;
+            _steps = GameSettings.Effect(gameObject.AddComponent<AudioSource>());
+            _steps.playOnAwake = false;
+            _steps.spatialBlend = 0f;
         }
 
         /// <summary>What the player stands on, guessed from the name of the floor's object.</summary>
@@ -498,8 +640,10 @@ namespace ZombiesFPS.Player
                 LetGo(Vector3.zero, 0.3f);
                 return;
             }
-            if (!InputLocked && GameInput.JumpPressed)
+            if (!InputLocked && JumpQueued)
             {
+                ConsumeJump();
+                _jumped = true;
                 LetGo(ladder.Out * 3.5f + Vector3.up * 3f, 0.6f);
                 return;
             }

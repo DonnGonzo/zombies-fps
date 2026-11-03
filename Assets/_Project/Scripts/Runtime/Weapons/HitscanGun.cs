@@ -20,6 +20,8 @@ namespace ZombiesFPS.Weapons
     {
         /// <summary>Hip-fire field of view, from Settings. Aim zoom keeps the same ratio as at 75 degrees.</summary>
         public float BaseFov => GameSettings.Fov;
+        const float SprintFovKick = 5f;
+        float _sprintFov;
         /// <summary>Melee and throws keep the gun from firing until this time.</summary>
         public float BusyUntil { get; set; }
         /// <summary>Perk multipliers: fire rate (Hair Trigger) and spread and aim speed (Steady Hand).</summary>
@@ -119,7 +121,11 @@ namespace ZombiesFPS.Weapons
             AimAmount = Mathf.MoveTowards(AimAmount, wantsAim ? 1f : 0f, dt / (_data.aimTime * Mathf.Lerp(1f, SpreadScale, 0.5f)));
             _look.AimAmount = AimAmount;
             float eased = AimAmount * AimAmount * (3f - 2f * AimAmount);
-            _camera.fieldOfView = Mathf.Lerp(BaseFov, _data.aimFov * BaseFov / 75f, eased);
+            // A few degrees wider at a full sprint or slide, so speed reads on screen; gone while aiming.
+            float sprintTarget = _motor.IsSliding ? 1.4f : _motor.IsSprinting && _motor.PlanarSpeed > _motor.walkSpeed ? 1f : 0f;
+            _sprintFov = Mathf.Lerp(_sprintFov, sprintTarget, 1f - Mathf.Exp(-5f * dt));
+            float kick = SprintFovKick * _sprintFov * (1f - eased);
+            _camera.fieldOfView = Mathf.Lerp(BaseFov, _data.aimFov * BaseFov / 75f, eased) + kick;
 
             _bloom = Mathf.MoveTowards(_bloom, 0f, dt * 4f);
             float moveFactor = Mathf.Clamp01(_motor.PlanarSpeed / _motor.walkSpeed);
