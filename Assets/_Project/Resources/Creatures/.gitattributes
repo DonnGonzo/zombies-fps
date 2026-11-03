@@ -1,0 +1,3 @@
+# Stored in plain git, not LFS: this environment can't reach the LFS server, and each file is under GitHub's 100 MB limit.
+*.fbx !filter !diff !merge binary
+*.jpg !filter !diff !merge binary

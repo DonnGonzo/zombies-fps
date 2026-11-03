@@ -1,0 +1,2 @@
+# slug builtin muzzleX muzzleY muzzleZ minX minY minZ maxX maxY maxZ suppLen heavyLen groups...  (tools/nightfall/pack_nightfall.py)
+Nightfall/nightfall iron -0.0000 -0.0679 0.5703 -0.0399 -0.3502 -0.3797 0.0367 0.0814 0.5703 0.1835 0.0428 irons mag reddot scope extmag fastmag grip supp heavy ammo auto

@@ -1,0 +1,2 @@
+
+# Procedural Dark Magic Lab generator\n# Dependencies: trimesh, numpy\n# This file mirrors the generation approach used to build the shipped assets.\n# Kept compact inside the package; adjust dimensions/colors and re-export as needed.\n

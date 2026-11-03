@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86a3c3cd67c04bcca90bb41dd9e53836, type: 3}
+  m_Name: Zombie_Crawler
+  m_EditorClassIdentifier: 
+  kind: 2
+  displayName: Crawler
+  healthMultiplier: 0.7
+  walkSpeed: 2
+  jogSpeed: 2.6
+  sprintSpeed: 3.4
+  damage: 20
+  attackRange: 1.4
+  pointsPerKill: 70
+  firstRound: 12
+  spawnWeight: 0.25
+  rampRounds: 8
+  maxAlive: 8
+  clothColor: {r: 0.18, g: 0.22, b: 0.16, a: 1}
+  crawls: 1
+  slowOnHit: 0.5
+  slowTime: 2
